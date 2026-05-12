@@ -10,6 +10,15 @@ import dashboardRouter from "./dashboard";
 import activityRouter from "./activity";
 import aiRouter from "./ai";
 import billingRouter from "./billing";
+import psaRouter from "./psa";
+import ebayRouter from "./ebay";
+import rebrickableRouter from "./rebrickable";
+import pricechartingRouter from "./pricecharting";
+import scryfallRouter from "./scryfall";
+import pokemonRouter from "./pokemon";
+import tcgapiRouter from "./tcgapi";
+import justtcgRouter from "./justtcg";
+import cardhedgerRouter from "./cardhedger";
 
 const router: IRouter = Router();
 
@@ -24,5 +33,14 @@ router.use(dashboardRouter);
 router.use(activityRouter);
 router.use(aiRouter);
 router.use(billingRouter);
+router.use(psaRouter);
+router.use(ebayRouter);
+router.use(rebrickableRouter);
+router.use(pricechartingRouter);
+router.use(scryfallRouter);
+router.use(pokemonRouter);
+router.use(tcgapiRouter);
+router.use(justtcgRouter);
+router.use(cardhedgerRouter);
 
 export default router;
