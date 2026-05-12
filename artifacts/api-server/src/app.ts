@@ -14,6 +14,10 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { serve } from "inngest/express";
 import { inngest } from "./inngest/client";
 import * as inngestFunctions from "./inngest/functions";
+import {
+  rateLimitMiddleware,
+  generalRateLimit,
+} from "./middleware/rateLimit";
 
 const app: Express = express();
 
@@ -65,6 +69,8 @@ app.post(
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(rateLimitMiddleware(generalRateLimit));
 
 app.use(
   clerkMiddleware((req) => ({
