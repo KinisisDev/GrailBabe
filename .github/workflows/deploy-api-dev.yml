@@ -1,0 +1,47 @@
+name: Deploy API to Azure Container Apps (Dev)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/api-server/**'
+      - 'lib/**'
+      - '.github/workflows/deploy-api-dev.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: crgrailbabedev.azurecr.io
+  IMAGE_NAME: grailbabe-api
+  CONTAINER_APP: ca-grailbabedev-api-dev
+  RESOURCE_GROUP: rg-grailbabedev-compute-dev-eus2
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: az acr login --name crgrailbabedev
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            -f artifacts/api-server/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ env.CONTAINER_APP }}
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
