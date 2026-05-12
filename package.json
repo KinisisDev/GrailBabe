@@ -1,19 +1,19 @@
 {
-        "name": "workspace",
-        "version": "0.0.0",
-        "license": "MIT",
-        "scripts": {
-                  "build": "npm install -g pnpm@9 && pnpm install --no-frozen-lockfile && pnpm -r --filter ./artifacts/web run build && cp -r artifacts/web/dist ./dist",
-                  "typecheck:libs": "tsc --build",
-                  "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
-        },
-        "private": true,
-        "devDependencies": {
-                  "prettier": "^3.8.1",
-                  "typescript": "~5.9.2"
-        },
-        "dependencies": {
-                  "stripe": "20.0.0",
-                  "stripe-replit-sync": "1.0.0"
-        }
+	"name": "workspace",
+	"version": "0.0.0",
+	"license": "MIT",
+	"scripts": {
+		"build": "npm install -g pnpm@9 && pnpm install --no-frozen-lockfile && pnpm -r --filter ./artifacts/web run build && mkdir -p dist && cp -r artifacts/web/dist/public/. dist/",
+		"typecheck:libs": "tsc --build",
+		"typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+	},
+	"private": true,
+	"devDependencies": {
+		"prettier": "^3.8.1",
+		"typescript": "~5.9.2"
+	},
+	"dependencies": {
+		"stripe": "20.0.0",
+		"stripe-replit-sync": "1.0.0"
+	}
 }
