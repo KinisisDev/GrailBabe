@@ -11,6 +11,9 @@ import {
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { WebhookHandlers } from "./webhookHandlers";
+import { serve } from "inngest/express";
+import { inngest } from "./inngest/client";
+import * as inngestFunctions from "./inngest/functions";
 
 const app: Express = express();
 
@@ -70,6 +73,14 @@ app.use(
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
   })),
+);
+
+app.use(
+  "/api/inngest",
+  serve({
+    client: inngest,
+    functions: Object.values(inngestFunctions),
+  }),
 );
 
 app.use("/api", router);
