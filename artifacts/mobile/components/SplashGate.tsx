@@ -104,7 +104,16 @@ export function SplashGate({ onEnter }: Props) {
     };
   }, [curtain1, curtain2, curtain3, logoOpacity, enterOpacity, enterTranslate, pulse]);
 
-  const handleEnter = () => {
+  const exitedRef = useRef(false);
+  const finish = React.useCallback(() => {
+    if (exitedRef.current) return;
+    exitedRef.current = true;
+    onEnter();
+  }, [onEnter]);
+
+  const handleEnter = React.useCallback(() => {
+    if (exitedRef.current) return;
+    // Best-effort exit animation; unblock app deterministically via timer.
     Animated.parallel([
       Animated.timing(exitOpacity, {
         toValue: 0,
@@ -116,8 +125,16 @@ export function SplashGate({ onEnter }: Props) {
         duration: 700,
         useNativeDriver: true,
       }),
-    ]).start(() => onEnter());
-  };
+    ]).start();
+    setTimeout(finish, 700);
+  }, [exitOpacity, exitScale, finish]);
+
+  // Auto-dismiss safety: ensures the splash never blocks the app forever
+  // (e.g. when rendered in a throttled canvas iframe where animations stall).
+  useEffect(() => {
+    const t = setTimeout(handleEnter, 4500);
+    return () => clearTimeout(t);
+  }, [handleEnter]);
 
   const panelTranslate = (anim: Animated.Value) =>
     anim.interpolate({ inputRange: [0, 1], outputRange: [0, -height * 1.1] });
