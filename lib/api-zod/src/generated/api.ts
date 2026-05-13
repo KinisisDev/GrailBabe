@@ -756,6 +756,113 @@ export const MarkConversationReadParams = zod.object({
 })
 
 
+export const ListCommunityPostsQueryParams = zod.object({
+  "category": zod.coerce.string().optional(),
+  "sort": zod.enum(['hot', 'new', 'top']).optional()
+})
+
+export const ListCommunityPostsResponseItem = zod.object({
+  "id": zod.number(),
+  "authorId": zod.string(),
+  "authorName": zod.string(),
+  "authorAvatar": zod.string().nullish(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "isPinned": zod.boolean(),
+  "score": zod.number(),
+  "userVote": zod.union([zod.literal(-1),zod.literal(0),zod.literal(1)]),
+  "commentCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCommunityPostsResponse = zod.array(ListCommunityPostsResponseItem)
+
+
+
+export const createCommunityPostBodyTitleMax = 200;
+
+
+
+
+export const CreateCommunityPostBody = zod.object({
+  "category": zod.string().min(1),
+  "title": zod.string().min(1).max(createCommunityPostBodyTitleMax),
+  "body": zod.string().min(1)
+})
+
+
+export const GetCommunityPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCommunityPostResponse = zod.object({
+  "id": zod.number(),
+  "authorId": zod.string(),
+  "authorName": zod.string(),
+  "authorAvatar": zod.string().nullish(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "isPinned": zod.boolean(),
+  "score": zod.number(),
+  "userVote": zod.union([zod.literal(-1),zod.literal(0),zod.literal(1)]),
+  "commentCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const ListCommunityCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCommunityCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "postId": zod.number(),
+  "authorId": zod.string(),
+  "authorName": zod.string(),
+  "authorAvatar": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCommunityCommentsResponse = zod.array(ListCommunityCommentsResponseItem)
+
+
+export const CreateCommunityCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const CreateCommunityCommentBody = zod.object({
+  "body": zod.string().min(1)
+})
+
+
+export const VoteCommunityPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const VoteCommunityPostBody = zod.object({
+  "value": zod.union([zod.literal(-1),zod.literal(1)])
+})
+
+export const VoteCommunityPostResponse = zod.object({
+  "id": zod.number(),
+  "authorId": zod.string(),
+  "authorName": zod.string(),
+  "authorAvatar": zod.string().nullish(),
+  "category": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "isPinned": zod.boolean(),
+  "score": zod.number(),
+  "userVote": zod.union([zod.literal(-1),zod.literal(0),zod.literal(1)]),
+  "commentCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
 export const GetUnreadMessageCountResponse = zod.object({
   "count": zod.number()
 })

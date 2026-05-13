@@ -20,6 +20,8 @@ import GrailPage from "@/pages/Grail";
 import TradesPage from "@/pages/Trades";
 import ForumPage from "@/pages/Forum";
 import ForumPostPage from "@/pages/ForumPost";
+import CommunityPage from "@/pages/Community";
+import CommunityPostPage from "@/pages/CommunityPost";
 import PortfolioPage from "@/pages/Portfolio";
 import BillingPage from "@/pages/Billing";
 import SettingsPage from "@/pages/Settings";
@@ -46,6 +48,8 @@ function ProtectedRoutes() {
         <Route path="/trades" component={TradesPage} />
         <Route path="/forum" component={ForumPage} />
         <Route path="/forum/:id">{(params) => <ForumPostPage id={Number(params.id)} />}</Route>
+        <Route path="/community" component={CommunityPage} />
+        <Route path="/community/:postId">{(params) => <CommunityPostPage id={Number(params.postId)} />}</Route>
         <Route path="/portfolio" component={PortfolioPage} />
         <Route path="/insights" component={InsightsPage} />
         <Route path="/billing" component={BillingPage} />

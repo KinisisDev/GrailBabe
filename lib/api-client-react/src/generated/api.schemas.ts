@@ -557,6 +557,71 @@ export interface UnreadCount {
   count: number;
 }
 
+export type CommunityPostSummaryUserVote = typeof CommunityPostSummaryUserVote[keyof typeof CommunityPostSummaryUserVote];
+
+
+export const CommunityPostSummaryUserVote = {
+  NUMBER_MINUS_1: -1,
+  NUMBER_0: 0,
+  NUMBER_1: 1,
+} as const;
+
+export interface CommunityPostSummary {
+  id: number;
+  authorId: string;
+  authorName: string;
+  /** @nullable */
+  authorAvatar?: string | null;
+  category: string;
+  title: string;
+  body: string;
+  isPinned: boolean;
+  score: number;
+  userVote: CommunityPostSummaryUserVote;
+  commentCount: number;
+  createdAt: string;
+}
+
+export interface CommunityPostInput {
+  /** @minLength 1 */
+  category: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /** @minLength 1 */
+  body: string;
+}
+
+export interface CommunityComment {
+  id: number;
+  postId: number;
+  authorId: string;
+  authorName: string;
+  /** @nullable */
+  authorAvatar?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface CommunityCommentInput {
+  /** @minLength 1 */
+  body: string;
+}
+
+export type CommunityVoteInputValue = typeof CommunityVoteInputValue[keyof typeof CommunityVoteInputValue];
+
+
+export const CommunityVoteInputValue = {
+  NUMBER_MINUS_1: -1,
+  NUMBER_1: 1,
+} as const;
+
+export interface CommunityVoteInput {
+  value: CommunityVoteInputValue;
+}
+
 export type ListVaultItemsParams = {
 category?: string;
 condition?: string;
@@ -590,5 +655,19 @@ export const GetPortfolioTimelineRange = {
   '90d': '90d',
   '1y': '1y',
   all: 'all',
+} as const;
+
+export type ListCommunityPostsParams = {
+category?: string;
+sort?: ListCommunityPostsSort;
+};
+
+export type ListCommunityPostsSort = typeof ListCommunityPostsSort[keyof typeof ListCommunityPostsSort];
+
+
+export const ListCommunityPostsSort = {
+  hot: 'hot',
+  new: 'new',
+  top: 'top',
 } as const;
 

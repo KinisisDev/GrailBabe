@@ -20,6 +20,7 @@ import tcgapiRouter from "./tcgapi";
 import justtcgRouter from "./justtcg";
 import cardhedgerRouter from "./cardhedger";
 import messagesRouter from "./messages";
+import communityRouter from "./community";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(tcgapiRouter);
 router.use(justtcgRouter);
 router.use(cardhedgerRouter);
 router.use(messagesRouter);
+router.use(communityRouter);
 
 export default router;

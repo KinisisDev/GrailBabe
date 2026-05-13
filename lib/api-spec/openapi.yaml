@@ -19,6 +19,7 @@ tags:
   - name: billing
   - name: prices
   - name: messages
+  - name: community
 paths:
   /healthz:
     get:
@@ -533,6 +534,98 @@ paths:
         "204":
           description: Marked as read
 
+  /community/posts:
+    get:
+      operationId: listCommunityPosts
+      tags: [community]
+      parameters:
+        - { name: category, in: query, schema: { type: string } }
+        - { name: sort, in: query, schema: { type: string, enum: [hot, new, top] } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CommunityPostSummary" }
+    post:
+      operationId: createCommunityPost
+      tags: [community]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommunityPostInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunityPostSummary" }
+
+  /community/posts/{id}:
+    get:
+      operationId: getCommunityPost
+      tags: [community]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunityPostSummary" }
+
+  /community/posts/{id}/comments:
+    get:
+      operationId: listCommunityComments
+      tags: [community]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CommunityComment" }
+    post:
+      operationId: createCommunityComment
+      tags: [community]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommunityCommentInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunityComment" }
+
+  /community/posts/{id}/vote:
+    post:
+      operationId: voteCommunityPost
+      tags: [community]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommunityVoteInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunityPostSummary" }
+
   /messages/unread-count:
     get:
       operationId: getUnreadMessageCount
@@ -995,3 +1088,52 @@ components:
       required: [count]
       properties:
         count: { type: integer }
+
+    CommunityPostSummary:
+      type: object
+      required: [id, authorId, authorName, category, title, body, isPinned, score, userVote, commentCount, createdAt]
+      properties:
+        id: { type: integer }
+        authorId: { type: string }
+        authorName: { type: string }
+        authorAvatar: { type: ["string", "null"] }
+        category: { type: string }
+        title: { type: string }
+        body: { type: string }
+        isPinned: { type: boolean }
+        score: { type: integer }
+        userVote: { type: integer, enum: [-1, 0, 1] }
+        commentCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    CommunityPostInput:
+      type: object
+      required: [category, title, body]
+      properties:
+        category: { type: string, minLength: 1 }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        body: { type: string, minLength: 1 }
+
+    CommunityComment:
+      type: object
+      required: [id, postId, authorId, authorName, body, createdAt]
+      properties:
+        id: { type: integer }
+        postId: { type: integer }
+        authorId: { type: string }
+        authorName: { type: string }
+        authorAvatar: { type: ["string", "null"] }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    CommunityCommentInput:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1 }
+
+    CommunityVoteInput:
+      type: object
+      required: [value]
+      properties:
+        value: { type: integer, enum: [-1, 1] }

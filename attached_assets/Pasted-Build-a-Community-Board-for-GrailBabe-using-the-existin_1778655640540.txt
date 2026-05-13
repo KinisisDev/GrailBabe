@@ -1,0 +1,193 @@
+Build a Community Board for GrailBabe using the existing app stack 
+(Drizzle schema + OpenAPI endpoints + generated hooks) — 
+the same pattern just used for the Messages feature.
+
+---
+
+## 1. Drizzle Schema
+
+Add to the existing schema file (wherever posts/vault items are defined):
+
+```ts
+// Posts
+export const posts = pgTable("posts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  category: text("category").notNull(), // 'tcg' | 'lego' | 'sports' | 'grail' | 'price-check' | 'general'
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  isPinned: boolean("is_pinned").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Comments
+export const postComments = pgTable("post_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Votes (one row per user per post)
+export const postVotes = pgTable("post_votes", {
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  value: integer("value").notNull(), // 1 or -1
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.postId] }),
+}));
+```
+
+Run the Drizzle migration after adding the schema.
+
+---
+
+## 2. API Endpoints
+
+Add these endpoints following the same pattern as the existing routes in the app:
+
+**Posts:**
+- GET /api/posts — list posts, query params: category (optional), sort ('hot'|'new'|'top', default 'hot')
+  - Each post returns: id, category, title, body, isPinned, createdAt, authorId, authorName, score (sum of votes), commentCount
+  - Pinned posts always first, then sorted by selected sort
+  - 'hot' = score desc, 'new' = createdAt desc, 'top' = score desc all time
+- POST /api/posts — create a post (auth required), body: { category, title, body }
+- GET /api/posts/:id — single post with full body + author info + score + commentCount
+
+**Comments:**
+- GET /api/posts/:id/comments — all comments for a post, ordered by createdAt asc, include authorName
+- POST /api/posts/:id/comments — add a comment (auth required), body: { body }
+
+**Votes:**
+- POST /api/posts/:id/vote — upsert a vote (auth required), body: { value: 1 | -1 }
+  - If the user already voted the same value, remove the vote (toggle off)
+  - If the user voted the opposite value, update to new value
+
+---
+
+## 3. Generated Hooks
+
+Generate hooks following the same pattern as the rest of the app:
+
+```ts
+useListPosts(params?: { category?: string; sort?: 'hot' | 'new' | 'top' })
+useGetPost(postId: string)
+useCreatePost()
+useListComments(postId: string)
+useCreateComment(postId: string)
+useVotePost(postId: string)
+```
+
+---
+
+## 4. Page 1 — artifacts/web/src/pages/Community.tsx
+
+### Layout: two-column (left sidebar + main feed)
+
+**Left sidebar (~190px):**
+- Section label "Categories"
+- Nav items: All Posts, TCG, LEGO, Sports Cards, Grail Posts, Price Checks, General
+- Each shows a colored dot and the count of posts in that category
+- Clicking filters the feed
+- Section label "My Activity"
+- Nav items: My Posts, My Upvoted (placeholders for now, no functionality needed)
+
+**Main feed:**
+
+Header row: "Community" title + "New post" button (opens modal)
+
+Compose bar: avatar circle with user initials + "Share something with the community..." placeholder text (clicking opens new post modal)
+
+Sort tabs: Hot | New | Top (updates the sort param passed to useListPosts)
+
+Search input: client-side filter on post titles as user types
+
+**Post list (not a grid — full width stacked cards):**
+
+Each post card:
+- Left vote column: upvote chevron → score number → downvote chevron
+  - Clicking upvote calls useVotePost with value 1
+  - Clicking the same vote again removes it (toggle)
+  - Downvote uses value -1
+  - Active vote highlighted in neon blue (--primary)
+- Right content area:
+  - Top: category badge (color-coded per category) + "Pinned" label if isPinned
+  - Title (font-weight 500)
+  - Body snippet truncated to 1 line
+  - Meta: author avatar + name, comment count, time ago
+- Pinned posts always appear at top of list
+- Clicking the card navigates to /community/:id
+- Hover state: border brightens slightly
+
+**New Post Modal (React state):**
+- Category dropdown: TCG | LEGO | Sports Cards | Grail Post | Price Check | General
+- Title input (required, max 200 chars, show char count)
+- Body textarea (required, min 20 chars)
+- Submit "Post to community" → calls useCreatePost, closes modal, refreshes list
+- Cancel / × button closes modal
+
+**Empty state** when no posts in selected category:
+Centered icon + "No posts yet. Be the first to post in this category."
+
+---
+
+## 5. Page 2 — artifacts/web/src/pages/CommunityPost.tsx
+
+Route: /community/:postId
+
+Layout:
+- "← Back to Community" link at top
+- Full post card: vote column + full body + author + timestamp
+- Divider + "X replies" heading
+- Comment list: each comment shows avatar + author name + body + time ago, ordered oldest first
+- Comment input at bottom: textarea ("Write a reply...") + "Reply" button
+  - Calls useCreateComment, appends new comment to list on success
+  - Disable button if textarea is empty
+
+---
+
+## 6. Category badge colors
+- tcg → purple tint (background: #eeedfe, color: #3c3489)
+- lego → green tint (background: #eaf3de, color: #27500a)
+- sports → amber tint (background: #faeeda, color: #633806)
+- grail → pink tint (background: #fbeaf0, color: #72243e)
+- price-check → teal tint (background: #e1f5ee, color: #085041)
+- general → muted (background: var(--muted), color: var(--muted-foreground))
+
+---
+
+## 7. Sidebar nav
+
+In AppShell.tsx add:
+- Icon: Users (lucide-react)
+- Label: "Community"
+- href: "/community"
+Place it between Trading Board and Messages in the nav order.
+
+---
+
+## 8. Routing
+
+In App.tsx add:
+```tsx
+<Route path="/community" component={Community} />
+<Route path="/community/:postId" component={CommunityPost} />
+```
+
+---
+
+## Style Notes
+- Full dark theme (bg-background, bg-card, border variables)
+- Neon blue (--primary) for active vote, Post button, Reply button
+- Pinned cards: border-left 2px solid var(--primary)
+- Post cards are full-width stacked list, not a grid
+- Consistent card padding and radius with the rest of the app
+
+---
+
+## Important
+- Follow the exact same patterns used for the Messages feature just built
+- Do NOT use Supabase client directly — use Drizzle + API endpoints + hooks like the rest of the app
+- Do NOT push to git — commit only
+- Run the Drizzle migration after updating the schema
