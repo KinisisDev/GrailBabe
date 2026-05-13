@@ -36,18 +36,20 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
         <div className="px-5 py-6">
           <Link href="/dashboard" className="flex items-center gap-2 group">
-              <div className="size-8 rounded-lg bg-primary/15 grid place-items-center ring-1 ring-primary/30">
-                <span className="text-primary font-serif font-semibold">G</span>
+            <img
+              src="/grailbabe-logo.png"
+              alt="GrailBabe"
+              className="h-8 w-auto object-contain"
+            />
+            <div>
+              <div className="font-serif text-lg leading-none tracking-tight">
+                GrailBabe
               </div>
-              <div>
-                <div className="font-serif text-lg leading-none tracking-tight">
-                  GrailBabe
-                </div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
-                  Collector OS
-                </div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+                Collector OS
               </div>
-            </Link>
+            </div>
+          </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {NAV.map((item) => {
@@ -55,27 +57,27 @@ export default function AppShell({ children }: { children: ReactNode }) {
             const Icon = item.icon;
             return (
               <Link key={item.to} href={item.to} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${ active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground" }`}>
-                  <Icon className="size-4" />
-                  <span className="flex-1">{item.label}</span>
-                  {item.premium && tier === "free" && (
-                    <Badge
-                      variant="outline"
-                      className="text-[9px] px-1.5 py-0 h-4 border-accent/40 text-accent uppercase tracking-wide"
-                    >
-                      Pro
-                    </Badge>
-                  )}
-                </Link>
+                <Icon className="size-4" />
+                <span className="flex-1">{item.label}</span>
+                {item.premium && tier === "free" && (
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] px-1.5 py-0 h-4 border-accent/40 text-accent uppercase tracking-wide"
+                  >
+                    Pro
+                  </Badge>
+                )}
+              </Link>
             );
           })}
         </nav>
         <div className="p-3 border-t border-border space-y-2">
           {tier === "free" ? (
             <Link href="/billing">
-                <Button className="w-full" size="sm">
-                  Upgrade to Premium
-                </Button>
-              </Link>
+              <Button className="w-full" size="sm">
+                Upgrade to Premium
+              </Button>
+            </Link>
           ) : (
             <div className="px-3 py-2 rounded-md bg-primary/10 border border-primary/20 text-xs">
               <div className="font-medium text-primary">Premium Member</div>
@@ -83,13 +85,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
           <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground rounded-md">
-              <Settings className="size-3.5" />
-              Settings
-            </Link>
+            <Settings className="size-3.5" />
+            Settings
+          </Link>
           <Link href="/billing" className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground rounded-md">
-              <CreditCard className="size-3.5" />
-              Billing
-            </Link>
+            <CreditCard className="size-3.5" />
+            Billing
+          </Link>
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
