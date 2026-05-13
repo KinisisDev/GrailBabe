@@ -5,7 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { TradePostInputKind } from "./tradePostInputKind";
+import type { TradePostInputKind } from './tradePostInputKind';
 
 export interface TradePostInput {
   /** @minLength 1 */

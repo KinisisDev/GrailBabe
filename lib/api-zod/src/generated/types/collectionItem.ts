@@ -5,7 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { CollectionItemCondition } from "./collectionItemCondition";
+import type { CollectionItemCondition } from './collectionItemCondition';
 
 export interface CollectionItem {
   id: number;

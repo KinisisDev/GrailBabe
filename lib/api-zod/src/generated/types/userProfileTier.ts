@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type UserProfileTier =
-  (typeof UserProfileTier)[keyof typeof UserProfileTier];
+export type UserProfileTier = typeof UserProfileTier[keyof typeof UserProfileTier];
+
 
 export const UserProfileTier = {
-  free: "free",
-  premium: "premium",
+  free: 'free',
+  premium: 'premium',
 } as const;

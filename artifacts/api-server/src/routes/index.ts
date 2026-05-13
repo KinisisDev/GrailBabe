@@ -19,6 +19,7 @@ import pokemonRouter from "./pokemon";
 import tcgapiRouter from "./tcgapi";
 import justtcgRouter from "./justtcg";
 import cardhedgerRouter from "./cardhedger";
+import messagesRouter from "./messages";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(pokemonRouter);
 router.use(tcgapiRouter);
 router.use(justtcgRouter);
 router.use(cardhedgerRouter);
+router.use(messagesRouter);
 
 export default router;

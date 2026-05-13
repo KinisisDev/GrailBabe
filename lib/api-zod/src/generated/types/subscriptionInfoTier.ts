@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type SubscriptionInfoTier =
-  (typeof SubscriptionInfoTier)[keyof typeof SubscriptionInfoTier];
+export type SubscriptionInfoTier = typeof SubscriptionInfoTier[keyof typeof SubscriptionInfoTier];
+
 
 export const SubscriptionInfoTier = {
-  free: "free",
-  premium: "premium",
+  free: 'free',
+  premium: 'premium',
 } as const;

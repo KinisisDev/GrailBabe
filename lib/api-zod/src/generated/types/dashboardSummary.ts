@@ -5,11 +5,11 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { ActivityEvent } from "./activityEvent";
-import type { CollectionItem } from "./collectionItem";
-import type { GrailItem } from "./grailItem";
-import type { PortfolioSummary } from "./portfolioSummary";
-import type { TradePost } from "./tradePost";
+import type { ActivityEvent } from './activityEvent';
+import type { CollectionItem } from './collectionItem';
+import type { GrailItem } from './grailItem';
+import type { PortfolioSummary } from './portfolioSummary';
+import type { TradePost } from './tradePost';
 
 export interface DashboardSummary {
   portfolio: PortfolioSummary;

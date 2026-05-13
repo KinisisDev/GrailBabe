@@ -6,15 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ActivityEventKind =
-  (typeof ActivityEventKind)[keyof typeof ActivityEventKind];
+export type ActivityEventKind = typeof ActivityEventKind[keyof typeof ActivityEventKind];
+
 
 export const ActivityEventKind = {
-  vault_add: "vault_add",
-  vault_update: "vault_update",
-  grail_add: "grail_add",
-  grail_acquired: "grail_acquired",
-  trade_post: "trade_post",
-  price_change: "price_change",
-  forum_post: "forum_post",
+  vault_add: 'vault_add',
+  vault_update: 'vault_update',
+  grail_add: 'grail_add',
+  grail_acquired: 'grail_acquired',
+  trade_post: 'trade_post',
+  price_change: 'price_change',
+  forum_post: 'forum_post',
 } as const;

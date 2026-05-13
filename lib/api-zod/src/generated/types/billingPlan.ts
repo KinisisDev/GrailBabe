@@ -5,8 +5,8 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { BillingPlanInterval } from "./billingPlanInterval";
-import type { BillingPlanTier } from "./billingPlanTier";
+import type { BillingPlanInterval } from './billingPlanInterval';
+import type { BillingPlanTier } from './billingPlanTier';
 
 export interface BillingPlan {
   id: string;

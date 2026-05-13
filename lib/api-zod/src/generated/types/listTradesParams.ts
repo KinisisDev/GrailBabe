@@ -7,5 +7,5 @@
  */
 
 export type ListTradesParams = {
-  category?: string;
+category?: string;
 };

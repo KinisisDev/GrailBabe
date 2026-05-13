@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type BillingPlanTier =
-  (typeof BillingPlanTier)[keyof typeof BillingPlanTier];
+export type BillingPlanTier = typeof BillingPlanTier[keyof typeof BillingPlanTier];
+
 
 export const BillingPlanTier = {
-  free: "free",
-  premium: "premium",
+  free: 'free',
+  premium: 'premium',
 } as const;

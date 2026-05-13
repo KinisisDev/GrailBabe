@@ -9,11 +9,10 @@
 /**
  * @nullable
  */
-export type SubscriptionInfoInterval =
-  | (typeof SubscriptionInfoInterval)[keyof typeof SubscriptionInfoInterval]
-  | null;
+export type SubscriptionInfoInterval = typeof SubscriptionInfoInterval[keyof typeof SubscriptionInfoInterval] | null;
+
 
 export const SubscriptionInfoInterval = {
-  month: "month",
-  year: "year",
+  month: 'month',
+  year: 'year',
 } as const;

@@ -5,7 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { GrailItemUpdatePriority } from "./grailItemUpdatePriority";
+import type { GrailItemUpdatePriority } from './grailItemUpdatePriority';
 
 export interface GrailItemUpdate {
   /** @minLength 1 */

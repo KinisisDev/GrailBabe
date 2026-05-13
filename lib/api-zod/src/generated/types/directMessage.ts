@@ -5,9 +5,12 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { CollectionItem } from './collectionItem';
 
-export interface AiSearchResult {
-  interpretation: string;
-  results: CollectionItem[];
+export interface DirectMessage {
+  id: number;
+  conversationId: number;
+  senderId: string;
+  content: string;
+  read: boolean;
+  createdAt: Date;
 }

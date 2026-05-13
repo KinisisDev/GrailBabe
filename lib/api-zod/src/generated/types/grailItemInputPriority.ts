@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GrailItemInputPriority =
-  (typeof GrailItemInputPriority)[keyof typeof GrailItemInputPriority];
+export type GrailItemInputPriority = typeof GrailItemInputPriority[keyof typeof GrailItemInputPriority];
+
 
 export const GrailItemInputPriority = {
-  low: "low",
-  medium: "medium",
-  high: "high",
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
 } as const;

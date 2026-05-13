@@ -15,12 +15,12 @@ export interface ApiErrorResponse {
   code?: string | null;
 }
 
-export type UserProfileTier =
-  (typeof UserProfileTier)[keyof typeof UserProfileTier];
+export type UserProfileTier = typeof UserProfileTier[keyof typeof UserProfileTier];
+
 
 export const UserProfileTier = {
-  free: "free",
-  premium: "premium",
+  free: 'free',
+  premium: 'premium',
 } as const;
 
 export interface UserProfile {
@@ -36,24 +36,23 @@ export interface UserProfile {
   createdAt?: string;
 }
 
-export type SubscriptionInfoTier =
-  (typeof SubscriptionInfoTier)[keyof typeof SubscriptionInfoTier];
+export type SubscriptionInfoTier = typeof SubscriptionInfoTier[keyof typeof SubscriptionInfoTier];
+
 
 export const SubscriptionInfoTier = {
-  free: "free",
-  premium: "premium",
+  free: 'free',
+  premium: 'premium',
 } as const;
 
 /**
  * @nullable
  */
-export type SubscriptionInfoInterval =
-  | (typeof SubscriptionInfoInterval)[keyof typeof SubscriptionInfoInterval]
-  | null;
+export type SubscriptionInfoInterval = typeof SubscriptionInfoInterval[keyof typeof SubscriptionInfoInterval] | null;
+
 
 export const SubscriptionInfoInterval = {
-  month: "month",
-  year: "year",
+  month: 'month',
+  year: 'year',
 } as const;
 
 export interface SubscriptionInfo {
@@ -92,16 +91,16 @@ export interface ProfileUpdate {
   bio?: string;
 }
 
-export type CollectionItemCondition =
-  (typeof CollectionItemCondition)[keyof typeof CollectionItemCondition];
+export type CollectionItemCondition = typeof CollectionItemCondition[keyof typeof CollectionItemCondition];
+
 
 export const CollectionItemCondition = {
-  mint: "mint",
-  near_mint: "near_mint",
-  excellent: "excellent",
-  good: "good",
-  fair: "fair",
-  poor: "poor",
+  mint: 'mint',
+  near_mint: 'near_mint',
+  excellent: 'excellent',
+  good: 'good',
+  fair: 'fair',
+  poor: 'poor',
 } as const;
 
 export interface CollectionItem {
@@ -140,16 +139,16 @@ export interface CollectionItemDetail {
   priceHistory: PriceSnapshot[];
 }
 
-export type CollectionItemInputCondition =
-  (typeof CollectionItemInputCondition)[keyof typeof CollectionItemInputCondition];
+export type CollectionItemInputCondition = typeof CollectionItemInputCondition[keyof typeof CollectionItemInputCondition];
+
 
 export const CollectionItemInputCondition = {
-  mint: "mint",
-  near_mint: "near_mint",
-  excellent: "excellent",
-  good: "good",
-  fair: "fair",
-  poor: "poor",
+  mint: 'mint',
+  near_mint: 'near_mint',
+  excellent: 'excellent',
+  good: 'good',
+  fair: 'fair',
+  poor: 'poor',
 } as const;
 
 export interface CollectionItemInput {
@@ -169,16 +168,16 @@ export interface CollectionItemInput {
   favorite?: boolean;
 }
 
-export type CollectionItemUpdateCondition =
-  (typeof CollectionItemUpdateCondition)[keyof typeof CollectionItemUpdateCondition];
+export type CollectionItemUpdateCondition = typeof CollectionItemUpdateCondition[keyof typeof CollectionItemUpdateCondition];
+
 
 export const CollectionItemUpdateCondition = {
-  mint: "mint",
-  near_mint: "near_mint",
-  excellent: "excellent",
-  good: "good",
-  fair: "fair",
-  poor: "poor",
+  mint: 'mint',
+  near_mint: 'near_mint',
+  excellent: 'excellent',
+  good: 'good',
+  fair: 'fair',
+  poor: 'poor',
 } as const;
 
 export interface CollectionItemUpdate {
@@ -197,13 +196,13 @@ export interface CollectionItemUpdate {
   favorite?: boolean;
 }
 
-export type GrailItemPriority =
-  (typeof GrailItemPriority)[keyof typeof GrailItemPriority];
+export type GrailItemPriority = typeof GrailItemPriority[keyof typeof GrailItemPriority];
+
 
 export const GrailItemPriority = {
-  low: "low",
-  medium: "medium",
-  high: "high",
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
 } as const;
 
 export interface GrailItem {
@@ -221,13 +220,13 @@ export interface GrailItem {
   createdAt: string;
 }
 
-export type GrailItemInputPriority =
-  (typeof GrailItemInputPriority)[keyof typeof GrailItemInputPriority];
+export type GrailItemInputPriority = typeof GrailItemInputPriority[keyof typeof GrailItemInputPriority];
+
 
 export const GrailItemInputPriority = {
-  low: "low",
-  medium: "medium",
-  high: "high",
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
 } as const;
 
 export interface GrailItemInput {
@@ -241,13 +240,13 @@ export interface GrailItemInput {
   priority?: GrailItemInputPriority;
 }
 
-export type GrailItemUpdatePriority =
-  (typeof GrailItemUpdatePriority)[keyof typeof GrailItemUpdatePriority];
+export type GrailItemUpdatePriority = typeof GrailItemUpdatePriority[keyof typeof GrailItemUpdatePriority];
+
 
 export const GrailItemUpdatePriority = {
-  low: "low",
-  medium: "medium",
-  high: "high",
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
 } as const;
 
 export interface GrailItemUpdate {
@@ -261,21 +260,22 @@ export interface GrailItemUpdate {
   acquired?: boolean;
 }
 
-export type TradePostKind = (typeof TradePostKind)[keyof typeof TradePostKind];
+export type TradePostKind = typeof TradePostKind[keyof typeof TradePostKind];
+
 
 export const TradePostKind = {
-  trade: "trade",
-  sell: "sell",
-  buy: "buy",
+  trade: 'trade',
+  sell: 'sell',
+  buy: 'buy',
 } as const;
 
-export type TradePostStatus =
-  (typeof TradePostStatus)[keyof typeof TradePostStatus];
+export type TradePostStatus = typeof TradePostStatus[keyof typeof TradePostStatus];
+
 
 export const TradePostStatus = {
-  open: "open",
-  pending: "pending",
-  closed: "closed",
+  open: 'open',
+  pending: 'pending',
+  closed: 'closed',
 } as const;
 
 export interface TradePost {
@@ -298,13 +298,13 @@ export interface TradePost {
   createdAt: string;
 }
 
-export type TradePostInputKind =
-  (typeof TradePostInputKind)[keyof typeof TradePostInputKind];
+export type TradePostInputKind = typeof TradePostInputKind[keyof typeof TradePostInputKind];
+
 
 export const TradePostInputKind = {
-  trade: "trade",
-  sell: "sell",
-  buy: "buy",
+  trade: 'trade',
+  sell: 'sell',
+  buy: 'buy',
 } as const;
 
 export interface TradePostInput {
@@ -366,15 +366,15 @@ export interface ReplyInput {
   body: string;
 }
 
-export type ReactionInputReaction =
-  (typeof ReactionInputReaction)[keyof typeof ReactionInputReaction];
+export type ReactionInputReaction = typeof ReactionInputReaction[keyof typeof ReactionInputReaction];
+
 
 export const ReactionInputReaction = {
-  fire: "fire",
-  heart: "heart",
-  eyes: "eyes",
-  clap: "clap",
-  none: "none",
+  fire: 'fire',
+  heart: 'heart',
+  eyes: 'eyes',
+  clap: 'clap',
+  none: 'none',
 } as const;
 
 export interface ReactionInput {
@@ -405,17 +405,17 @@ export interface TimelinePoint {
   value: number;
 }
 
-export type ActivityEventKind =
-  (typeof ActivityEventKind)[keyof typeof ActivityEventKind];
+export type ActivityEventKind = typeof ActivityEventKind[keyof typeof ActivityEventKind];
+
 
 export const ActivityEventKind = {
-  vault_add: "vault_add",
-  vault_update: "vault_update",
-  grail_add: "grail_add",
-  grail_acquired: "grail_acquired",
-  trade_post: "trade_post",
-  price_change: "price_change",
-  forum_post: "forum_post",
+  vault_add: 'vault_add',
+  vault_update: 'vault_update',
+  grail_add: 'grail_add',
+  grail_acquired: 'grail_acquired',
+  trade_post: 'trade_post',
+  price_change: 'price_change',
+  forum_post: 'forum_post',
 } as const;
 
 export interface ActivityEvent {
@@ -435,27 +435,27 @@ export interface DashboardSummary {
   activity: ActivityEvent[];
 }
 
-export type AiInsightsInputFocus =
-  (typeof AiInsightsInputFocus)[keyof typeof AiInsightsInputFocus];
+export type AiInsightsInputFocus = typeof AiInsightsInputFocus[keyof typeof AiInsightsInputFocus];
+
 
 export const AiInsightsInputFocus = {
-  overview: "overview",
-  opportunities: "opportunities",
-  risks: "risks",
-  valuation: "valuation",
+  overview: 'overview',
+  opportunities: 'opportunities',
+  risks: 'risks',
+  valuation: 'valuation',
 } as const;
 
 export interface AiInsightsInput {
   focus?: AiInsightsInputFocus;
 }
 
-export type AiHighlightSentiment =
-  (typeof AiHighlightSentiment)[keyof typeof AiHighlightSentiment];
+export type AiHighlightSentiment = typeof AiHighlightSentiment[keyof typeof AiHighlightSentiment];
+
 
 export const AiHighlightSentiment = {
-  positive: "positive",
-  neutral: "neutral",
-  warning: "warning",
+  positive: 'positive',
+  neutral: 'neutral',
+  warning: 'warning',
 } as const;
 
 export interface AiHighlight {
@@ -482,21 +482,21 @@ export interface AiSearchResult {
   results: CollectionItem[];
 }
 
-export type BillingPlanTier =
-  (typeof BillingPlanTier)[keyof typeof BillingPlanTier];
+export type BillingPlanTier = typeof BillingPlanTier[keyof typeof BillingPlanTier];
+
 
 export const BillingPlanTier = {
-  free: "free",
-  premium: "premium",
+  free: 'free',
+  premium: 'premium',
 } as const;
 
-export type BillingPlanInterval =
-  (typeof BillingPlanInterval)[keyof typeof BillingPlanInterval];
+export type BillingPlanInterval = typeof BillingPlanInterval[keyof typeof BillingPlanInterval];
+
 
 export const BillingPlanInterval = {
-  month: "month",
-  year: "year",
-  none: "none",
+  month: 'month',
+  year: 'year',
+  none: 'none',
 } as const;
 
 export interface BillingPlan {
@@ -516,37 +516,79 @@ export interface CheckoutSession {
   url: string;
 }
 
+export interface PublicUser {
+  id: string;
+  displayName: string;
+  /** @nullable */
+  avatarUrl: string | null;
+}
+
+export interface DirectMessage {
+  id: number;
+  conversationId: number;
+  senderId: string;
+  content: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface ConversationSummary {
+  id: number;
+  otherUser: PublicUser;
+  lastMessage?: DirectMessage | null;
+  unreadCount: number;
+  updatedAt: string;
+}
+
+export interface ConversationInput {
+  /** @minLength 1 */
+  otherUserId: string;
+}
+
+export interface MessageInput {
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  content: string;
+}
+
+export interface UnreadCount {
+  count: number;
+}
+
 export type ListVaultItemsParams = {
-  category?: string;
-  condition?: string;
-  search?: string;
-  sort?: ListVaultItemsSort;
+category?: string;
+condition?: string;
+search?: string;
+sort?: ListVaultItemsSort;
 };
 
-export type ListVaultItemsSort =
-  (typeof ListVaultItemsSort)[keyof typeof ListVaultItemsSort];
+export type ListVaultItemsSort = typeof ListVaultItemsSort[keyof typeof ListVaultItemsSort];
+
 
 export const ListVaultItemsSort = {
-  recent: "recent",
-  value: "value",
-  name: "name",
+  recent: 'recent',
+  value: 'value',
+  name: 'name',
 } as const;
 
 export type ListTradesParams = {
-  category?: string;
+category?: string;
 };
 
 export type GetPortfolioTimelineParams = {
-  range?: GetPortfolioTimelineRange;
+range?: GetPortfolioTimelineRange;
 };
 
-export type GetPortfolioTimelineRange =
-  (typeof GetPortfolioTimelineRange)[keyof typeof GetPortfolioTimelineRange];
+export type GetPortfolioTimelineRange = typeof GetPortfolioTimelineRange[keyof typeof GetPortfolioTimelineRange];
+
 
 export const GetPortfolioTimelineRange = {
-  "7d": "7d",
-  "30d": "30d",
-  "90d": "90d",
-  "1y": "1y",
-  all: "all",
+  '7d': '7d',
+  '30d': '30d',
+  '90d': '90d',
+  '1y': '1y',
+  all: 'all',
 } as const;
+

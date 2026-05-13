@@ -5,8 +5,8 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { ForumPost } from "./forumPost";
-import type { ForumReply } from "./forumReply";
+import type { ForumPost } from './forumPost';
+import type { ForumReply } from './forumReply';
 
 export interface ForumPostDetail {
   post: ForumPost;

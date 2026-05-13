@@ -5,8 +5,8 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { CollectionItem } from "./collectionItem";
-import type { PriceSnapshot } from "./priceSnapshot";
+import type { CollectionItem } from './collectionItem';
+import type { PriceSnapshot } from './priceSnapshot';
 
 export interface CollectionItemDetail {
   item: CollectionItem;

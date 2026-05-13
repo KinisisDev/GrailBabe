@@ -5,7 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { AiHighlightSentiment } from "./aiHighlightSentiment";
+import type { AiHighlightSentiment } from './aiHighlightSentiment';
 
 export interface AiHighlight {
   title: string;

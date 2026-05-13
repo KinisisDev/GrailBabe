@@ -5,9 +5,9 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { PlanLimits } from "./planLimits";
-import type { SubscriptionInfo } from "./subscriptionInfo";
-import type { UserProfile } from "./userProfile";
+import type { PlanLimits } from './planLimits';
+import type { SubscriptionInfo } from './subscriptionInfo';
+import type { UserProfile } from './userProfile';
 
 export interface MeResponse {
   profile: UserProfile;

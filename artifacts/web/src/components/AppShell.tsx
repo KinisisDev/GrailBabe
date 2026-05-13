@@ -3,7 +3,11 @@ import { Link, useLocation } from "wouter";
 import { UserButton } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useGetMe } from "@workspace/api-client-react";
+import {
+  useGetMe,
+  useGetUnreadMessageCount,
+  getGetUnreadMessageCountQueryKey,
+} from "@workspace/api-client-react";
 import {
   LayoutDashboard,
   Box,
@@ -35,6 +39,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { data: me } = useGetMe();
   const tier = me?.profile.tier ?? "free";
+  const { data: unread } = useGetUnreadMessageCount({
+    query: {
+      queryKey: getGetUnreadMessageCountQueryKey(),
+      refetchInterval: 15000,
+    },
+  });
+  const unreadCount = unread?.count ?? 0;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -59,6 +70,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
               >
                   <Icon className="size-4" />
                   <span className="flex-1">{item.label}</span>
+                  {item.to === "/messages" && unreadCount > 0 && (
+                    <span
+                      className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-semibold text-black"
+                      style={{ backgroundColor: "var(--neon-blue)" }}
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                   {item.premium && tier === "free" && (
                     <Badge
                       variant="outline"

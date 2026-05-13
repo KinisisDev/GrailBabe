@@ -5,3 +5,5 @@ export * from "./grailItems";
 export * from "./tradePosts";
 export * from "./forumPosts";
 export * from "./activity";
+export * from "./conversations";
+export * from "./messages";

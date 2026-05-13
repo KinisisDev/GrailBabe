@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type BillingPlanInterval =
-  (typeof BillingPlanInterval)[keyof typeof BillingPlanInterval];
+export type BillingPlanInterval = typeof BillingPlanInterval[keyof typeof BillingPlanInterval];
+
 
 export const BillingPlanInterval = {
-  month: "month",
-  year: "year",
-  none: "none",
+  month: 'month',
+  year: 'year',
+  none: 'none',
 } as const;

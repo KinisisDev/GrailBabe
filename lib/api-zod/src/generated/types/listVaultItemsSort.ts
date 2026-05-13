@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListVaultItemsSort =
-  (typeof ListVaultItemsSort)[keyof typeof ListVaultItemsSort];
+export type ListVaultItemsSort = typeof ListVaultItemsSort[keyof typeof ListVaultItemsSort];
+
 
 export const ListVaultItemsSort = {
-  recent: "recent",
-  value: "value",
-  name: "name",
+  recent: 'recent',
+  value: 'value',
+  name: 'name',
 } as const;

@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AiHighlightSentiment =
-  (typeof AiHighlightSentiment)[keyof typeof AiHighlightSentiment];
+export type AiHighlightSentiment = typeof AiHighlightSentiment[keyof typeof AiHighlightSentiment];
+
 
 export const AiHighlightSentiment = {
-  positive: "positive",
-  neutral: "neutral",
-  warning: "warning",
+  positive: 'positive',
+  neutral: 'neutral',
+  warning: 'warning',
 } as const;

@@ -5,11 +5,11 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { ListVaultItemsSort } from "./listVaultItemsSort";
+import type { ListVaultItemsSort } from './listVaultItemsSort';
 
 export type ListVaultItemsParams = {
-  category?: string;
-  condition?: string;
-  search?: string;
-  sort?: ListVaultItemsSort;
+category?: string;
+condition?: string;
+search?: string;
+sort?: ListVaultItemsSort;
 };

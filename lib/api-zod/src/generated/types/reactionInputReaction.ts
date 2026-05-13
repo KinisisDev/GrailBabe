@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ReactionInputReaction =
-  (typeof ReactionInputReaction)[keyof typeof ReactionInputReaction];
+export type ReactionInputReaction = typeof ReactionInputReaction[keyof typeof ReactionInputReaction];
+
 
 export const ReactionInputReaction = {
-  fire: "fire",
-  heart: "heart",
-  eyes: "eyes",
-  clap: "clap",
-  none: "none",
+  fire: 'fire',
+  heart: 'heart',
+  eyes: 'eyes',
+  clap: 'clap',
+  none: 'none',
 } as const;

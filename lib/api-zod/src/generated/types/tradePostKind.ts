@@ -6,10 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type TradePostKind = (typeof TradePostKind)[keyof typeof TradePostKind];
+export type TradePostKind = typeof TradePostKind[keyof typeof TradePostKind];
+
 
 export const TradePostKind = {
-  trade: "trade",
-  sell: "sell",
-  buy: "buy",
+  trade: 'trade',
+  sell: 'sell',
+  buy: 'buy',
 } as const;

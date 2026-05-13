@@ -5,7 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { AiInsightsInputFocus } from "./aiInsightsInputFocus";
+import type { AiInsightsInputFocus } from './aiInsightsInputFocus';
 
 export interface AiInsightsInput {
   focus?: AiInsightsInputFocus;

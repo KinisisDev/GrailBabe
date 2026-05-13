@@ -5,8 +5,8 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { SubscriptionInfoInterval } from "./subscriptionInfoInterval";
-import type { SubscriptionInfoTier } from "./subscriptionInfoTier";
+import type { SubscriptionInfoInterval } from './subscriptionInfoInterval';
+import type { SubscriptionInfoTier } from './subscriptionInfoTier';
 
 export interface SubscriptionInfo {
   tier: SubscriptionInfoTier;

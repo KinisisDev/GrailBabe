@@ -6,14 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CollectionItemInputCondition =
-  (typeof CollectionItemInputCondition)[keyof typeof CollectionItemInputCondition];
+export type CollectionItemInputCondition = typeof CollectionItemInputCondition[keyof typeof CollectionItemInputCondition];
+
 
 export const CollectionItemInputCondition = {
-  mint: "mint",
-  near_mint: "near_mint",
-  excellent: "excellent",
-  good: "good",
-  fair: "fair",
-  poor: "poor",
+  mint: 'mint',
+  near_mint: 'near_mint',
+  excellent: 'excellent',
+  good: 'good',
+  fair: 'fair',
+  poor: 'poor',
 } as const;

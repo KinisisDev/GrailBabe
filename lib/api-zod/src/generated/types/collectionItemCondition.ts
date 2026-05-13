@@ -6,14 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CollectionItemCondition =
-  (typeof CollectionItemCondition)[keyof typeof CollectionItemCondition];
+export type CollectionItemCondition = typeof CollectionItemCondition[keyof typeof CollectionItemCondition];
+
 
 export const CollectionItemCondition = {
-  mint: "mint",
-  near_mint: "near_mint",
-  excellent: "excellent",
-  good: "good",
-  fair: "fair",
-  poor: "poor",
+  mint: 'mint',
+  near_mint: 'near_mint',
+  excellent: 'excellent',
+  good: 'good',
+  fair: 'fair',
+  poor: 'poor',
 } as const;

@@ -5,9 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { CollectionItem } from './collectionItem';
 
-export interface AiSearchResult {
-  interpretation: string;
-  results: CollectionItem[];
+export interface UnreadCount {
+  count: number;
 }

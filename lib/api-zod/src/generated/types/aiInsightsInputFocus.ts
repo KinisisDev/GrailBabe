@@ -6,12 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AiInsightsInputFocus =
-  (typeof AiInsightsInputFocus)[keyof typeof AiInsightsInputFocus];
+export type AiInsightsInputFocus = typeof AiInsightsInputFocus[keyof typeof AiInsightsInputFocus];
+
 
 export const AiInsightsInputFocus = {
-  overview: "overview",
-  opportunities: "opportunities",
-  risks: "risks",
-  valuation: "valuation",
+  overview: 'overview',
+  opportunities: 'opportunities',
+  risks: 'risks',
+  valuation: 'valuation',
 } as const;

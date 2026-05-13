@@ -5,7 +5,7 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
-import type { UserProfileTier } from "./userProfileTier";
+import type { UserProfileTier } from './userProfileTier';
 
 export interface UserProfile {
   id: string;

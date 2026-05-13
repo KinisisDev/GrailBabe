@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetPortfolioTimelineRange =
-  (typeof GetPortfolioTimelineRange)[keyof typeof GetPortfolioTimelineRange];
+export type GetPortfolioTimelineRange = typeof GetPortfolioTimelineRange[keyof typeof GetPortfolioTimelineRange];
+
 
 export const GetPortfolioTimelineRange = {
-  "7d": "7d",
-  "30d": "30d",
-  "90d": "90d",
-  "1y": "1y",
-  all: "all",
+  '7d': '7d',
+  '30d': '30d',
+  '90d': '90d',
+  '1y': '1y',
+  all: 'all',
 } as const;
