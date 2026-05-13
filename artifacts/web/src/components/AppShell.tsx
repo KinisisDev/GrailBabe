@@ -11,6 +11,7 @@ import {
   Star,
   ArrowLeftRight,
   MessagesSquare,
+  Mail,
   TrendingUp,
   Sparkles,
   CreditCard,
@@ -25,6 +26,7 @@ const NAV = [
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
   { to: "/trades", label: "Trading", icon: ArrowLeftRight },
   { to: "/forum", label: "Community", icon: MessagesSquare },
+  { to: "/messages", label: "Messages", icon: Mail },
   { to: "/security", label: "Security", icon: Shield },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
