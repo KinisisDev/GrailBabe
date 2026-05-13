@@ -222,7 +222,7 @@ function StatCard({
       {delta && (
         <div
           className={`mt-1 text-xs ${
-            positive ? "text-emerald-400" : "text-rose-400"
+            positive ? "text-emerald-400" : "text-blue-400"
           }`}
         >
           {delta}

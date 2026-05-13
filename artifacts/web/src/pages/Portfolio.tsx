@@ -211,7 +211,7 @@ export default function PortfolioPage() {
             )}
             {summary?.worstPerformer && summary.worstPerformer.id !== summary.bestPerformer?.id && (
               <div>
-                <div className="text-xs uppercase tracking-widest text-rose-400 mb-1">
+                <div className="text-xs uppercase tracking-widest text-blue-400 mb-1">
                   Worst performer
                 </div>
                 <div className="font-medium">{summary.worstPerformer.name}</div>
@@ -285,7 +285,7 @@ function Stat({
       {delta && (
         <div
           className={`mt-1 text-xs ${
-            positive ? "text-emerald-400" : "text-rose-400"
+            positive ? "text-emerald-400" : "text-blue-400"
           }`}
         >
           {delta}

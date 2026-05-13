@@ -92,7 +92,7 @@ export default function InsightsPage() {
                       h.sentiment === "positive"
                         ? "border-emerald-500/30 bg-emerald-500/5"
                         : h.sentiment === "warning"
-                          ? "border-rose-500/30 bg-rose-500/5"
+                          ? "border-blue-500/30 bg-blue-500/5"
                           : "border-border bg-muted/30"
                     }`}
                   >

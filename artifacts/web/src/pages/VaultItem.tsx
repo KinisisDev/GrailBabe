@@ -221,7 +221,7 @@ function Stat({
           positive === true
             ? "text-emerald-400"
             : positive === false
-              ? "text-rose-400"
+              ? "text-blue-400"
               : ""
         }`}
       >
