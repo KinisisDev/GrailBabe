@@ -54,3 +54,21 @@ id = "l-0lb2_X7tqabHgkPTbsd"
 uri = "file://artifacts/web/src/assets/tcg-bg/swu.png"
 type = "image"
 title = "swu tcg bg"
+
+[[generated]]
+id = "bTA200_LJYD7ArqcajUy5"
+uri = "file://artifacts/web/src/assets/vault-bg/tcg.png"
+type = "image"
+title = "tcg vault category background"
+
+[[generated]]
+id = "r3IPapNxoCizdL090X9pc"
+uri = "file://artifacts/web/src/assets/vault-bg/lego.png"
+type = "image"
+title = "lego vault category background"
+
+[[generated]]
+id = "7pHzPrq3z7-MKHNdT8qsP"
+uri = "file://artifacts/web/src/assets/vault-bg/sports.png"
+type = "image"
+title = "sports vault category background"

@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Layers, Box, Trophy } from "lucide-react";
 import { isTcgCategory, isLegoCategory } from "@/lib/vaultCategory";
+import tcgBg from "@/assets/vault-bg/tcg.png";
+import legoBg from "@/assets/vault-bg/lego.png";
+import sportsBg from "@/assets/vault-bg/sports.png";
 
 export default function VaultHubPage() {
   const { data } = useListVaultItems();
@@ -20,6 +23,7 @@ export default function VaultHubPage() {
       count: tcgCount,
       enabled: true,
       neon: "var(--neon-blue)",
+      bg: tcgBg,
     },
     {
       to: "/vault/lego",
@@ -29,6 +33,7 @@ export default function VaultHubPage() {
       count: legoCount,
       enabled: true,
       neon: "var(--neon-green)",
+      bg: legoBg,
     },
     {
       to: "#",
@@ -38,6 +43,7 @@ export default function VaultHubPage() {
       count: 0,
       enabled: false,
       neon: "var(--neon-yellow)",
+      bg: sportsBg,
     },
   ];
 
@@ -55,15 +61,27 @@ export default function VaultHubPage() {
           const Icon = t.icon;
           const Inner = (
             <Card
-              className={`h-full transition-colors ${t.enabled ? "hover:border-primary/40 cursor-pointer" : "opacity-60 cursor-not-allowed"}`}
+              className={`h-full transition-colors relative overflow-hidden group ${t.enabled ? "hover:border-primary/40 cursor-pointer" : "cursor-not-allowed"}`}
               style={{ ["--neon" as never]: t.neon }}
             >
-              <CardContent className="p-6 space-y-4">
+              <div
+                className={`absolute inset-0 bg-cover bg-center transition-opacity ${t.enabled ? "opacity-90 group-hover:opacity-100" : "opacity-50"}`}
+                style={{
+                  backgroundImage: `url(${t.bg})`,
+                  filter: "brightness(1.3) saturate(1.1)",
+                }}
+                aria-hidden
+              />
+              <div
+                className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-card via-card/70 to-transparent"
+                aria-hidden
+              />
+              <CardContent className="p-6 space-y-4 relative aspect-[4/3] flex flex-col justify-end">
                 <div className="flex items-center justify-between">
                   <div
-                    className="size-12 rounded-lg grid place-items-center"
+                    className="size-12 rounded-lg grid place-items-center backdrop-blur-sm"
                     style={{
-                      backgroundColor: "color-mix(in srgb, var(--neon) 14%, transparent)",
+                      backgroundColor: "color-mix(in srgb, var(--neon) 22%, transparent)",
                       color: "var(--neon)",
                     }}
                   >
