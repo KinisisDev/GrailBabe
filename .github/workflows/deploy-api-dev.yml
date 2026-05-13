@@ -23,11 +23,11 @@ jobs:
 
       - name: Azure Login
         run: |
-                  az login --service-principal \
-                              -u "${{ secrets.AZURE_CLIENT_ID }}" \
-                                          -p "${{ secrets.AZURE_CLIENT_SECRET }}" \
-                                                      --tenant "${{ secrets.AZURE_TENANT_ID }}"
-                                                                az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          az login --service-principal \
+            -u "${{ secrets.AZURE_CLIENT_ID }}" \
+            -p "${{ secrets.AZURE_CLIENT_SECRET }}" \
+            --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Login to ACR
         run: az acr login --name acrgrailbabedevdev
@@ -43,8 +43,14 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Deploy to Container App
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          containerAppName: ${{ env.CONTAINER_APP }}
-          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: |
+          az containerapp registry set \
+            --name ${{ env.CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server ${{ env.REGISTRY }} \
+            --username "${{ secrets.AZURE_CLIENT_ID }}" \
+            --password "${{ secrets.AZURE_CLIENT_SECRET }}"
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
