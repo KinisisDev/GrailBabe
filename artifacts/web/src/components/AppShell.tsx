@@ -83,8 +83,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur sticky top-0 z-10">
-          <div className="text-sm text-muted-foreground">
+        <header className="h-14 border-b border-border flex items-center justify-between px-6 sticky top-0 z-10" style={{ backgroundColor: "#00ff88" }}>
+          <div className="text-sm font-semibold text-black">
             {NAV.find((n) => location.startsWith(n.to))?.label ?? "GrailBabe"}
           </div>
           <div className="flex items-center gap-3">
