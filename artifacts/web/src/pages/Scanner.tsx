@@ -538,8 +538,8 @@ function ResultsActions({
   return (
     <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border">
       <Button variant="outline" size="sm" onClick={onScanAnother}>
-        <RefreshCw className="size-4 mr-1.5" />
-        Just check price — done
+        <X className="size-4 mr-1.5" />
+        Dismiss
       </Button>
       <Button size="sm" onClick={() => setOpen(true)}>
         <Plus className="size-4 mr-1.5" />
@@ -568,6 +568,12 @@ const CONDITION_OPTIONS: Array<{
   { value: "fair", label: "Fair" },
   { value: "poor", label: "Poor" },
 ];
+
+function vaultRouteForCategory(category: Category): string {
+  if (category === "tcg") return "/vault/tcg";
+  if (category === "lego") return "/vault/lego";
+  return "/vault";
+}
 
 function gradeToCondition(
   grade: string | null | undefined,
@@ -645,7 +651,7 @@ function AddToVaultDialog({
           toast.success("Added to your Vault");
           onOpenChange(false);
           onScanAnother();
-          navigate("/vault");
+          navigate(vaultRouteForCategory(category));
         },
         onError: (err) => {
           toast.error(err instanceof Error ? err.message : "Failed to add to vault");

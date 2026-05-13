@@ -854,9 +854,9 @@ function ResultsCard({
             { borderColor: colors.border, opacity: pressed ? 0.85 : 1, flex: 1 },
           ]}
         >
-          <Feather name="refresh-cw" size={14} color={colors.foreground} />
+          <Feather name="x" size={14} color={colors.foreground} />
           <Text style={[styles.btnText, { color: colors.foreground }]}>
-            Just check price
+            Dismiss
           </Text>
         </Pressable>
         <Pressable
