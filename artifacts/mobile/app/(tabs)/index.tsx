@@ -1,10 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_ACTIVITY, DUMMY_VAULT_ITEMS } from "@/constants/demoData";
 import { StatTile } from "@/components/StatTile";
 import { ActivityRow } from "@/components/ActivityRow";
+import { IridescentHeader } from "@/components/IridescentHeader";
+import { SectionTitle } from "@/components/SectionTitle";
 
 export default function HomeDashboard() {
   const insets = useSafeAreaInsets();
@@ -15,20 +17,16 @@ export default function HomeDashboard() {
   
   // top mover mock
   const topMover = DUMMY_VAULT_ITEMS.reduce((max, item) => {
-    const change = item.currentValue - item.purchasePrice;
-    const maxChange = max.currentValue - max.purchasePrice;
-    return change > maxChange ? item : max;
+    return item.changeAmount > max.changeAmount ? item : max;
   }, DUMMY_VAULT_ITEMS[0]);
-
-  const topMoverChange = topMover ? topMover.currentValue - topMover.purchasePrice : 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <IridescentHeader title="GrailBabe" />
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           { 
-            paddingTop: Platform.OS === "web" ? 67 : insets.top + 20,
             paddingBottom: Platform.OS === "web" ? 84 + 20 : insets.bottom + 100 
           }
         ]}
@@ -37,19 +35,19 @@ export default function HomeDashboard() {
         <Text style={[styles.balance, { color: colors.foreground }]}>
           ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Text>
-        <Text style={[styles.balanceSubtitle, { color: colors.accent }]}>Portfolio Value</Text>
+        <Text style={[styles.balanceSubtitle, { color: colors.neonGreen }]}>Portfolio Value</Text>
 
         <View style={styles.statsGrid}>
           <StatTile title="Vault Items" value={totalItems.toString()} />
           <StatTile 
             title="Top Mover" 
-            value={`+${topMoverChange.toLocaleString(undefined, { minimumFractionDigits: 0 })}`}
+            value={`+${topMover?.changeAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}`}
             subtitle={topMover?.name}
             highlight
           />
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recent Activity</Text>
+        <SectionTitle>Recent Activity</SectionTitle>
         <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {DUMMY_ACTIVITY.map((activity, index) => (
             <ActivityRow 
@@ -71,6 +69,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 24,
   },
   greeting: {
     fontSize: 16,
@@ -83,20 +82,17 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   balanceSubtitle: {
-    fontSize: 14,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
     marginTop: 4,
     marginBottom: 32,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   statsGrid: {
     flexDirection: "row",
     gap: 12,
     marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
-    marginBottom: 16,
   },
   activityCard: {
     borderRadius: 16,

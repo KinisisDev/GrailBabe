@@ -18,6 +18,9 @@ export function ItemCard({ item }: ItemCardProps) {
     router.push(`/item/${item.id}`);
   };
 
+  const isPositive = item.changeAmount >= 0;
+  const deltaColor = isPositive ? colors.neonGreen : colors.neonRed;
+
   return (
     <Pressable 
       onPress={handlePress}
@@ -25,8 +28,8 @@ export function ItemCard({ item }: ItemCardProps) {
         styles.container,
         { 
           backgroundColor: colors.card,
-          borderColor: colors.border,
-          opacity: pressed ? 0.8 : 1,
+          borderColor: pressed ? `rgba(0, 212, 255, 0.4)` : colors.border,
+          opacity: pressed ? 0.9 : 1,
           transform: [{ scale: pressed ? 0.98 : 1 }]
         }
       ]}
@@ -35,6 +38,9 @@ export function ItemCard({ item }: ItemCardProps) {
         <Text style={[styles.imageText, { color: colors.mutedForeground }]}>
           {item.category}
         </Text>
+        <View style={[styles.badge, { borderColor: `rgba(245, 177, 58, 0.4)` }]}>
+           <Text style={[styles.badgeText, { color: colors.neonAmber }]}>GRAIL</Text>
+        </View>
       </View>
       <View style={styles.content}>
         <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>
@@ -47,9 +53,9 @@ export function ItemCard({ item }: ItemCardProps) {
           <Text style={[styles.value, { color: colors.foreground }]}>
             ${item.currentValue.toLocaleString()}
           </Text>
-          <View style={[styles.badge, { backgroundColor: colors.muted }]}>
-            <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>{item.condition}</Text>
-          </View>
+          <Text style={[styles.deltaText, { color: deltaColor }]}>
+            {isPositive ? "+" : ""}${Math.abs(item.changeAmount).toLocaleString()}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -67,23 +73,44 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
   },
   imageText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     opacity: 0.5,
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+  },
+  badge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    backgroundColor: "transparent",
+  },
+  badgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   content: {
     padding: 12,
   },
   name: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_500Medium",
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
     marginBottom: 12,
   },
   footer: {
@@ -95,12 +122,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_700Bold",
   },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeText: {
+  deltaText: {
     fontSize: 10,
     fontFamily: "Inter_600SemiBold",
   },

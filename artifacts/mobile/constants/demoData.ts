@@ -10,6 +10,8 @@ export interface VaultItem {
   condition: Condition;
   purchasePrice: number;
   currentValue: number;
+  changeAmount: number;
+  changePct: number;
   dateAdded: string;
   imageUri?: string;
   notes?: string;
@@ -25,6 +27,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "Sealed",
     purchasePrice: 799.99,
     currentValue: 850.0,
+    changeAmount: 50.01,
+    changePct: 6.25,
     dateAdded: "2023-10-15T08:00:00Z",
     notes: "Perfect box, stored away from sunlight.",
   },
@@ -37,6 +41,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "PSA 10",
     purchasePrice: 15000.0,
     currentValue: 18500.0,
+    changeAmount: 3500.0,
+    changePct: 23.33,
     dateAdded: "2022-04-20T14:30:00Z",
     notes: "Grail achieved.",
   },
@@ -49,6 +55,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "NM",
     purchasePrice: 45000.0,
     currentValue: 50000.0,
+    changeAmount: 5000.0,
+    changePct: 11.11,
     dateAdded: "2021-11-10T10:15:00Z",
   },
   {
@@ -60,6 +68,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "Sealed",
     purchasePrice: 399.99,
     currentValue: 450.0,
+    changeAmount: 50.01,
+    changePct: 12.5,
     dateAdded: "2023-01-05T09:45:00Z",
   },
   {
@@ -71,6 +81,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "PSA 10",
     purchasePrice: 2000.0,
     currentValue: 2400.0,
+    changeAmount: 400.0,
+    changePct: 20.0,
     dateAdded: "2023-08-12T16:20:00Z",
   },
   {
@@ -82,6 +94,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "Mint",
     purchasePrice: 499.99,
     currentValue: 499.99,
+    changeAmount: 0.0,
+    changePct: 0.0,
     dateAdded: "2023-12-25T11:00:00Z",
     notes: "Currently building.",
   },
@@ -94,6 +108,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "BGS 9.5",
     purchasePrice: 600.0,
     currentValue: 950.0,
+    changeAmount: 350.0,
+    changePct: 58.33,
     dateAdded: "2023-06-18T13:10:00Z",
   },
   {
@@ -105,6 +121,8 @@ export const DUMMY_VAULT_ITEMS: VaultItem[] = [
     condition: "Sealed",
     purchasePrice: 679.99,
     currentValue: 700.0,
+    changeAmount: 20.01,
+    changePct: 2.94,
     dateAdded: "2024-01-10T15:00:00Z",
   },
 ];

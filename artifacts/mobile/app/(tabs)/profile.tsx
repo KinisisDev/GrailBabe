@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { IridescentHeader } from "@/components/IridescentHeader";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -11,7 +12,8 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: Platform.OS === "web" ? 67 : insets.top + 10 }]}>
+      <IridescentHeader title="Profile" />
+      <View style={styles.header}>
         <Text style={[styles.title, { color: colors.foreground }]}>Profile</Text>
       </View>
 
@@ -69,10 +71,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    paddingTop: 24,
   },
   title: {
     fontSize: 32,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Fraunces_700Bold",
+    letterSpacing: -0.5,
   },
   content: {
     paddingHorizontal: 20,
@@ -129,7 +133,9 @@ const styles = StyleSheet.create({
   },
   version: {
     textAlign: "center",
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
 });

@@ -5,6 +5,7 @@ import { useColors } from "@/hooks/useColors";
 import { DUMMY_VAULT_ITEMS } from "@/constants/demoData";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { IridescentHeader } from "@/components/IridescentHeader";
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,27 +26,23 @@ export default function ItemDetailScreen() {
     );
   }
 
-  const profit = item.currentValue - item.purchasePrice;
-  const profitPercent = (profit / item.purchasePrice) * 100;
+  const profit = item.changeAmount;
+  const profitPercent = item.changePct;
   const isPositive = profit >= 0;
+  const deltaColor = isPositive ? colors.neonGreen : colors.neonRed;
 
   return (
     <>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: "Item Details",
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.foreground,
-          headerShadowVisible: false,
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
-              <Feather name="chevron-left" size={24} color={colors.foreground} />
-            </Pressable>
-          ),
-        }} 
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <IridescentHeader 
+          title="Item Details" 
+          left={
+            <Pressable onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
+              <Feather name="chevron-left" size={24} color="#0a0a0f" />
+            </Pressable>
+          } 
+        />
         <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
           <View style={[styles.imageBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="image" size={48} color={colors.mutedForeground} />
@@ -76,7 +73,7 @@ export default function ItemDetailScreen() {
               <Text style={[styles.valueLabel, { color: colors.mutedForeground }]}>Total Return</Text>
               <Text style={[
                 styles.profit, 
-                { color: isPositive ? colors.primary : colors.destructive }
+                { color: deltaColor }
               ]}>
                 {isPositive ? "+" : ""}${Math.abs(profit).toLocaleString()} ({isPositive ? "+" : ""}{profitPercent.toFixed(1)}%)
               </Text>
@@ -139,8 +136,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   conditionBadge: {
     paddingHorizontal: 8,
@@ -149,16 +148,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   conditionText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   title: {
     fontSize: 28,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Fraunces_700Bold",
+    letterSpacing: -0.5,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
     marginBottom: 24,
   },
@@ -172,8 +174,10 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   valueLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
     marginBottom: 4,
   },
   currentValue: {
@@ -194,11 +198,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   detailLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
   },
   detailValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Inter_500Medium",
   },
   notesSection: {
@@ -206,7 +210,8 @@ const styles = StyleSheet.create({
   },
   notesLabel: {
     fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Fraunces_600SemiBold",
+    letterSpacing: -0.5,
     marginBottom: 12,
   },
   notesBox: {

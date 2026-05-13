@@ -1,15 +1,14 @@
 /**
  * GrailBabe Mobile design tokens.
  *
- * Synced from artifacts/web/src/index.css (HSL -> hex). The web app is
- * dark-only with an editorial navy + champagne palette, so the mobile app
- * mirrors that aesthetic by storing dark values under `light` and pinning
- * the app to dark mode in app.json (userInterfaceStyle: "dark").
+ * Mirrors artifacts/web/src/index.css — a dark obsidian base with an
+ * iridescent neon accent palette (blue / green / yellow / red) and warm
+ * bone foreground text. The mobile app is pinned to dark mode in app.json.
  */
 
 const dark = {
   text: "#f4f0e8",
-  tint: "#1f8aff",
+  tint: "#00d4ff",
 
   background: "#0a0a0f",
   foreground: "#f4f0e8",
@@ -17,8 +16,10 @@ const dark = {
   card: "#11111a",
   cardForeground: "#f4f0e8",
 
-  primary: "#1f8aff",
-  primaryForeground: "#0e0e16",
+  sidebar: "#0d0d14",
+
+  primary: "#00d4ff",
+  primaryForeground: "#0a0a0f",
 
   secondary: "#21222a",
   secondaryForeground: "#f4f0e8",
@@ -26,14 +27,21 @@ const dark = {
   muted: "#1d1d24",
   mutedForeground: "#a3a3ac",
 
-  accent: "#f5b13a",
-  accentForeground: "#0e0e16",
+  accent: "#fff200",
+  accentForeground: "#0a0a0f",
 
-  destructive: "#e84141",
+  destructive: "#ff2e63",
   destructiveForeground: "#fbf6ee",
 
   border: "#262830",
   input: "#21222a",
+
+  // Iridescent neon palette — used for gradient headers, value deltas, badges.
+  neonBlue: "#00d4ff",
+  neonGreen: "#00ff88",
+  neonRed: "#ff2e63",
+  neonYellow: "#fff200",
+  neonAmber: "#f5b13a",
 };
 
 const colors = {
@@ -42,5 +50,7 @@ const colors = {
 };
 
 export const radius = 12;
+
+export const iridescentGradient = ["#00d4ff", "#00ff88", "#fff200", "#ff2e63", "#00d4ff"] as const;
 
 export default colors;

@@ -12,10 +12,14 @@ interface StatTileProps {
 export function StatTile({ title, value, subtitle, highlight = false }: StatTileProps) {
   const colors = useColors();
 
+  const isPositive = highlight && value.startsWith("+");
+  const isNegative = highlight && value.startsWith("-");
+  const valueColor = isPositive ? colors.neonGreen : isNegative ? colors.neonRed : highlight ? colors.neonYellow : colors.foreground;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[styles.title, { color: colors.mutedForeground }]}>{title}</Text>
-      <Text style={[styles.value, { color: highlight ? colors.accent : colors.foreground }]}>{value}</Text>
+      <Text style={[styles.value, { color: valueColor }]}>{value}</Text>
       {subtitle && (
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
           {subtitle}
@@ -33,8 +37,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   title: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
     marginBottom: 8,
   },
   value: {

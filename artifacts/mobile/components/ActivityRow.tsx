@@ -15,11 +15,11 @@ export function ActivityRow({ activity, isLast = false }: ActivityRowProps) {
   const getIcon = () => {
     switch (activity.type) {
       case "addition":
-        return <Feather name="plus-circle" size={20} color={colors.primary} />;
+        return <Feather name="plus-circle" size={20} color={colors.neonBlue} />;
       case "price_update":
-        return <Feather name="trending-up" size={20} color={colors.accent} />;
+        return <Feather name="trending-up" size={20} color={colors.neonGreen} />;
       case "grading":
-        return <Feather name="award" size={20} color={colors.primary} />;
+        return <Feather name="award" size={20} color={colors.neonYellow} />;
       default:
         return <Feather name="activity" size={20} color={colors.foreground} />;
     }
@@ -70,7 +70,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
   time: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
 });

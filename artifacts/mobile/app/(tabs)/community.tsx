@@ -5,6 +5,7 @@ import { useColors } from "@/hooks/useColors";
 import { DUMMY_POSTS } from "@/constants/demoData";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { IridescentHeader } from "@/components/IridescentHeader";
 
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
@@ -12,7 +13,8 @@ export default function CommunityScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: Platform.OS === "web" ? 67 : insets.top + 10 }]}>
+      <IridescentHeader title="Community" />
+      <View style={styles.header}>
         <Text style={[styles.title, { color: colors.foreground }]}>Community</Text>
       </View>
 
@@ -76,10 +78,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    paddingTop: 24,
   },
   title: {
     fontSize: 32,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Fraunces_700Bold",
+    letterSpacing: -0.5,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -134,8 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   tagText: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
   },
   actionsRow: {
     flexDirection: "row",

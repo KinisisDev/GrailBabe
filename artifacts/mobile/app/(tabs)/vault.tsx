@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_VAULT_ITEMS, Category } from "@/constants/demoData";
 import { ItemCard } from "@/components/ItemCard";
+import { IridescentHeader } from "@/components/IridescentHeader";
 
 export default function VaultScreen() {
   const insets = useSafeAreaInsets();
@@ -16,7 +17,8 @@ export default function VaultScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: Platform.OS === "web" ? 67 : insets.top + 10 }]}>
+      <IridescentHeader title="Vault" />
+      <View style={styles.header}>
         <Text style={[styles.title, { color: colors.foreground }]}>Your Vault</Text>
         <View style={styles.filterRow}>
           {(["ALL", "LEGO", "TCG"] as const).map((cat) => (
@@ -65,10 +67,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    paddingTop: 24,
   },
   title: {
     fontSize: 32,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Fraunces_700Bold",
+    letterSpacing: -0.5,
     marginBottom: 16,
   },
   filterRow: {

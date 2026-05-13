@@ -38,7 +38,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **Do not bump `@types/react` / `@types/react-dom` past `~19.1.x` in `pnpm-workspace.yaml`** (catalog or overrides). Mobile (Expo) pins `~19.1.10` and any drift to `^19.2.x` causes pnpm to materialize two physical copies of `@react-navigation/native@7.2.4` (one per peer-variant). Each copy has its own `LinkingContext`, so `expo-router`'s NavigationContainer provides one and `native-stack`'s `useLinkBuilder` consumes the other → web preview crashes with "Couldn't find a LinkingContext context." Verify with `ls node_modules/.pnpm | rg "react-navigation\+native@7"` — exactly one `_react-native@…` line should exist.
+- iOS-only modules (`expo-symbols`, `expo-glass-effect`, `expo-router/unstable-native-tabs`) must be `require()`'d lazily inside an `if (Platform.OS === "ios")` branch in `artifacts/mobile/app/(tabs)/_layout.tsx`, otherwise web bundling pulls them in and fails.
 
 ## Pointers
 
