@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  useCreateVaultItem,
   useRemoveBackground,
   useScannerAnalyze,
   type ScannerAnalyzeResult,
@@ -8,6 +9,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
@@ -28,7 +37,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 type Mode = "standard" | "advanced";
 type Category = "tcg" | "sports" | "lego";
@@ -354,12 +363,16 @@ export default function ScannerPage() {
           <StandardResults
             result={result}
             image={primaryImage}
+            images={images}
+            category={category}
             onScanAnother={reset}
           />
         ) : (
           <AdvancedResults
             result={result}
             image={primaryImage}
+            images={images}
+            category={category}
             onScanAnother={reset}
           />
         ))}
@@ -510,30 +523,228 @@ function ItemHeader({
   );
 }
 
-function ResultsActions({ onScanAnother }: { onScanAnother: () => void }) {
+function ResultsActions({
+  result,
+  images,
+  category,
+  onScanAnother,
+}: {
+  result: ScannerAnalyzeResult;
+  images: string[];
+  category: Category;
+  onScanAnother: () => void;
+}) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex justify-end gap-2 pt-2 border-t border-border">
+    <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border">
       <Button variant="outline" size="sm" onClick={onScanAnother}>
         <RefreshCw className="size-4 mr-1.5" />
-        Scan another
+        Just check price — done
       </Button>
-      <Link href="/vault">
-        <Button size="sm">
-          <Plus className="size-4 mr-1.5" />
-          Add to Vault
-        </Button>
-      </Link>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        <Plus className="size-4 mr-1.5" />
+        Commit to Vault
+      </Button>
+      <AddToVaultDialog
+        open={open}
+        onOpenChange={setOpen}
+        result={result}
+        images={images}
+        category={category}
+        onScanAnother={onScanAnother}
+      />
     </div>
+  );
+}
+
+const CONDITION_OPTIONS: Array<{
+  value: "mint" | "near_mint" | "excellent" | "good" | "fair" | "poor";
+  label: string;
+}> = [
+  { value: "mint", label: "Mint" },
+  { value: "near_mint", label: "Near Mint" },
+  { value: "excellent", label: "Excellent" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+function gradeToCondition(
+  grade: string | null | undefined,
+): "mint" | "near_mint" | "excellent" | "good" | "fair" | "poor" {
+  if (!grade) return "near_mint";
+  const g = grade.toLowerCase();
+  if (g.includes("gem") || g.includes("mint 10") || g === "10") return "mint";
+  if (g.includes("near mint") || g.includes("nm") || g.includes("9")) return "near_mint";
+  if (g.includes("excellent") || g.includes("ex") || g.includes("8") || g.includes("7")) return "excellent";
+  if (g.includes("good") || g.includes("vg") || g.includes("6") || g.includes("5")) return "good";
+  if (g.includes("fair") || g.includes("4") || g.includes("3")) return "fair";
+  return "poor";
+}
+
+function AddToVaultDialog({
+  open,
+  onOpenChange,
+  result,
+  images,
+  category,
+  onScanAnother,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  result: ScannerAnalyzeResult;
+  images: string[];
+  category: Category;
+  onScanAnother: () => void;
+}) {
+  const [, navigate] = useLocation();
+  const createMut = useCreateVaultItem();
+  const [name, setName] = useState(result.name);
+  const [condition, setCondition] = useState(gradeToCondition(result.aiGrade));
+  const [currentValue, setCurrentValue] = useState(
+    String(result.priceRange.mid.toFixed(2)),
+  );
+
+  useEffect(() => {
+    if (open) {
+      setName(result.name);
+      setCondition(gradeToCondition(result.aiGrade));
+      setCurrentValue(String(result.priceRange.mid.toFixed(2)));
+    }
+  }, [open, result]);
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast.error("Name is required");
+      return;
+    }
+    const value = Number(currentValue);
+    const notesParts: string[] = [];
+    if (result.set) notesParts.push(`Set: ${result.set}`);
+    if (result.year) notesParts.push(`Year: ${result.year}`);
+    if (result.aiGrade) notesParts.push(`AI grade: ${result.aiGrade}`);
+    if (result.aiGradeRange) notesParts.push(`Range: ${result.aiGradeRange}`);
+    notesParts.push(
+      `Scanner price range: $${result.priceRange.low.toFixed(2)} – $${result.priceRange.high.toFixed(2)} (mid $${result.priceRange.mid.toFixed(2)})`,
+    );
+
+    createMut.mutate(
+      {
+        data: {
+          name: trimmed,
+          category,
+          condition,
+          currentValue: Number.isFinite(value) ? value : result.priceRange.mid,
+          photos: images,
+          notes: notesParts.join("\n"),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Added to your Vault");
+          onOpenChange(false);
+          onScanAnother();
+          navigate("/vault");
+        },
+        onError: (err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to add to vault");
+        },
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Commit to Vault</DialogTitle>
+          <DialogDescription>
+            Save this scanned item to your collection. You can edit any details later.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-muted-foreground">Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Condition</label>
+            <select
+              value={condition}
+              onChange={(e) =>
+                setCondition(e.target.value as typeof condition)
+              }
+              className="mt-1 w-full h-9 rounded-md border border-border bg-background px-2 text-sm"
+            >
+              {CONDITION_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">
+              Current value (USD)
+            </label>
+            <Input
+              value={currentValue}
+              onChange={(e) => setCurrentValue(e.target.value)}
+              type="number"
+              step="0.01"
+              min="0"
+              className="mt-1"
+            />
+            <div className="text-[10px] text-muted-foreground mt-1">
+              Pre-filled from scanner mid price.
+            </div>
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            {images.length} photo{images.length === 1 ? "" : "s"} will be saved
+            with this item.
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={createMut.isPending}
+          >
+            Cancel
+          </Button>
+          <Button size="sm" onClick={submit} disabled={createMut.isPending}>
+            {createMut.isPending ? (
+              <Loader2 className="size-4 animate-spin mr-1.5" />
+            ) : (
+              <Plus className="size-4 mr-1.5" />
+            )}
+            Add to Vault
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function StandardResults({
   result,
   image,
+  images,
+  category,
   onScanAnother,
 }: {
   result: ScannerAnalyzeResult;
   image: string | null;
+  images: string[];
+  category: Category;
   onScanAnother: () => void;
 }) {
   return (
@@ -541,7 +752,12 @@ function StandardResults({
       <CardContent className="p-6 space-y-4">
         <ItemHeader result={result} image={image} />
         <PriceTriple result={result} />
-        <ResultsActions onScanAnother={onScanAnother} />
+        <ResultsActions
+          result={result}
+          images={images}
+          category={category}
+          onScanAnother={onScanAnother}
+        />
       </CardContent>
     </Card>
   );
@@ -579,10 +795,14 @@ function Sparkline({ values }: { values: number[] }) {
 function AdvancedResults({
   result,
   image,
+  images,
+  category,
   onScanAnother,
 }: {
   result: ScannerAnalyzeResult;
   image: string | null;
+  images: string[];
+  category: Category;
   onScanAnother: () => void;
 }) {
   const [aiBannerDismissed, setAiBannerDismissed] = useState(false);
@@ -865,7 +1085,12 @@ function AdvancedResults({
           </AccordionItem>
         </Accordion>
 
-        <ResultsActions onScanAnother={onScanAnother} />
+        <ResultsActions
+          result={result}
+          images={images}
+          category={category}
+          onScanAnother={onScanAnother}
+        />
       </CardContent>
     </Card>
   );

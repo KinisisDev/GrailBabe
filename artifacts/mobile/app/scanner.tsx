@@ -14,9 +14,12 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Polyline } from "react-native-svg";
+import { Modal, Alert } from "react-native";
+import { useRouter } from "expo-router";
 import {
   useScannerAnalyze,
   useRemoveBackground,
+  useCreateVaultItem,
   type ScannerAnalyzeResult,
 } from "@workspace/api-client-react";
 
@@ -442,6 +445,8 @@ export default function ScannerScreen() {
           <ResultsCard
             result={result}
             image={primaryImage}
+            images={images}
+            category={category}
             mode={mode}
             colors={colors}
             openSections={openSections}
@@ -538,6 +543,8 @@ function ResultsSkeleton({
 function ResultsCard({
   result,
   image,
+  images,
+  category,
   mode,
   colors,
   openSections,
@@ -548,6 +555,8 @@ function ResultsCard({
 }: {
   result: ScannerAnalyzeResult;
   image: string | null;
+  images: string[];
+  category: Category;
   mode: Mode;
   colors: ReturnType<typeof useColors>;
   openSections: Record<string, boolean>;
@@ -557,6 +566,7 @@ function ResultsCard({
   onReset: () => void;
 }) {
   const hasAi = Boolean(result.aiGrade) && !result.aiError;
+  const [vaultModalOpen, setVaultModalOpen] = useState(false);
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -841,16 +851,353 @@ function ResultsCard({
           onPress={onReset}
           style={({ pressed }) => [
             styles.secondaryBtn,
-            { borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
+            { borderColor: colors.border, opacity: pressed ? 0.85 : 1, flex: 1 },
           ]}
         >
           <Feather name="refresh-cw" size={14} color={colors.foreground} />
-          <Text style={[styles.btnText, { color: colors.foreground }]}>Scan another</Text>
+          <Text style={[styles.btnText, { color: colors.foreground }]}>
+            Just check price
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setVaultModalOpen(true)}
+          style={({ pressed }) => [
+            styles.primaryBtn,
+            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, flex: 1 },
+          ]}
+        >
+          <Feather name="plus" size={14} color={colors.primaryForeground} />
+          <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
+            Commit to Vault
+          </Text>
         </Pressable>
       </View>
+
+      <AddToVaultModal
+        visible={vaultModalOpen}
+        onClose={() => setVaultModalOpen(false)}
+        result={result}
+        images={images}
+        category={category}
+        colors={colors}
+        onAdded={() => {
+          setVaultModalOpen(false);
+          onReset();
+        }}
+      />
     </View>
   );
 }
+
+const CONDITIONS: Array<{
+  value: "mint" | "near_mint" | "excellent" | "good" | "fair" | "poor";
+  label: string;
+}> = [
+  { value: "mint", label: "Mint" },
+  { value: "near_mint", label: "Near Mint" },
+  { value: "excellent", label: "Excellent" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+function gradeToCondition(
+  grade: string | null | undefined,
+): "mint" | "near_mint" | "excellent" | "good" | "fair" | "poor" {
+  if (!grade) return "near_mint";
+  const g = grade.toLowerCase();
+  if (g.includes("gem") || g.includes("mint 10") || g === "10") return "mint";
+  if (g.includes("near mint") || g.includes("nm") || g.includes("9")) return "near_mint";
+  if (g.includes("excellent") || g.includes("ex") || g.includes("8") || g.includes("7"))
+    return "excellent";
+  if (g.includes("good") || g.includes("vg") || g.includes("6") || g.includes("5"))
+    return "good";
+  if (g.includes("fair") || g.includes("4") || g.includes("3")) return "fair";
+  return "poor";
+}
+
+function AddToVaultModal({
+  visible,
+  onClose,
+  result,
+  images,
+  category,
+  colors,
+  onAdded,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  result: ScannerAnalyzeResult;
+  images: string[];
+  category: Category;
+  colors: ReturnType<typeof useColors>;
+  onAdded: () => void;
+}) {
+  const router = useRouter();
+  const createMut = useCreateVaultItem();
+  const [name, setName] = useState(result.name);
+  const [condition, setCondition] = useState(gradeToCondition(result.aiGrade));
+  const [valueStr, setValueStr] = useState(result.priceRange.mid.toFixed(2));
+
+  useEffect(() => {
+    if (visible) {
+      setName(result.name);
+      setCondition(gradeToCondition(result.aiGrade));
+      setValueStr(result.priceRange.mid.toFixed(2));
+    }
+  }, [visible, result]);
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      Alert.alert("Name required", "Please enter a name for this item.");
+      return;
+    }
+    const v = Number(valueStr);
+    const notes: string[] = [];
+    if (result.set) notes.push(`Set: ${result.set}`);
+    if (result.year) notes.push(`Year: ${result.year}`);
+    if (result.aiGrade) notes.push(`AI grade: ${result.aiGrade}`);
+    notes.push(
+      `Scanner price range: $${result.priceRange.low.toFixed(2)} – $${result.priceRange.high.toFixed(2)} (mid $${result.priceRange.mid.toFixed(2)})`,
+    );
+
+    createMut.mutate(
+      {
+        data: {
+          name: trimmed,
+          category,
+          condition,
+          currentValue: Number.isFinite(v) ? v : result.priceRange.mid,
+          photos: images,
+          notes: notes.join("\n"),
+        },
+      },
+      {
+        onSuccess: () => {
+          onAdded();
+          router.push("/(tabs)/vault");
+        },
+        onError: (err) => {
+          Alert.alert(
+            "Failed to add",
+            err instanceof Error ? err.message : "Something went wrong.",
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <View style={vaultModalStyles.backdrop}>
+        <View
+          style={[
+            vaultModalStyles.sheet,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={vaultModalStyles.handle} />
+          <Text
+            style={{
+              color: colors.foreground,
+              fontFamily: "Fraunces_700Bold",
+              fontSize: 20,
+              marginBottom: 4,
+            }}
+          >
+            Commit to Vault
+          </Text>
+          <Text
+            style={{
+              color: colors.mutedForeground,
+              fontSize: 12,
+              marginBottom: 16,
+            }}
+          >
+            Save this scan to your collection. You can edit details later.
+          </Text>
+
+          <Text style={[vaultModalStyles.label, { color: colors.mutedForeground }]}>
+            Name
+          </Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Item name"
+            placeholderTextColor={colors.mutedForeground}
+            style={[
+              vaultModalStyles.input,
+              { borderColor: colors.border, color: colors.foreground },
+            ]}
+          />
+
+          <Text style={[vaultModalStyles.label, { color: colors.mutedForeground }]}>
+            Condition
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingVertical: 4 }}
+            style={{ marginBottom: 12 }}
+          >
+            {CONDITIONS.map((c) => {
+              const active = c.value === condition;
+              return (
+                <Pressable
+                  key={c.value}
+                  onPress={() => setCondition(c.value)}
+                  style={({ pressed }) => [
+                    vaultModalStyles.chip,
+                    {
+                      borderColor: active ? colors.primary : colors.border,
+                      backgroundColor: active ? colors.primary : "transparent",
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: active ? colors.primaryForeground : colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 11,
+                    }}
+                  >
+                    {c.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={[vaultModalStyles.label, { color: colors.mutedForeground }]}>
+            Current value (USD)
+          </Text>
+          <TextInput
+            value={valueStr}
+            onChangeText={setValueStr}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+            placeholderTextColor={colors.mutedForeground}
+            style={[
+              vaultModalStyles.input,
+              { borderColor: colors.border, color: colors.foreground },
+            ]}
+          />
+          <Text
+            style={{ color: colors.mutedForeground, fontSize: 10, marginTop: -8, marginBottom: 12 }}
+          >
+            Pre-filled from scanner mid price.
+          </Text>
+
+          <Text style={{ color: colors.mutedForeground, fontSize: 10, marginBottom: 16 }}>
+            {images.length} photo{images.length === 1 ? "" : "s"} will be saved with this item.
+          </Text>
+
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Pressable
+              onPress={onClose}
+              disabled={createMut.isPending}
+              style={({ pressed }) => [
+                vaultModalStyles.btn,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: "transparent",
+                  opacity: pressed || createMut.isPending ? 0.7 : 1,
+                  flex: 1,
+                },
+              ]}
+            >
+              <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={submit}
+              disabled={createMut.isPending}
+              style={({ pressed }) => [
+                vaultModalStyles.btn,
+                {
+                  borderColor: colors.primary,
+                  backgroundColor: colors.primary,
+                  opacity: pressed || createMut.isPending ? 0.85 : 1,
+                  flex: 1,
+                  flexDirection: "row",
+                  gap: 6,
+                },
+              ]}
+            >
+              {createMut.isPending ? (
+                <ActivityIndicator color={colors.primaryForeground} size="small" />
+              ) : (
+                <Feather name="plus" size={14} color={colors.primaryForeground} />
+              )}
+              <Text
+                style={{ color: colors.primaryForeground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}
+              >
+                Add to Vault
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const vaultModalStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    paddingBottom: 32,
+  },
+  handle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  btn: {
+    paddingVertical: 11,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
 
 function PriceTriple({
   result,
