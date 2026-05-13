@@ -6,17 +6,13 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="px-8 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="size-9 rounded-lg bg-primary/15 grid place-items-center ring-1 ring-primary/30">
-            <span className="text-primary font-serif font-semibold text-lg">G</span>
-          </div>
-          <div>
-            <div className="font-serif text-xl tracking-tight">GrailBabe</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Collector Operating System
-            </div>
-          </div>
-        </div>
+        <Link href="/" className="block">
+          <img
+            src="/grailbabe-logo.png"
+            alt="GrailBabe"
+            className="block h-auto w-auto max-h-16 object-contain"
+          />
+        </Link>
         <div className="flex items-center gap-3">
           <Link href="/sign-in">
             <Button variant="ghost" size="sm">
