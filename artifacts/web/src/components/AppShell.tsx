@@ -36,7 +36,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
         <div className="h-14 px-1 flex items-center justify-center border-b border-border overflow-visible relative">
           <Link href="/dashboard" className="block w-full">
-            <img src="/grailbabe-logo.png" alt="GrailBabe" className="block w-full h-auto object-contain max-h-28" />
+            <img src="/grailbabe-logo.png" alt="GrailBabe" className="block w-full h-auto object-contain max-h-36" />
           </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">
