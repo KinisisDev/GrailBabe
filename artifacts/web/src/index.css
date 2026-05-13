@@ -165,6 +165,53 @@
   }
 }
 
+/* Scanner: vertical scanning bar */
+@keyframes scanLineMove {
+  0%   { transform: translateY(0%); }
+  50%  { transform: translateY(calc(100% - 2px)); }
+  100% { transform: translateY(0%); }
+}
+@keyframes scanGlow {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 255, 136, 0.06) 0px,
+      rgba(0, 255, 136, 0.06) 2px,
+      transparent 2px,
+      transparent 6px
+    ),
+    radial-gradient(ellipse at center, rgba(0,255,136,0.10), transparent 70%);
+  animation: scanGlow 1.4s ease-in-out infinite;
+}
+.scan-overlay::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00ff88 10%, #b6ffd9 50%, #00ff88 90%, transparent);
+  box-shadow: 0 0 12px #00ff88, 0 0 24px rgba(0,255,136,0.6);
+  animation: scanLineMove 1.6s ease-in-out infinite;
+}
+.scan-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(0,255,136,0.55);
+  border-radius: inherit;
+  box-shadow: inset 0 0 18px rgba(0,255,136,0.25);
+}
+
 /* Animated iridescent page titles — applies to any h1 using font-serif + tracking-tight */
 @keyframes iridescent-shift {
   0%   { background-position:   0% 50%; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--neon-blue)  55%, transparent)); }

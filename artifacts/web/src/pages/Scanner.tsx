@@ -279,7 +279,7 @@ export default function ScannerPage() {
                 {images.map((img, idx) => (
                   <div key={idx} className="relative">
                     <div
-                      className="rounded-lg border border-border overflow-hidden bg-muted"
+                      className="rounded-lg border border-border overflow-hidden bg-muted relative"
                       style={{ width: 110, height: 110 }}
                     >
                       <img
@@ -287,6 +287,7 @@ export default function ScannerPage() {
                         alt={`Photo ${idx + 1}`}
                         className="w-full h-full object-contain"
                       />
+                      {analyzeMut.isPending && <div className="scan-overlay" />}
                     </div>
                     <button
                       type="button"

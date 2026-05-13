@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Image,
   TextInput,
   ScrollView,
+  Animated,
+  Easing,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Feather } from "@expo/vector-icons";
@@ -25,6 +27,81 @@ type Mode = "standard" | "advanced";
 type Category = "tcg" | "sports" | "lego";
 
 const MAX_PHOTOS = 6;
+
+function ScanOverlay() {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 900,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
+
+  // Thumb is 110 tall; bar is 2px. Move from 0 to 108.
+  const translateY = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 108],
+  });
+
+  return (
+    <View pointerEvents="none" style={scanStyles.overlay}>
+      <View style={scanStyles.tint} />
+      <Animated.View
+        style={[
+          scanStyles.bar,
+          { transform: [{ translateY }] },
+        ]}
+      />
+      <View style={scanStyles.frame} />
+    </View>
+  );
+}
+
+const scanStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+    borderRadius: 8,
+  },
+  tint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,255,136,0.10)",
+  },
+  bar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 2,
+    backgroundColor: "#b6ffd9",
+    shadowColor: "#00ff88",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  frame: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: "rgba(0,255,136,0.55)",
+    borderRadius: 8,
+  },
+});
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US", {
@@ -285,6 +362,7 @@ export default function ScannerScreen() {
               {images.map((uri, idx) => (
                 <View key={idx} style={[styles.thumb, { borderColor: colors.border }]}>
                   <Image source={{ uri }} style={styles.thumbImg} resizeMode="contain" />
+                  {isPending && <ScanOverlay />}
                   <Pressable
                     onPress={() => removeImage(idx)}
                     style={[styles.thumbX, { backgroundColor: colors.background, borderColor: colors.border }]}
