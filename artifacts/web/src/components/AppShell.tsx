@@ -40,11 +40,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">
-          {NAV.map((item) => {
+          {NAV.map((item, idx) => {
             const active = location === item.to || location.startsWith(item.to + "/");
             const Icon = item.icon;
+            const neons = ["var(--neon-blue)", "var(--neon-green)", "var(--neon-red)", "var(--neon-yellow)"];
+            const neon = neons[idx % neons.length];
             return (
-              <Link key={item.to} href={item.to} className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${ active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground" }`}>
+              <Link
+                key={item.to}
+                href={item.to}
+                style={{ ["--neon" as any]: neon }}
+                className={`nav-neon flex items-center gap-3 px-3 py-2 rounded-md text-sm ${ active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground" }`}
+              >
                   <Icon className="size-4" />
                   <span className="flex-1">{item.label}</span>
                   {item.premium && tier === "free" && (
