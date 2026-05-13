@@ -5,6 +5,7 @@ import {
   ScannerAnalyzeBody,
 } from "@workspace/api-zod";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { cacheGet, cacheSet } from "../lib/cache";
 import { cachedJson } from "../lib/externalFetch";
 
 const router: IRouter = Router();
@@ -80,7 +81,6 @@ router.post("/scanner/remove-background", requireAuth, async (req, res) => {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), REMOVE_BG_TIMEOUT_MS);
   try {
-    // remove.bg-compatible API contract.
     const form = new FormData();
     form.append(
       "image_file",
@@ -137,6 +137,17 @@ interface PriceData {
   extendedPrices: Array<{ label: string; value: string; note?: string | null }>;
 }
 
+interface PartialPrice {
+  low?: number | null;
+  mid: number;
+  high?: number | null;
+  source: string;
+  set?: string | null;
+  year?: number | null;
+  resolvedName?: string | null;
+  extendedPrices?: PriceData["extendedPrices"];
+}
+
 function deterministicSeed(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
@@ -168,6 +179,62 @@ function mockSparkline(seed: string): number[] {
   return out;
 }
 
+function abortableInit(extra: RequestInit = {}): {
+  init: RequestInit;
+  cancel: () => void;
+} {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PRICE_FETCH_TIMEOUT_MS);
+  return {
+    init: { ...extra, signal: ctrl.signal },
+    cancel: () => clearTimeout(timer),
+  };
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function buildResult(
+  itemId: string,
+  primary: PartialPrice,
+  extras: PartialPrice[],
+  recentSoldCount: number,
+  advanced: boolean,
+): PriceData {
+  const mid = primary.mid;
+  const low = primary.low ?? round2(mid * 0.75);
+  const high = primary.high ?? round2(mid * 1.5);
+
+  const sources = [primary.source, ...extras.map((e) => e.source)];
+  const extendedPrices: PriceData["extendedPrices"] = [];
+  if (advanced) {
+    for (const e of extras) {
+      extendedPrices.push({
+        label: e.source,
+        value: `$${e.mid.toFixed(2)}`,
+        note: e.resolvedName ?? null,
+      });
+    }
+    if (primary.extendedPrices) extendedPrices.push(...primary.extendedPrices);
+  }
+
+  return {
+    low,
+    mid,
+    high,
+    recentSoldCount,
+    sources,
+    set: primary.set ?? extras.find((e) => e.set)?.set ?? null,
+    year: primary.year ?? extras.find((e) => e.year)?.year ?? null,
+    resolvedName: primary.resolvedName ?? itemId,
+    isMockData: false,
+    extendedPrices,
+  };
+}
+
+// ───────────────────────── TCG sources ─────────────────────────
+
 interface ScryfallCard {
   name?: string;
   set_name?: string;
@@ -179,75 +246,415 @@ interface ScryfallCard {
   };
 }
 
-async function fetchTcgPrice(itemId: string, advanced: boolean): Promise<PriceData> {
-  // Try Scryfall (no auth) for TCG cards by name.
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), PRICE_FETCH_TIMEOUT_MS);
+async function tryScryfall(itemId: string): Promise<PartialPrice | null> {
+  const { init, cancel } = abortableInit({
+    headers: {
+      "User-Agent": process.env.SCRYFALL_USER_AGENT || "GrailBabe/1.0",
+      Accept: "application/json",
+    },
+  });
   try {
     const result = await cachedJson<ScryfallCard>(
       `scanner:scryfall:${itemId.toLowerCase()}`,
       `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(itemId)}`,
-      {
-        headers: {
-          "User-Agent": process.env.SCRYFALL_USER_AGENT || "GrailBabe/1.0",
-          Accept: "application/json",
-        },
-        signal: ctrl.signal,
-      },
+      init,
     );
     const data = result.data;
     const usd = Number(data.prices?.usd ?? 0);
     const foil = Number(data.prices?.usd_foil ?? 0);
-    if (usd > 0) {
-      const mid = usd;
-      const low = Math.round(mid * 0.75 * 100) / 100;
-      const high = Math.round(mid * 1.5 * 100) / 100;
-      const extended: PriceData["extendedPrices"] = [];
-      if (advanced) {
-        if (foil > 0)
-          extended.push({
-            label: "Foil / Holo",
-            value: `$${foil.toFixed(2)}`,
-            note: "Scryfall market",
-          });
-        extended.push({
-          label: "PSA 9 estimate",
-          value: `$${(mid * 3).toFixed(2)}`,
-          note: "Typical 3× raw multiplier",
-        });
-        extended.push({
-          label: "PSA 10 estimate",
-          value: `$${(mid * 8).toFixed(2)}`,
-          note: "Typical 8× raw multiplier",
-        });
-      }
-      return {
-        low,
-        mid,
-        high,
-        recentSoldCount: 0,
-        sources: ["Scryfall"],
-        set: data.set_name ?? null,
-        year: data.released_at
-          ? Number(data.released_at.slice(0, 4)) || null
-          : null,
-        resolvedName: data.name ?? itemId,
-        isMockData: false,
-        extendedPrices: extended,
-      };
-    }
+    if (usd <= 0) return null;
+    const extended: PriceData["extendedPrices"] = [];
+    if (foil > 0)
+      extended.push({
+        label: "Foil / Holo",
+        value: `$${foil.toFixed(2)}`,
+        note: "Scryfall market",
+      });
+    extended.push(
+      {
+        label: "PSA 9 estimate",
+        value: `$${(usd * 3).toFixed(2)}`,
+        note: "Typical 3× raw multiplier",
+      },
+      {
+        label: "PSA 10 estimate",
+        value: `$${(usd * 8).toFixed(2)}`,
+        note: "Typical 8× raw multiplier",
+      },
+    );
+    return {
+      mid: usd,
+      low: round2(usd * 0.75),
+      high: round2(usd * 1.5),
+      source: "Scryfall",
+      set: data.set_name ?? null,
+      year: data.released_at ? Number(data.released_at.slice(0, 4)) || null : null,
+      resolvedName: data.name ?? itemId,
+      extendedPrices: extended,
+    };
   } catch {
-    // fall through to mock
+    return null;
   } finally {
-    clearTimeout(timer);
+    cancel();
   }
+}
 
-  // Mock fallback
+interface PokemonCardResp {
+  data?: Array<{
+    name?: string;
+    set?: { name?: string; releaseDate?: string };
+    tcgplayer?: {
+      prices?: Record<string, { low?: number; mid?: number; high?: number; market?: number }>;
+    };
+  }>;
+}
+
+async function tryPokemonTcg(itemId: string): Promise<PartialPrice | null> {
+  const key = process.env.POKEMON_TCG_API_KEY;
+  const { init, cancel } = abortableInit({
+    headers: key ? { "X-Api-Key": key } : {},
+  });
+  try {
+    const base = process.env.POKEMON_TCG_BASE_URL || "https://api.pokemontcg.io/v2";
+    const q = encodeURIComponent(`name:"${itemId.replace(/"/g, "")}"`);
+    const result = await cachedJson<PokemonCardResp>(
+      `scanner:pokemon:${itemId.toLowerCase()}`,
+      `${base}/cards?q=${q}&pageSize=1`,
+      init,
+    );
+    const card = result.data.data?.[0];
+    if (!card) return null;
+    const priceBucket =
+      Object.values(card.tcgplayer?.prices ?? {}).find((p) => p && (p.market || p.mid)) ?? null;
+    const market = priceBucket?.market ?? priceBucket?.mid ?? 0;
+    if (!market || market <= 0) return null;
+    return {
+      mid: round2(market),
+      low: priceBucket?.low ? round2(priceBucket.low) : round2(market * 0.75),
+      high: priceBucket?.high ? round2(priceBucket.high) : round2(market * 1.5),
+      source: "Pokémon TCG (TCGplayer)",
+      set: card.set?.name ?? null,
+      year: card.set?.releaseDate
+        ? Number(card.set.releaseDate.slice(0, 4)) || null
+        : null,
+      resolvedName: card.name ?? itemId,
+    };
+  } catch {
+    return null;
+  } finally {
+    cancel();
+  }
+}
+
+interface JustTcgResp {
+  data?: Array<{
+    name?: string;
+    set?: string;
+    market_price?: number;
+    low_price?: number;
+    high_price?: number;
+  }>;
+}
+
+async function tryJustTcg(itemId: string): Promise<PartialPrice | null> {
+  const key = process.env.JUSTTCG_API_KEY;
+  if (!key) return null;
+  const { init, cancel } = abortableInit({ headers: { "X-API-Key": key } });
+  try {
+    const base = process.env.JUSTTCG_BASE_URL || "https://justtcg.com/api/v1";
+    const result = await cachedJson<JustTcgResp>(
+      `scanner:justtcg:${itemId.toLowerCase()}`,
+      `${base}/cards?q=${encodeURIComponent(itemId)}`,
+      init,
+    );
+    const card = result.data.data?.[0];
+    const mid = card?.market_price ?? 0;
+    if (!card || !mid || mid <= 0) return null;
+    return {
+      mid: round2(mid),
+      low: card.low_price ? round2(card.low_price) : null,
+      high: card.high_price ? round2(card.high_price) : null,
+      source: "JustTCG",
+      set: card.set ?? null,
+      resolvedName: card.name ?? itemId,
+    };
+  } catch {
+    return null;
+  } finally {
+    cancel();
+  }
+}
+
+interface TcgApiResp {
+  data?: Array<{
+    name?: string;
+    set?: { name?: string };
+    prices?: { market?: number; low?: number; high?: number };
+  }>;
+}
+
+async function tryTcgApi(itemId: string): Promise<PartialPrice | null> {
+  const key = process.env.TCGAPI_API_KEY;
+  if (!key) return null;
+  const { init, cancel } = abortableInit({
+    headers: { Authorization: `Bearer ${key}` },
+  });
+  try {
+    const base = process.env.TCGAPI_BASE_URL || "https://tcgapi.dev/api/v1";
+    const result = await cachedJson<TcgApiResp>(
+      `scanner:tcgapi:${itemId.toLowerCase()}`,
+      `${base}/cards?q=${encodeURIComponent(itemId)}`,
+      init,
+    );
+    const card = result.data.data?.[0];
+    const mid = card?.prices?.market ?? 0;
+    if (!card || !mid || mid <= 0) return null;
+    return {
+      mid: round2(mid),
+      low: card.prices?.low ? round2(card.prices.low) : null,
+      high: card.prices?.high ? round2(card.prices.high) : null,
+      source: "TCGapi.dev",
+      set: card.set?.name ?? null,
+      resolvedName: card.name ?? itemId,
+    };
+  } catch {
+    return null;
+  } finally {
+    cancel();
+  }
+}
+
+// ───────────────────────── Sports sources ─────────────────────────
+
+interface CardHedgerSearchResp {
+  data?: Array<{
+    card_id?: string;
+    name?: string;
+    set?: string;
+    year?: number;
+    market_value?: number;
+    low?: number;
+    high?: number;
+  }>;
+}
+
+async function tryCardHedger(itemId: string): Promise<PartialPrice | null> {
+  const key = process.env.CARDHEDGER_API_KEY;
+  if (!key) return null;
+  const { init, cancel } = abortableInit({
+    method: "POST",
+    headers: {
+      "X-API-Key": key,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ search: itemId }),
+  });
+  try {
+    const base = process.env.CARDHEDGER_BASE_URL || "https://api.cardhedger.com";
+    const result = await cachedJson<CardHedgerSearchResp>(
+      `scanner:cardhedger:${itemId.toLowerCase()}`,
+      `${base}/v1/cards/card-search`,
+      init,
+    );
+    const card = result.data.data?.[0];
+    const mid = card?.market_value ?? 0;
+    if (!card || !mid || mid <= 0) return null;
+    return {
+      mid: round2(mid),
+      low: card.low ? round2(card.low) : null,
+      high: card.high ? round2(card.high) : null,
+      source: "CardHedger",
+      set: card.set ?? null,
+      year: card.year ?? null,
+      resolvedName: card.name ?? itemId,
+    };
+  } catch {
+    return null;
+  } finally {
+    cancel();
+  }
+}
+
+interface PriceChartingProductsResp {
+  status?: string;
+  products?: Array<{
+    id?: string | number;
+    "product-name"?: string;
+    "console-name"?: string;
+    "release-date"?: string;
+    "loose-price"?: number;
+    "cib-price"?: number;
+    "new-price"?: number;
+  }>;
+}
+
+async function tryPriceCharting(itemId: string): Promise<PartialPrice | null> {
+  const token = process.env.PRICECHARTING_API_TOKEN;
+  if (!token) return null;
+  const { init, cancel } = abortableInit();
+  try {
+    const result = await cachedJson<PriceChartingProductsResp>(
+      `scanner:pricecharting:${itemId.toLowerCase()}`,
+      `https://www.pricecharting.com/api/products?q=${encodeURIComponent(itemId)}&t=${token}`,
+      init,
+    );
+    const product = result.data.products?.[0];
+    if (!product) return null;
+    // PriceCharting returns prices in cents.
+    const loose = product["loose-price"] ? product["loose-price"] / 100 : 0;
+    const cib = product["cib-price"] ? product["cib-price"] / 100 : 0;
+    const fresh = product["new-price"] ? product["new-price"] / 100 : 0;
+    const mid = fresh || cib || loose;
+    if (!mid || mid <= 0) return null;
+    return {
+      mid: round2(mid),
+      low: loose > 0 ? round2(loose) : null,
+      high: fresh > 0 ? round2(fresh) : null,
+      source: "PriceCharting",
+      year: product["release-date"]
+        ? Number(product["release-date"].slice(0, 4)) || null
+        : null,
+      resolvedName: product["product-name"] ?? itemId,
+    };
+  } catch {
+    return null;
+  } finally {
+    cancel();
+  }
+}
+
+interface EbaySearchResp {
+  itemSummaries?: Array<{
+    title?: string;
+    price?: { value?: string; currency?: string };
+  }>;
+  total?: number;
+}
+
+async function getEbayTokenInline(): Promise<string | null> {
+  const cached = await cacheGet<{ token: string }>("ebay:oauth:client_credentials");
+  if (cached?.token) return cached.token;
+  const appId = process.env.EBAY_APP_ID;
+  const certId = process.env.EBAY_CERT_ID;
+  if (!appId || !certId) return null;
+  const basic = Buffer.from(`${appId}:${certId}`).toString("base64");
+  const res = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body:
+      "grant_type=client_credentials&scope=" +
+      encodeURIComponent("https://api.ebay.com/oauth/api_scope"),
+  });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { access_token?: string; expires_in?: number };
+  if (!body.access_token) return null;
+  const ttl = Math.max(60, (body.expires_in ?? 7200) - 60);
+  await cacheSet("ebay:oauth:client_credentials", { token: body.access_token }, ttl);
+  return body.access_token;
+}
+
+async function tryEbay(
+  itemId: string,
+): Promise<{ partial: PartialPrice | null; soldCount: number }> {
+  const token = await getEbayTokenInline().catch(() => null);
+  if (!token) return { partial: null, soldCount: 0 };
+  const { init, cancel } = abortableInit({
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+    },
+  });
+  try {
+    const filter = "buyingOptions:{FIXED_PRICE|AUCTION}";
+    const url =
+      "https://api.ebay.com/buy/browse/v1/item_summary/search" +
+      `?q=${encodeURIComponent(itemId)}` +
+      `&filter=${encodeURIComponent(filter)}` +
+      `&limit=20`;
+    const result = await cachedJson<EbaySearchResp>(
+      `scanner:ebay:${itemId.toLowerCase()}`,
+      url,
+      init,
+      300,
+    );
+    const items = result.data.itemSummaries ?? [];
+    const prices = items
+      .map((i) => Number(i.price?.value ?? 0))
+      .filter((n) => n > 0);
+    if (prices.length === 0)
+      return { partial: null, soldCount: result.data.total ?? items.length };
+    prices.sort((a, b) => a - b);
+    const mid = prices[Math.floor(prices.length / 2)]!;
+    return {
+      partial: {
+        mid: round2(mid),
+        low: round2(prices[0]!),
+        high: round2(prices[prices.length - 1]!),
+        source: "eBay (active listings)",
+        resolvedName: items[0]?.title ?? itemId,
+      },
+      soldCount: result.data.total ?? items.length,
+    };
+  } catch {
+    return { partial: null, soldCount: 0 };
+  } finally {
+    cancel();
+  }
+}
+
+// ───────────────────────── LEGO sources ─────────────────────────
+
+interface RebrickableSet {
+  set_num?: string;
+  name?: string;
+  year?: number;
+  num_parts?: number;
+}
+
+async function tryRebrickable(itemId: string): Promise<PartialPrice | null> {
+  const key = process.env.REBRICKABLE_API_KEY;
+  if (!key) return null;
+  const { init, cancel } = abortableInit({
+    headers: { Authorization: `key ${key}` },
+  });
+  try {
+    const result = await cachedJson<RebrickableSet>(
+      `scanner:rebrickable:set:${itemId}`,
+      `https://rebrickable.com/api/v3/lego/sets/${encodeURIComponent(itemId)}/`,
+      init,
+    );
+    const data = result.data;
+    const parts = data.num_parts ?? 100;
+    // Heuristic: $0.12 per piece. Used as fallback when no real market data.
+    const mid = round2(parts * 0.12);
+    return {
+      mid,
+      low: round2(mid * 0.7),
+      high: round2(mid * 1.8),
+      source: "Rebrickable (heuristic from piece count)",
+      set: data.set_num ?? null,
+      year: data.year ?? null,
+      resolvedName: data.name ?? itemId,
+    };
+  } catch {
+    return null;
+  } finally {
+    cancel();
+  }
+}
+
+// ───────────────────────── Aggregators ─────────────────────────
+
+function mockTcg(itemId: string, advanced: boolean): PriceData {
   const p = mockPrices(itemId + ":tcg", 12);
   return {
     ...p,
     recentSoldCount: 27,
-    sources: ["Mock data — TCGPlayer key not configured"],
+    sources: ["Mock data — no TCG API returned a price"],
     set: null,
     year: null,
     resolvedName: itemId,
@@ -262,20 +669,12 @@ async function fetchTcgPrice(itemId: string, advanced: boolean): Promise<PriceDa
   };
 }
 
-async function fetchSportsPrice(itemId: string, advanced: boolean): Promise<PriceData> {
-  // eBay sold-listings would require Marketing/Browse API. We won't shoehorn here;
-  // attempt only if creds exist, otherwise mock.
-  const haveEbay = Boolean(process.env.EBAY_APP_ID && process.env.EBAY_CERT_ID);
+function mockSports(itemId: string, advanced: boolean): PriceData {
   const p = mockPrices(itemId + ":sports", 25);
-  const sources: string[] = haveEbay
-    ? [
-        "Mock data — eBay sold-listing aggregation not yet implemented",
-      ]
-    : ["Mock data — eBay key not configured"];
   return {
     ...p,
     recentSoldCount: 14,
-    sources,
+    sources: ["Mock data — no sports API returned a price"],
     set: null,
     year: null,
     resolvedName: itemId,
@@ -289,60 +688,12 @@ async function fetchSportsPrice(itemId: string, advanced: boolean): Promise<Pric
   };
 }
 
-interface RebrickableSet {
-  set_num?: string;
-  name?: string;
-  year?: number;
-  num_parts?: number;
-}
-
-async function fetchLegoPrice(itemId: string, advanced: boolean): Promise<PriceData> {
-  const key = process.env.REBRICKABLE_API_KEY;
-  if (key) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), PRICE_FETCH_TIMEOUT_MS);
-    try {
-      const result = await cachedJson<RebrickableSet>(
-        `scanner:rebrickable:set:${itemId}`,
-        `https://rebrickable.com/api/v3/lego/sets/${encodeURIComponent(itemId)}/`,
-        { headers: { Authorization: `key ${key}` }, signal: ctrl.signal },
-      );
-      const data = result.data;
-      // Rebrickable doesn't give pricing — heuristic from part count.
-      const parts = data.num_parts ?? 100;
-      const mid = Math.round(parts * 0.12 * 100) / 100;
-      const low = Math.round(mid * 0.7 * 100) / 100;
-      const high = Math.round(mid * 1.8 * 100) / 100;
-      return {
-        low,
-        mid,
-        high,
-        recentSoldCount: 0,
-        sources: ["Rebrickable", "Mock data — BrickLink key not configured"],
-        set: data.set_num ?? null,
-        year: data.year ?? null,
-        resolvedName: data.name ?? itemId,
-        isMockData: true,
-        extendedPrices: advanced
-          ? [
-              { label: "Sealed (MISB)", value: `$${(mid * 1.4).toFixed(2)}`, note: "Mock" },
-              { label: "Opened complete", value: `$${(mid * 0.7).toFixed(2)}`, note: "Mock" },
-              { label: "Retired premium", value: `$${(mid * 2.2).toFixed(2)}`, note: "Mock" },
-            ]
-          : [],
-      };
-    } catch {
-      // fall through
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
+function mockLego(itemId: string, advanced: boolean): PriceData {
   const p = mockPrices(itemId + ":lego", 60);
   return {
     ...p,
     recentSoldCount: 9,
-    sources: ["Mock data — Rebrickable/BrickLink keys not configured"],
+    sources: ["Mock data — no LEGO API returned a price"],
     set: itemId,
     year: null,
     resolvedName: `LEGO Set ${itemId}`,
@@ -356,6 +707,57 @@ async function fetchLegoPrice(itemId: string, advanced: boolean): Promise<PriceD
       : [],
   };
 }
+
+async function fetchTcgPrice(itemId: string, advanced: boolean): Promise<PriceData> {
+  // Run all TCG sources in parallel; use the first successful as primary, others as extras.
+  const [scryfall, pokemon, justtcg, tcgapi, ebay] = await Promise.all([
+    tryScryfall(itemId),
+    tryPokemonTcg(itemId),
+    tryJustTcg(itemId),
+    tryTcgApi(itemId),
+    tryEbay(itemId),
+  ]);
+  const partials = [scryfall, pokemon, justtcg, tcgapi].filter(
+    (r): r is PartialPrice => r !== null,
+  );
+  if (ebay.partial) partials.push(ebay.partial);
+  if (partials.length === 0) return mockTcg(itemId, advanced);
+  const [primary, ...extras] = partials;
+  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced);
+}
+
+async function fetchSportsPrice(itemId: string, advanced: boolean): Promise<PriceData> {
+  const [cardhedger, pricecharting, ebay] = await Promise.all([
+    tryCardHedger(itemId),
+    tryPriceCharting(itemId),
+    tryEbay(itemId),
+  ]);
+  const partials: PartialPrice[] = [];
+  if (cardhedger) partials.push(cardhedger);
+  if (pricecharting) partials.push(pricecharting);
+  if (ebay.partial) partials.push(ebay.partial);
+  if (partials.length === 0) return mockSports(itemId, advanced);
+  const [primary, ...extras] = partials;
+  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced);
+}
+
+async function fetchLegoPrice(itemId: string, advanced: boolean): Promise<PriceData> {
+  const [pricecharting, rebrickable, ebay] = await Promise.all([
+    tryPriceCharting(`LEGO ${itemId}`),
+    tryRebrickable(itemId),
+    tryEbay(`LEGO ${itemId}`),
+  ]);
+  // Prefer real market price (PriceCharting / eBay) over the Rebrickable heuristic.
+  const partials: PartialPrice[] = [];
+  if (pricecharting) partials.push(pricecharting);
+  if (ebay.partial) partials.push(ebay.partial);
+  if (rebrickable) partials.push(rebrickable);
+  if (partials.length === 0) return mockLego(itemId, advanced);
+  const [primary, ...extras] = partials;
+  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced);
+}
+
+// ───────────────────────── AI grading (advanced only) ─────────────────────────
 
 interface AiGradeOutput {
   grade: string;
