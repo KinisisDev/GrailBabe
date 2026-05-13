@@ -35,19 +35,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex bg-background">
       <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
         <div className="px-5 py-6">
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-              <div className="size-8 rounded-lg bg-primary/15 grid place-items-center ring-1 ring-primary/30">
-                <span className="text-primary font-serif font-semibold">G</span>
-              </div>
-              <div>
-                <div className="font-serif text-lg leading-none tracking-tight">
-                  GrailBabe
-                </div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
-                  Collector OS
-                </div>
-              </div>
-            </Link>
+          <Link href="/dashboard">
+            <img src="/grailbabe-logo.png" alt="GrailBabe" className="h-10 w-auto object-contain" />
+          </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {NAV.map((item) => {
