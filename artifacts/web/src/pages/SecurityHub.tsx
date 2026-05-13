@@ -43,15 +43,17 @@ export default function SecurityHubPage() {
       <div
         className="rounded-md border p-4 flex items-start gap-3"
         style={{
-          borderColor: "color-mix(in srgb, var(--neon-blue) 40%, transparent)",
-          backgroundColor: "color-mix(in srgb, var(--neon-blue) 10%, transparent)",
+          borderImage:
+            "linear-gradient(90deg, var(--neon-blue), var(--neon-green), var(--neon-yellow), var(--neon-red)) 1",
+          borderWidth: "1px",
+          borderStyle: "solid",
+          background:
+            "linear-gradient(90deg, color-mix(in srgb, var(--neon-blue) 18%, transparent), color-mix(in srgb, var(--neon-green) 18%, transparent), color-mix(in srgb, var(--neon-yellow) 18%, transparent), color-mix(in srgb, var(--neon-red) 18%, transparent))",
         }}
       >
-        <AlertTriangle className="size-5 shrink-0 mt-0.5" style={{ color: "var(--neon-blue)" }} />
+        <AlertTriangle className="size-5 shrink-0 mt-0.5 text-foreground" />
         <div className="text-sm">
-          <span className="font-semibold" style={{ color: "var(--neon-blue)" }}>
-            Zero Tolerance
-          </span>
+          <span className="font-semibold text-foreground">Zero Tolerance</span>
           <span className="text-foreground/90"> — Fake cards, scams, and abuse result in permanent bans</span>
         </div>
       </div>
