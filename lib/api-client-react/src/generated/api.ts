@@ -82,7 +82,10 @@ import type {
   UnreadCount,
   UpdateProfileInput,
   UserProfile,
-  UserReview
+  UserReview,
+  VaultItemImage,
+  VaultItemImagePatchInput,
+  VaultItemImageUploadInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3911,6 +3914,275 @@ export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TE
 
 
 
+export const getListVaultItemImagesUrl = (itemId: number,) => {
+
+
+  
+
+  return `/api/vault-items/${itemId}/images`
+}
+
+export const listVaultItemImages = async (itemId: number, options?: RequestInit): Promise<VaultItemImage[]> => {
+  
+  return customFetch<VaultItemImage[]>(getListVaultItemImagesUrl(itemId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getListVaultItemImagesQueryKey = (itemId: number,) => {
+    return [
+    `/api/vault-items/${itemId}/images`
+    ] as const;
+    }
+
+    
+export const getListVaultItemImagesQueryOptions = <TData = Awaited<ReturnType<typeof listVaultItemImages>>, TError = ErrorType<unknown>>(itemId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVaultItemImages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVaultItemImagesQueryKey(itemId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVaultItemImages>>> = ({ signal }) => listVaultItemImages(itemId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(itemId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVaultItemImages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVaultItemImagesQueryResult = NonNullable<Awaited<ReturnType<typeof listVaultItemImages>>>
+export type ListVaultItemImagesQueryError = ErrorType<unknown>
+
+
+
+export function useListVaultItemImages<TData = Awaited<ReturnType<typeof listVaultItemImages>>, TError = ErrorType<unknown>>(
+ itemId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVaultItemImages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVaultItemImagesQueryOptions(itemId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+export const getUploadVaultItemImageUrl = (itemId: number,) => {
+
+
+  
+
+  return `/api/vault-items/${itemId}/images`
+}
+
+export const uploadVaultItemImage = async (itemId: number,
+    vaultItemImageUploadInput: VaultItemImageUploadInput, options?: RequestInit): Promise<VaultItemImage> => {
+  
+  return customFetch<VaultItemImage>(getUploadVaultItemImageUrl(itemId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      vaultItemImageUploadInput,)
+  }
+);}
+  
+
+
+
+export const getUploadVaultItemImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadVaultItemImage>>, TError,{itemId: number;data: BodyType<VaultItemImageUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadVaultItemImage>>, TError,{itemId: number;data: BodyType<VaultItemImageUploadInput>}, TContext> => {
+
+const mutationKey = ['uploadVaultItemImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadVaultItemImage>>, {itemId: number;data: BodyType<VaultItemImageUploadInput>}> = (props) => {
+          const {itemId,data} = props ?? {};
+
+          return  uploadVaultItemImage(itemId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadVaultItemImageMutationResult = NonNullable<Awaited<ReturnType<typeof uploadVaultItemImage>>>
+    export type UploadVaultItemImageMutationBody = BodyType<VaultItemImageUploadInput>
+    export type UploadVaultItemImageMutationError = ErrorType<unknown>
+
+    export const useUploadVaultItemImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadVaultItemImage>>, TError,{itemId: number;data: BodyType<VaultItemImageUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadVaultItemImage>>,
+        TError,
+        {itemId: number;data: BodyType<VaultItemImageUploadInput>},
+        TContext
+      > => {
+      return useMutation(getUploadVaultItemImageMutationOptions(options));
+    }
+    
+export const getPatchVaultItemImageUrl = (itemId: number,
+    imageId: string,) => {
+
+
+  
+
+  return `/api/vault-items/${itemId}/images/${imageId}`
+}
+
+export const patchVaultItemImage = async (itemId: number,
+    imageId: string,
+    vaultItemImagePatchInput: VaultItemImagePatchInput, options?: RequestInit): Promise<VaultItemImage> => {
+  
+  return customFetch<VaultItemImage>(getPatchVaultItemImageUrl(itemId,imageId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      vaultItemImagePatchInput,)
+  }
+);}
+  
+
+
+
+export const getPatchVaultItemImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchVaultItemImage>>, TError,{itemId: number;imageId: string;data: BodyType<VaultItemImagePatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchVaultItemImage>>, TError,{itemId: number;imageId: string;data: BodyType<VaultItemImagePatchInput>}, TContext> => {
+
+const mutationKey = ['patchVaultItemImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchVaultItemImage>>, {itemId: number;imageId: string;data: BodyType<VaultItemImagePatchInput>}> = (props) => {
+          const {itemId,imageId,data} = props ?? {};
+
+          return  patchVaultItemImage(itemId,imageId,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchVaultItemImageMutationResult = NonNullable<Awaited<ReturnType<typeof patchVaultItemImage>>>
+    export type PatchVaultItemImageMutationBody = BodyType<VaultItemImagePatchInput>
+    export type PatchVaultItemImageMutationError = ErrorType<unknown>
+
+    export const usePatchVaultItemImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchVaultItemImage>>, TError,{itemId: number;imageId: string;data: BodyType<VaultItemImagePatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchVaultItemImage>>,
+        TError,
+        {itemId: number;imageId: string;data: BodyType<VaultItemImagePatchInput>},
+        TContext
+      > => {
+      return useMutation(getPatchVaultItemImageMutationOptions(options));
+    }
+    
+export const getDeleteVaultItemImageUrl = (itemId: number,
+    imageId: string,) => {
+
+
+  
+
+  return `/api/vault-items/${itemId}/images/${imageId}`
+}
+
+export const deleteVaultItemImage = async (itemId: number,
+    imageId: string, options?: RequestInit): Promise<void> => {
+  
+  return customFetch<void>(getDeleteVaultItemImageUrl(itemId,imageId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+  
+
+
+
+export const getDeleteVaultItemImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVaultItemImage>>, TError,{itemId: number;imageId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteVaultItemImage>>, TError,{itemId: number;imageId: string}, TContext> => {
+
+const mutationKey = ['deleteVaultItemImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVaultItemImage>>, {itemId: number;imageId: string}> = (props) => {
+          const {itemId,imageId} = props ?? {};
+
+          return  deleteVaultItemImage(itemId,imageId,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteVaultItemImageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteVaultItemImage>>>
+    
+    export type DeleteVaultItemImageMutationError = ErrorType<unknown>
+
+    export const useDeleteVaultItemImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVaultItemImage>>, TError,{itemId: number;imageId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteVaultItemImage>>,
+        TError,
+        {itemId: number;imageId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteVaultItemImageMutationOptions(options));
+    }
+    
 export const getRemoveBackgroundUrl = () => {
 
 

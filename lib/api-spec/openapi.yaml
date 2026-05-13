@@ -817,6 +817,60 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PublicProfile" }
 
+  /vault-items/{itemId}/images:
+    parameters:
+      - { name: itemId, in: path, required: true, schema: { type: integer } }
+    get:
+      operationId: listVaultItemImages
+      tags: [vault-images]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VaultItemImage" }
+    post:
+      operationId: uploadVaultItemImage
+      tags: [vault-images]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VaultItemImageUploadInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VaultItemImage" }
+
+  /vault-items/{itemId}/images/{imageId}:
+    parameters:
+      - { name: itemId, in: path, required: true, schema: { type: integer } }
+      - { name: imageId, in: path, required: true, schema: { type: string } }
+    patch:
+      operationId: patchVaultItemImage
+      tags: [vault-images]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VaultItemImagePatchInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VaultItemImage" }
+    delete:
+      operationId: deleteVaultItemImage
+      tags: [vault-images]
+      responses:
+        "204":
+          description: Deleted
+
   /scanner/remove-background:
     post:
       operationId: removeBackground
@@ -856,6 +910,29 @@ components:
       required: [status]
       properties:
         status: { type: string }
+
+    VaultItemImage:
+      type: object
+      required: [id, vaultItemId, url, isPrimary, displayOrder, createdAt]
+      properties:
+        id: { type: string }
+        vaultItemId: { type: integer }
+        url: { type: string }
+        isPrimary: { type: boolean }
+        displayOrder: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    VaultItemImageUploadInput:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64: { type: string }
+
+    VaultItemImagePatchInput:
+      type: object
+      properties:
+        isPrimary: { type: boolean }
+        displayOrder: { type: integer }
 
     RemoveBackgroundInput:
       type: object

@@ -1,5 +1,6 @@
 export * from "./userProfiles";
 export * from "./collectionItems";
+export * from "./vaultItemImages";
 export * from "./priceSnapshots";
 export * from "./grailItems";
 export * from "./tradePosts";

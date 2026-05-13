@@ -110,3 +110,6 @@ export * from './updateProfileInput';
 export * from './userProfile';
 export * from './userProfileTier';
 export * from './userReview';
+export * from './vaultItemImage';
+export * from './vaultItemImagePatchInput';
+export * from './vaultItemImageUploadInput';

@@ -23,6 +23,7 @@ import messagesRouter from "./messages";
 import communityRouter from "./community";
 import profilesRouter from "./profiles";
 import scannerRouter from "./scanner";
+import vaultImagesRouter from "./vaultImages";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(messagesRouter);
 router.use(communityRouter);
 router.use(profilesRouter);
 router.use(scannerRouter);
+router.use(vaultImagesRouter);
 
 export default router;

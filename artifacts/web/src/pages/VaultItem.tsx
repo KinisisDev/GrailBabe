@@ -24,6 +24,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { toast } from "sonner";
+import { VaultItemImages } from "@/components/VaultItemImages";
 
 export default function VaultItemPage({ id }: { id: number }) {
   const { data, isLoading } = useGetVaultItem(id);
@@ -152,6 +153,8 @@ export default function VaultItemPage({ id }: { id: number }) {
           </CardContent>
         </Card>
       )}
+
+      <VaultItemImages itemId={item.id} category={item.category} />
 
       {item.notes && (
         <Card>

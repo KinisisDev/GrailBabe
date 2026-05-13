@@ -9,6 +9,24 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface VaultItemImage {
+  id: string;
+  vaultItemId: number;
+  url: string;
+  isPrimary: boolean;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface VaultItemImageUploadInput {
+  imageBase64: string;
+}
+
+export interface VaultItemImagePatchInput {
+  isPrimary?: boolean;
+  displayOrder?: number;
+}
+
 export interface RemoveBackgroundInput {
   imageBase64: string;
 }

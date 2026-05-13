@@ -1231,6 +1231,56 @@ export const GetProfileResponse = zod.object({
 })
 
 
+export const ListVaultItemImagesParams = zod.object({
+  "itemId": zod.coerce.number()
+})
+
+export const ListVaultItemImagesResponseItem = zod.object({
+  "id": zod.string(),
+  "vaultItemId": zod.number(),
+  "url": zod.string(),
+  "isPrimary": zod.boolean(),
+  "displayOrder": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListVaultItemImagesResponse = zod.array(ListVaultItemImagesResponseItem)
+
+
+export const UploadVaultItemImageParams = zod.object({
+  "itemId": zod.coerce.number()
+})
+
+export const UploadVaultItemImageBody = zod.object({
+  "imageBase64": zod.string()
+})
+
+
+export const PatchVaultItemImageParams = zod.object({
+  "itemId": zod.coerce.number(),
+  "imageId": zod.coerce.string()
+})
+
+export const PatchVaultItemImageBody = zod.object({
+  "isPrimary": zod.boolean().optional(),
+  "displayOrder": zod.number().optional()
+})
+
+export const PatchVaultItemImageResponse = zod.object({
+  "id": zod.string(),
+  "vaultItemId": zod.number(),
+  "url": zod.string(),
+  "isPrimary": zod.boolean(),
+  "displayOrder": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const DeleteVaultItemImageParams = zod.object({
+  "itemId": zod.coerce.number(),
+  "imageId": zod.coerce.string()
+})
+
+
 export const RemoveBackgroundBody = zod.object({
   "imageBase64": zod.string()
 })
