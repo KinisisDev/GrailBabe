@@ -1294,6 +1294,7 @@ export const ScannerAnalyzeBody = zod.object({
   "itemId": zod.string(),
   "category": zod.enum(['tcg', 'sports', 'lego']),
   "imageBase64": zod.string().nullish(),
+  "imageBase64s": zod.array(zod.string()).nullish().describe('Optional multi-angle photos (front, back, corners, edges) for higher AI grading accuracy.'),
   "mode": zod.enum(['standard', 'advanced'])
 })
 
@@ -1323,7 +1324,22 @@ export const ScannerAnalyzeResponse = zod.object({
 })),
   "priceHistorySparkline": zod.array(zod.number()),
   "aiError": zod.boolean(),
-  "aiErrorReason": zod.string().nullish()
+  "aiErrorReason": zod.string().nullish(),
+  "aiConfidence": zod.union([zod.literal('high'),zod.literal('medium'),zod.literal('low'),zod.literal(null)]).nullish().describe('AI\'s confidence in its grade estimate.'),
+  "aiSubGrades": zod.union([zod.object({
+  "centering": zod.number().describe('1-10 PSA-style sub-grade'),
+  "corners": zod.number(),
+  "edges": zod.number(),
+  "surface": zod.number(),
+  "centeringMeasured": zod.string().nullish().describe('e.g. \'55\/45 L-R, 50\/50 T-B\'')
+}),zod.null()]).optional(),
+  "aiReasoning": zod.string().nullish(),
+  "priceLadder": zod.array(zod.object({
+  "grade": zod.string().describe('e.g. \'Raw\', \'PSA 8\', \'PSA 9\', \'PSA 10\''),
+  "price": zod.number(),
+  "source": zod.string().nullish()
+})).optional(),
+  "marketImpliedGrade": zod.string().nullish().describe('Grade rung whose ladder price is closest to the current market mid.')
 })
 
 

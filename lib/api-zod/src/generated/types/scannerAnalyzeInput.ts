@@ -13,5 +13,10 @@ export interface ScannerAnalyzeInput {
   category: ScannerAnalyzeInputCategory;
   /** @nullable */
   imageBase64?: string | null;
+  /**
+   * Optional multi-angle photos (front, back, corners, edges) for higher AI grading accuracy.
+   * @nullable
+   */
+  imageBase64s?: string[] | null;
   mode: ScannerAnalyzeInputMode;
 }

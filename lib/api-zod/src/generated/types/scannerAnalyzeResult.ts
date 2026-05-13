@@ -5,8 +5,11 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { ScannerAnalyzeResultAiConfidence } from './scannerAnalyzeResultAiConfidence';
 import type { ScannerExtendedPrice } from './scannerExtendedPrice';
+import type { ScannerPriceLadderRung } from './scannerPriceLadderRung';
 import type { ScannerPriceRange } from './scannerPriceRange';
+import type { ScannerSubGrades } from './scannerSubGrades';
 
 export interface ScannerAnalyzeResult {
   name: string;
@@ -35,4 +38,18 @@ export interface ScannerAnalyzeResult {
   aiError: boolean;
   /** @nullable */
   aiErrorReason?: string | null;
+  /**
+   * AI's confidence in its grade estimate.
+   * @nullable
+   */
+  aiConfidence?: ScannerAnalyzeResultAiConfidence;
+  aiSubGrades?: ScannerSubGrades | null;
+  /** @nullable */
+  aiReasoning?: string | null;
+  priceLadder?: ScannerPriceLadderRung[];
+  /**
+   * Grade rung whose ladder price is closest to the current market mid.
+   * @nullable
+   */
+  marketImpliedGrade?: string | null;
 }

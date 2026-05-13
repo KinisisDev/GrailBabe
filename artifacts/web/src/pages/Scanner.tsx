@@ -77,7 +77,7 @@ export default function ScannerPage() {
   const [mode, setMode] = useState<Mode>(loadMode);
   const [category, setCategory] = useState<Category>("tcg");
   const [itemId, setItemId] = useState("");
-  const [imageData, setImageData] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [bgRemoving, setBgRemoving] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [result, setResult] = useState<ScannerAnalyzeResult | null>(null);
@@ -92,6 +92,10 @@ export default function ScannerPage() {
   }, [mode]);
 
   const handleImageInput = async (file: File) => {
+    if (images.length >= 6) {
+      toast.error("Maximum 6 photos");
+      return;
+    }
     try {
       let dataUrl = await dataUrlFromBlob(file);
 
@@ -110,10 +114,14 @@ export default function ScannerPage() {
       }
 
       const compressed = await compressImage(dataUrl);
-      setImageData(compressed);
-    } catch (err) {
+      setImages((prev) => [...prev, compressed]);
+    } catch {
       toast.error("Could not process image");
     }
+  };
+
+  const removeImage = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,12 +138,14 @@ export default function ScannerPage() {
     setAnalyzeError(null);
     setResult(null);
     try {
+      const useImages = mode === "advanced" ? images : [];
       const res = await analyzeMut.mutateAsync({
         data: {
           itemId: itemId.trim(),
           category,
           mode,
-          imageBase64: mode === "advanced" ? imageData : null,
+          imageBase64: useImages[0] ?? null,
+          imageBase64s: useImages.length > 1 ? useImages.slice(1) : null,
         },
       });
       setResult(res);
@@ -148,10 +158,12 @@ export default function ScannerPage() {
 
   const reset = () => {
     setResult(null);
-    setImageData(null);
+    setImages([]);
     setAnalyzeError(null);
     setItemId("");
   };
+
+  const primaryImage = images[0] ?? null;
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
@@ -220,7 +232,7 @@ export default function ScannerPage() {
 
           <div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
-              Photo (optional in standard, used for AI grade in advanced)
+              Photos ({images.length}/6) — front, back, corners, edges all help
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -228,6 +240,7 @@ export default function ScannerPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setCameraOpen(true)}
+                disabled={images.length >= 6}
               >
                 <Camera className="size-4 mr-1.5" />
                 Take photo
@@ -237,6 +250,7 @@ export default function ScannerPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={images.length >= 6}
               >
                 <Upload className="size-4 mr-1.5" />
                 Upload file
@@ -253,39 +267,50 @@ export default function ScannerPage() {
                   Background removal skipped for LEGO.
                 </span>
               )}
+              {mode === "advanced" && images.length === 1 && category !== "lego" && (
+                <span className="text-[10px]" style={{ color: "var(--neon-yellow)" }}>
+                  Add a back photo for higher confidence
+                </span>
+              )}
             </div>
 
-            {(bgRemoving || imageData) && (
-              <div className="mt-3 relative inline-block">
-                <div
-                  className="rounded-lg border border-border overflow-hidden bg-muted"
-                  style={{ width: 200, height: 200 }}
-                >
-                  {imageData && (
-                    <img
-                      src={imageData}
-                      alt="Captured"
-                      className="w-full h-full object-contain"
-                    />
-                  )}
-                  {bgRemoving && (
-                    <div className="absolute inset-0 grid place-items-center bg-background/70 backdrop-blur-sm rounded-lg">
-                      <div className="text-xs flex items-center gap-2">
-                        <Loader2 className="size-4 animate-spin" />
-                        Removing background…
-                      </div>
+            {(bgRemoving || images.length > 0) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {images.map((img, idx) => (
+                  <div key={idx} className="relative">
+                    <div
+                      className="rounded-lg border border-border overflow-hidden bg-muted"
+                      style={{ width: 110, height: 110 }}
+                    >
+                      <img
+                        src={img}
+                        alt={`Photo ${idx + 1}`}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
-                  )}
-                </div>
-                {imageData && !bgRemoving && (
-                  <button
-                    type="button"
-                    onClick={() => setImageData(null)}
-                    className="absolute -top-2 -right-2 size-6 rounded-full bg-background border border-border grid place-items-center hover:bg-muted"
-                    aria-label="Remove image"
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute -top-2 -right-2 size-6 rounded-full bg-background border border-border grid place-items-center hover:bg-muted"
+                      aria-label={`Remove photo ${idx + 1}`}
+                    >
+                      <X className="size-3" />
+                    </button>
+                    <div className="absolute bottom-1 left-1 text-[9px] px-1.5 py-0.5 rounded bg-background/80 border border-border">
+                      {idx === 0 ? "Front" : `#${idx + 1}`}
+                    </div>
+                  </div>
+                ))}
+                {bgRemoving && (
+                  <div
+                    className="rounded-lg border border-border bg-muted grid place-items-center"
+                    style={{ width: 110, height: 110 }}
                   >
-                    <X className="size-3" />
-                  </button>
+                    <div className="text-[10px] flex flex-col items-center gap-1">
+                      <Loader2 className="size-4 animate-spin" />
+                      Removing bg…
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -308,7 +333,7 @@ export default function ScannerPage() {
       </Card>
 
       {analyzeMut.isPending && (
-        <ResultsSkeleton mode={mode} hasImage={Boolean(imageData)} />
+        <ResultsSkeleton mode={mode} hasImage={images.length > 0} />
       )}
 
       {analyzeError && (
@@ -327,13 +352,13 @@ export default function ScannerPage() {
         (mode === "standard" ? (
           <StandardResults
             result={result}
-            image={imageData}
+            image={primaryImage}
             onScanAnother={reset}
           />
         ) : (
           <AdvancedResults
             result={result}
-            image={imageData}
+            image={primaryImage}
             onScanAnother={reset}
           />
         ))}
@@ -610,14 +635,73 @@ function AdvancedResults({
                 </div>
               ) : (
                 <div className="space-y-3 py-2">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Estimated grade
+                  <div className="flex flex-wrap items-end gap-4">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Estimated grade
+                      </div>
+                      <div className="font-serif text-3xl" style={{ color: "var(--neon-blue)" }}>
+                        {result.aiGradeRange ?? result.aiGrade}
+                      </div>
                     </div>
-                    <div className="font-serif text-3xl" style={{ color: "var(--neon-blue)" }}>
-                      {result.aiGradeRange ?? result.aiGrade}
-                    </div>
+                    {result.aiConfidence && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] mb-1.5"
+                        style={{
+                          borderColor:
+                            result.aiConfidence === "high"
+                              ? "color-mix(in srgb, var(--neon-green) 60%, transparent)"
+                              : result.aiConfidence === "low"
+                                ? "color-mix(in srgb, var(--neon-yellow) 60%, transparent)"
+                                : undefined,
+                          color:
+                            result.aiConfidence === "high"
+                              ? "var(--neon-green)"
+                              : result.aiConfidence === "low"
+                                ? "var(--neon-yellow)"
+                                : undefined,
+                        }}
+                      >
+                        {result.aiConfidence} confidence
+                      </Badge>
+                    )}
+                    {result.marketImpliedGrade && result.aiGrade && (
+                      <div className="text-[10px] text-muted-foreground mb-1.5">
+                        Market implies <span className="text-foreground">{result.marketImpliedGrade}</span>
+                      </div>
+                    )}
                   </div>
+                  {result.aiSubGrades && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {(
+                        [
+                          { label: "Centering", v: result.aiSubGrades.centering },
+                          { label: "Corners", v: result.aiSubGrades.corners },
+                          { label: "Edges", v: result.aiSubGrades.edges },
+                          { label: "Surface", v: result.aiSubGrades.surface },
+                        ] as const
+                      ).map((s) => (
+                        <div
+                          key={s.label}
+                          className="rounded-md border border-border p-2 text-center"
+                        >
+                          <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                            {s.label}
+                          </div>
+                          <div className="font-serif text-lg mt-0.5">
+                            {s.v ? s.v.toFixed(1) : "—"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {result.aiReasoning && (
+                    <div className="text-xs text-muted-foreground italic border-l-2 pl-3"
+                      style={{ borderColor: "var(--neon-blue)" }}>
+                      {result.aiReasoning}
+                    </div>
+                  )}
                   {result.defects.length > 0 && (
                     <div>
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
@@ -714,6 +798,54 @@ function AdvancedResults({
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          {result.priceLadder && result.priceLadder.length > 0 && (
+            <AccordionItem value="ladder">
+              <AccordionTrigger className="hover:no-underline">
+                Price by Grade
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="py-2 space-y-2">
+                  <div className="text-[10px] text-muted-foreground">
+                    What the same card is typically worth at each PSA grade.
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {result.priceLadder.map((rung) => {
+                      const matchesAi =
+                        result.aiGrade && rung.grade.includes(result.aiGrade.replace(/^PSA\s*/i, ""));
+                      const matchesMarket = rung.grade === result.marketImpliedGrade;
+                      return (
+                        <div
+                          key={rung.grade}
+                          className="rounded-md border p-2 text-center"
+                          style={{
+                            borderColor: matchesAi
+                              ? "var(--neon-blue)"
+                              : matchesMarket
+                                ? "color-mix(in srgb, var(--neon-green) 60%, transparent)"
+                                : "var(--border)",
+                          }}
+                        >
+                          <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                            {rung.grade}
+                          </div>
+                          <div className="font-serif text-base mt-0.5">
+                            {fmt(rung.price)}
+                          </div>
+                          {(matchesAi || matchesMarket) && (
+                            <div className="text-[9px] mt-0.5"
+                              style={{ color: matchesAi ? "var(--neon-blue)" : "var(--neon-green)" }}>
+                              {matchesAi ? "AI grade" : "Market"}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
 
           <AccordionItem value="history">
             <AccordionTrigger className="hover:no-underline">

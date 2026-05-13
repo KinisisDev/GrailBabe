@@ -135,6 +135,12 @@ interface PriceData {
   resolvedName?: string;
   isMockData: boolean;
   extendedPrices: Array<{ label: string; value: string; note?: string | null }>;
+  // Used for the price-ladder cross-check. `rawAnchorMid` comes from a
+  // non-eBay catalog source (publisher / database) and is the basis for the
+  // ladder. `marketMid` is eBay's median across recent listings (mix of
+  // raw + graded) and is what we compare against the ladder.
+  rawAnchorMid: number | null;
+  marketMid: number | null;
 }
 
 interface PartialPrice {
@@ -195,12 +201,15 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+const EBAY_SOURCE_LABEL = "eBay (active listings)";
+
 function buildResult(
   itemId: string,
   primary: PartialPrice,
   extras: PartialPrice[],
   recentSoldCount: number,
   advanced: boolean,
+  ebayPartial: PartialPrice | null,
 ): PriceData {
   const mid = primary.mid;
   const low = primary.low ?? round2(mid * 0.75);
@@ -219,6 +228,12 @@ function buildResult(
     if (primary.extendedPrices) extendedPrices.push(...primary.extendedPrices);
   }
 
+  // Raw anchor = first non-eBay source (publisher catalog price).
+  const rawAnchor =
+    primary.source !== EBAY_SOURCE_LABEL
+      ? primary
+      : extras.find((e) => e.source !== EBAY_SOURCE_LABEL) ?? null;
+
   return {
     low,
     mid,
@@ -230,6 +245,8 @@ function buildResult(
     resolvedName: primary.resolvedName ?? itemId,
     isMockData: false,
     extendedPrices,
+    rawAnchorMid: rawAnchor?.mid ?? null,
+    marketMid: ebayPartial?.mid ?? null,
   };
 }
 
@@ -666,6 +683,8 @@ function mockTcg(itemId: string, advanced: boolean): PriceData {
           { label: "PSA 10 estimate", value: `$${(p.mid * 8).toFixed(2)}`, note: "Mock" },
         ]
       : [],
+    rawAnchorMid: null,
+    marketMid: null,
   };
 }
 
@@ -685,6 +704,8 @@ function mockSports(itemId: string, advanced: boolean): PriceData {
           { label: "Raw vs PSA 10 spread", value: `$${(p.mid * 6).toFixed(2)}`, note: "Mock" },
         ]
       : [],
+    rawAnchorMid: null,
+    marketMid: null,
   };
 }
 
@@ -705,6 +726,8 @@ function mockLego(itemId: string, advanced: boolean): PriceData {
           { label: "Retired premium", value: `$${(p.mid * 2.2).toFixed(2)}`, note: "Mock" },
         ]
       : [],
+    rawAnchorMid: null,
+    marketMid: null,
   };
 }
 
@@ -723,7 +746,7 @@ async function fetchTcgPrice(itemId: string, advanced: boolean): Promise<PriceDa
   if (ebay.partial) partials.push(ebay.partial);
   if (partials.length === 0) return mockTcg(itemId, advanced);
   const [primary, ...extras] = partials;
-  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced);
+  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced, ebay.partial);
 }
 
 async function fetchSportsPrice(itemId: string, advanced: boolean): Promise<PriceData> {
@@ -738,7 +761,7 @@ async function fetchSportsPrice(itemId: string, advanced: boolean): Promise<Pric
   if (ebay.partial) partials.push(ebay.partial);
   if (partials.length === 0) return mockSports(itemId, advanced);
   const [primary, ...extras] = partials;
-  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced);
+  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced, ebay.partial);
 }
 
 async function fetchLegoPrice(itemId: string, advanced: boolean): Promise<PriceData> {
@@ -754,14 +777,25 @@ async function fetchLegoPrice(itemId: string, advanced: boolean): Promise<PriceD
   if (rebrickable) partials.push(rebrickable);
   if (partials.length === 0) return mockLego(itemId, advanced);
   const [primary, ...extras] = partials;
-  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced);
+  return buildResult(itemId, primary!, extras, ebay.soldCount, advanced, ebay.partial);
 }
 
 // ───────────────────────── AI grading (advanced only) ─────────────────────────
 
+interface AiSubGrades {
+  centering: number;
+  corners: number;
+  edges: number;
+  surface: number;
+  centeringMeasured: string | null;
+}
+
 interface AiGradeOutput {
   grade: string;
   gradeRange: string;
+  confidence: "high" | "medium" | "low";
+  subGrades: AiSubGrades | null;
+  reasoning: string;
   defects: string[];
   centering: string;
   surfaceNotes: string;
@@ -769,20 +803,108 @@ interface AiGradeOutput {
   authenticityFlags: string[];
 }
 
-async function gradeWithAi(
-  imageBase64: string,
+interface PriceLadderRung {
+  grade: string;
+  price: number;
+  source: string | null;
+}
+
+// Industry-typical multipliers off raw market price.
+// Sources: PWCC/PSA market reports — TCG and modern sports cards behave similarly enough.
+const RAW_TO_GRADE_MULTIPLIERS: Array<{ grade: string; mult: number }> = [
+  { grade: "Raw (NM)", mult: 1.0 },
+  { grade: "PSA 7", mult: 1.4 },
+  { grade: "PSA 8", mult: 2.2 },
+  { grade: "PSA 9", mult: 4.0 },
+  { grade: "PSA 10", mult: 10.0 },
+];
+
+function buildPriceLadder(
+  rawMid: number,
   category: "tcg" | "sports" | "lego",
+): PriceLadderRung[] {
+  if (category === "lego" || rawMid <= 0) return [];
+  return RAW_TO_GRADE_MULTIPLIERS.map(({ grade, mult }) => ({
+    grade,
+    price: round2(rawMid * mult),
+    source: "Heuristic from raw market price",
+  }));
+}
+
+function impliedGradeFromMarket(
+  ladder: PriceLadderRung[],
+  marketMid: number,
+): string | null {
+  if (ladder.length === 0 || marketMid <= 0) return null;
+  let best = ladder[0]!;
+  let bestDiff = Math.abs(Math.log(marketMid / best.price));
+  for (const r of ladder.slice(1)) {
+    const d = Math.abs(Math.log(marketMid / r.price));
+    if (d < bestDiff) {
+      best = r;
+      bestDiff = d;
+    }
+  }
+  return best.grade;
+}
+
+const PSA_RUBRIC = `PSA grading criteria (apply strictly):
+- PSA 10 GEM MINT: virtually perfect. Centering 55/45 or better on front, 75/25 or better on back. Sharp focus, full original gloss, sharp corners, no edge wear, no print defects, no surface marks.
+- PSA 9 MINT: minor flaw allowed (one of: slight wax stain on reverse, minor printing imperfection, slight off-white border, very slight focus issue, minor edge nick). Centering 60/40 or better front.
+- PSA 8 NM-MT: minor wear acceptable. Slight fuzzing on corners, small print spot, minor focus, slight wax stain. Centering 65/35 or better.
+- PSA 7 NM: visible surface wear or printing defects, slight fraying on corners, minor chipping on edges, slight notching. Centering 70/30 or better.
+- PSA 6 EX-MT: visible surface wear, possible light scratches, fuzzy corners, light scuffing, slight notching, minor staining. Centering 80/20 or better.
+- PSA 5 EX: very slight rounding of corners, minor chipping on edges, light scuffs/scratches, light staining. Centering 85/15 or better.
+- PSA 4 VG-EX: rounded corners, surface wear, possible printing defects, minor creases, light staining.
+- PSA 3 VG: rounding & layering on corners, scuffing on edges, scratching/scuffing on surface, light creases.
+- PSA 2 GOOD: significant rounding, fraying, scuffs, multiple light creases.
+- PSA 1 POOR: extreme wear, heavy creases, possibly trimmed/restored.`;
+
+async function gradeWithAi(
+  images: string[],
+  category: "tcg" | "sports" | "lego",
+  context: { itemId: string; rawMid: number | null; ladder: PriceLadderRung[] },
 ): Promise<AiGradeOutput> {
-  const { base64, mediaType } = stripDataUrl(imageBase64);
   const systemPrompt =
-    "You are an expert collectibles grader. Analyze this card/item image and provide concise, precise output as STRICT minified JSON only with this shape: " +
-    `{"grade":"PSA 7","gradeRange":"PSA 7-8","defects":["..."],"centering":"55/45 L-R, 50/50 T-B","surfaceNotes":"...","authenticityOk":true,"authenticityFlags":["..."]}. ` +
-    "For LEGO, replace grade with a Used/New estimate but keep the same JSON shape. No markdown, no commentary.";
+    category === "lego"
+      ? "You are an expert LEGO set authenticator and condition grader. Output STRICT minified JSON only — no markdown, no commentary. Schema: " +
+        `{"grade":"Sealed","gradeRange":"Sealed-Used Complete","confidence":"high|medium|low","subGrades":null,"reasoning":"...","defects":["..."],"centering":"","surfaceNotes":"...","authenticityOk":true,"authenticityFlags":["..."]}.`
+      : `You are a professional PSA-style trading-card grader. Analyze EVERY supplied image (front, back, corners, edges) before deciding.
+
+${PSA_RUBRIC}
+
+Methodology:
+1. Score each PSA pillar independently on a 1-10 scale: centering, corners, edges, surface.
+2. Measure centering by eye and report as "L/R, T/B" percentages (e.g. "55/45, 50/50").
+3. Overall grade is the LOWEST sub-grade unless it is a clear outlier (then second-lowest).
+4. Confidence: "high" only if you can clearly see all four corners and both faces. "low" if only the front or only one image is provided.
+
+Output STRICT minified JSON only — no markdown, no commentary. Schema: ` +
+        `{"grade":"PSA 8","gradeRange":"PSA 8-9","confidence":"high|medium|low","subGrades":{"centering":8,"corners":7,"edges":9,"surface":8,"centeringMeasured":"58/42, 51/49"},"reasoning":"one short paragraph citing what lowered the grade","defects":["..."],"centering":"58/42 L-R, 51/49 T-B","surfaceNotes":"...","authenticityOk":true,"authenticityFlags":["..."]}.`;
+
+  const ladderHint =
+    context.ladder.length > 0
+      ? `\nMarket price ladder for cross-reference (raw → graded):\n${context.ladder
+          .map((r) => `  ${r.grade}: $${r.price.toFixed(2)}`)
+          .join("\n")}`
+      : "";
+  const rawHint =
+    context.rawMid && context.rawMid > 0
+      ? `\nCurrent raw market mid: $${context.rawMid.toFixed(2)}.`
+      : "";
 
   const userInstruction =
     category === "lego"
-      ? "Estimate completeness and condition (sealed, complete used, missing parts). List visible defects, color/sticker condition, and any authenticity flags."
-      : "Provide PSA 1-10 grade with brief reasoning, visible defects (creases, scratches, stains, print defects), centering estimate (left/right and top/bottom percentages), surface condition notes, and authenticity flags if anything looks off.";
+      ? `Identify "${context.itemId}". Estimate condition (Sealed MISB, Used Complete, Used Incomplete). List visible damage (sticker fade, missing pieces, box wear, color fade) and any authenticity flags (fakes, knockoffs).`
+      : `Grade "${context.itemId}" using the PSA rubric.${rawHint}${ladderHint}\nLook at every image. Be conservative — when in doubt, drop a grade. Provide a 2-grade range (e.g. PSA 8-9) and one "best estimate".`;
+
+  const imageBlocks = images.slice(0, 6).map((img) => {
+    const { base64, mediaType } = stripDataUrl(img);
+    return {
+      type: "image" as const,
+      source: { type: "base64" as const, media_type: mediaType, data: base64 },
+    };
+  });
 
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
@@ -791,13 +913,7 @@ async function gradeWithAi(
     messages: [
       {
         role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: base64 },
-          },
-          { type: "text", text: userInstruction },
-        ],
+        content: [...imageBlocks, { type: "text", text: userInstruction }],
       },
     ],
   });
@@ -812,10 +928,32 @@ async function gradeWithAi(
     .replace(/^```\s*/i, "")
     .replace(/```$/i, "")
     .trim();
-  const parsed = JSON.parse(cleaned) as AiGradeOutput;
+  const parsed = JSON.parse(cleaned) as Partial<AiGradeOutput> & {
+    subGrades?: Partial<AiSubGrades> | null;
+  };
+
+  let subGrades: AiSubGrades | null = null;
+  if (parsed.subGrades && typeof parsed.subGrades === "object") {
+    const s = parsed.subGrades;
+    subGrades = {
+      centering: Number(s.centering ?? 0) || 0,
+      corners: Number(s.corners ?? 0) || 0,
+      edges: Number(s.edges ?? 0) || 0,
+      surface: Number(s.surface ?? 0) || 0,
+      centeringMeasured: s.centeringMeasured ? String(s.centeringMeasured) : null,
+    };
+  }
+
+  const conf = String(parsed.confidence ?? "medium").toLowerCase();
+  const confidence: "high" | "medium" | "low" =
+    conf === "high" || conf === "low" ? conf : "medium";
+
   return {
     grade: String(parsed.grade ?? ""),
     gradeRange: String(parsed.gradeRange ?? parsed.grade ?? ""),
+    confidence,
+    subGrades,
+    reasoning: String(parsed.reasoning ?? ""),
     defects: Array.isArray(parsed.defects) ? parsed.defects.map(String) : [],
     centering: String(parsed.centering ?? ""),
     surfaceNotes: String(parsed.surfaceNotes ?? ""),
@@ -830,12 +968,19 @@ router.post("/scanner/analyze", requireAuth, async (req, res) => {
   const parsed = ScannerAnalyzeBody.safeParse(req.body);
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid request body" });
-  const { itemId, category, imageBase64, mode } = parsed.data;
+  const { itemId, category, imageBase64, imageBase64s, mode } = parsed.data;
   const advanced = mode === "advanced";
-  if (imageBase64 && imageTooLarge(imageBase64))
-    return res
-      .status(413)
-      .json({ error: "Image exceeds 10MB limit" });
+
+  // Coalesce single + multi-image inputs, dedupe, cap at 6.
+  const imagesRaw = [
+    ...(imageBase64 ? [imageBase64] : []),
+    ...((imageBase64s ?? []).filter((s): s is string => Boolean(s))),
+  ];
+  const images = Array.from(new Set(imagesRaw)).slice(0, 6);
+  for (const img of images) {
+    if (imageTooLarge(img))
+      return res.status(413).json({ error: "An image exceeds the 10MB limit" });
+  }
 
   let priceData: PriceData;
   try {
@@ -848,13 +993,36 @@ router.post("/scanner/analyze", requireAuth, async (req, res) => {
     return res.status(502).json({ error: "Failed to fetch price data" });
   }
 
+  // Ladder is built from the raw anchor (catalog source like Scryfall/CardHedger),
+  // not eBay or the blended mid. The cross-check is meaningful only when eBay's
+  // market median is meaningfully above the raw anchor (graded comps inflate eBay).
+  const ladderAnchor = priceData.rawAnchorMid;
+  const priceLadder =
+    advanced && ladderAnchor && ladderAnchor > 0
+      ? buildPriceLadder(ladderAnchor, category)
+      : [];
+  let marketImpliedGrade: string | null = null;
+  if (advanced && priceLadder.length > 0 && priceData.marketMid && ladderAnchor) {
+    // Only surface a market-implied grade when eBay diverges from the raw anchor
+    // by at least 25%; otherwise the listing pool is dominated by raw cards and
+    // the cross-check has no useful signal.
+    const divergence = Math.abs(Math.log(priceData.marketMid / ladderAnchor));
+    if (divergence > Math.log(1.25)) {
+      marketImpliedGrade = impliedGradeFromMarket(priceLadder, priceData.marketMid);
+    }
+  }
+
   let ai: AiGradeOutput | null = null;
   let aiError = false;
   let aiErrorReason: string | null = null;
-  if (advanced && imageBase64) {
+  if (advanced && images.length > 0) {
     try {
       ai = await withTimeout(
-        gradeWithAi(imageBase64, category),
+        gradeWithAi(images, category, {
+          itemId,
+          rawMid: priceData.mid,
+          ladder: priceLadder,
+        }),
         AI_GRADE_TIMEOUT_MS,
         "AI grading",
       );
@@ -884,12 +1052,17 @@ router.post("/scanner/analyze", requireAuth, async (req, res) => {
     isMockData: priceData.isMockData,
     aiGrade: ai?.grade ?? null,
     aiGradeRange: ai?.gradeRange ?? null,
+    aiConfidence: ai?.confidence ?? null,
+    aiSubGrades: ai?.subGrades ?? null,
+    aiReasoning: ai?.reasoning ?? null,
     defects: ai?.defects ?? [],
     centering: ai?.centering ?? null,
     surfaceNotes: ai?.surfaceNotes ?? null,
     authenticityFlags: ai?.authenticityFlags ?? [],
     authenticityOk: ai?.authenticityOk ?? null,
     extendedPrices: priceData.extendedPrices,
+    priceLadder,
+    marketImpliedGrade,
     priceHistorySparkline: sparkline,
     aiError,
     aiErrorReason,

@@ -969,7 +969,29 @@ components:
         itemId: { type: string }
         category: { type: string, enum: [tcg, sports, lego] }
         imageBase64: { type: ["string", "null"] }
+        imageBase64s:
+          type: ["array", "null"]
+          items: { type: string }
+          description: Optional multi-angle photos (front, back, corners, edges) for higher AI grading accuracy.
         mode: { type: string, enum: [standard, advanced] }
+
+    ScannerSubGrades:
+      type: object
+      required: [centering, corners, edges, surface]
+      properties:
+        centering: { type: number, description: "1-10 PSA-style sub-grade" }
+        corners: { type: number }
+        edges: { type: number }
+        surface: { type: number }
+        centeringMeasured: { type: ["string", "null"], description: "e.g. '55/45 L-R, 50/50 T-B'" }
+
+    ScannerPriceLadderRung:
+      type: object
+      required: [grade, price]
+      properties:
+        grade: { type: string, description: "e.g. 'Raw', 'PSA 8', 'PSA 9', 'PSA 10'" }
+        price: { type: number }
+        source: { type: ["string", "null"] }
 
     ScannerAnalyzeResult:
       type: object
@@ -1013,6 +1035,21 @@ components:
           items: { type: number }
         aiError: { type: boolean }
         aiErrorReason: { type: ["string", "null"] }
+        aiConfidence:
+          type: ["string", "null"]
+          enum: [high, medium, low, null]
+          description: AI's confidence in its grade estimate.
+        aiSubGrades:
+          oneOf:
+            - $ref: "#/components/schemas/ScannerSubGrades"
+            - type: "null"
+        aiReasoning: { type: ["string", "null"] }
+        priceLadder:
+          type: array
+          items: { $ref: "#/components/schemas/ScannerPriceLadderRung" }
+        marketImpliedGrade:
+          type: ["string", "null"]
+          description: Grade rung whose ladder price is closest to the current market mid.
 
     ApiErrorResponse:
       type: object

@@ -70,8 +70,47 @@ export interface ScannerAnalyzeInput {
   category: ScannerAnalyzeInputCategory;
   /** @nullable */
   imageBase64?: string | null;
+  /**
+   * Optional multi-angle photos (front, back, corners, edges) for higher AI grading accuracy.
+   * @nullable
+   */
+  imageBase64s?: string[] | null;
   mode: ScannerAnalyzeInputMode;
 }
+
+export interface ScannerSubGrades {
+  /** 1-10 PSA-style sub-grade */
+  centering: number;
+  corners: number;
+  edges: number;
+  surface: number;
+  /**
+   * e.g. '55/45 L-R, 50/50 T-B'
+   * @nullable
+   */
+  centeringMeasured?: string | null;
+}
+
+export interface ScannerPriceLadderRung {
+  /** e.g. 'Raw', 'PSA 8', 'PSA 9', 'PSA 10' */
+  grade: string;
+  price: number;
+  /** @nullable */
+  source?: string | null;
+}
+
+/**
+ * AI's confidence in its grade estimate.
+ * @nullable
+ */
+export type ScannerAnalyzeResultAiConfidence = typeof ScannerAnalyzeResultAiConfidence[keyof typeof ScannerAnalyzeResultAiConfidence] | null;
+
+
+export const ScannerAnalyzeResultAiConfidence = {
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
 
 export interface ScannerAnalyzeResult {
   name: string;
@@ -100,6 +139,20 @@ export interface ScannerAnalyzeResult {
   aiError: boolean;
   /** @nullable */
   aiErrorReason?: string | null;
+  /**
+   * AI's confidence in its grade estimate.
+   * @nullable
+   */
+  aiConfidence?: ScannerAnalyzeResultAiConfidence;
+  aiSubGrades?: ScannerSubGrades | null;
+  /** @nullable */
+  aiReasoning?: string | null;
+  priceLadder?: ScannerPriceLadderRung[];
+  /**
+   * Grade rung whose ladder price is closest to the current market mid.
+   * @nullable
+   */
+  marketImpliedGrade?: string | null;
 }
 
 export interface ApiErrorResponse {
