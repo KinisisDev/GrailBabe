@@ -6,3 +6,51 @@ id = "sP2euD_4l9nhtHOTFX4Qi"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "fP-TCqJUFR-4UYah8_Mvf"
+uri = "file://artifacts/web/src/assets/tcg-bg/pokemon.png"
+type = "image"
+title = "pokemon tcg background"
+
+[[generated]]
+id = "g2aOGa1fiWwvR-J07hYEq"
+uri = "file://artifacts/web/src/assets/tcg-bg/yugioh.png"
+type = "image"
+title = "yugioh tcg background"
+
+[[generated]]
+id = "FdFdsBbxOlaJWoBj624xs"
+uri = "file://artifacts/web/src/assets/tcg-bg/mtg.png"
+type = "image"
+title = "mtg tcg background"
+
+[[generated]]
+id = "-hoEckxBPH0Fou3kWc_HT"
+uri = "file://artifacts/web/src/assets/tcg-bg/lorcana.png"
+type = "image"
+title = "lorcana tcg background"
+
+[[generated]]
+id = "Y0UsSt3FBIjXX8OyhwgEK"
+uri = "file://artifacts/web/src/assets/tcg-bg/riftbound.png"
+type = "image"
+title = "riftbound tcg background"
+
+[[generated]]
+id = "krN-ymZsBw6zO_nJjX4yb"
+uri = "file://artifacts/web/src/assets/tcg-bg/digimon.png"
+type = "image"
+title = "digimon tcg background"
+
+[[generated]]
+id = "-0z4VnPLepvT-1wJd_OLK"
+uri = "file://artifacts/web/src/assets/tcg-bg/onepiece.png"
+type = "image"
+title = "onepiece tcg background"
+
+[[generated]]
+id = "l-0lb2_X7tqabHgkPTbsd"
+uri = "file://artifacts/web/src/assets/tcg-bg/swu.png"
+type = "image"
+title = "swu tcg bg"

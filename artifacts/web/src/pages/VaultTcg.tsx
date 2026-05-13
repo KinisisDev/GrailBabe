@@ -3,7 +3,15 @@ import { useListVaultItems } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Layers } from "lucide-react";
-import { TCG_GAMES, isTcgGameCategory } from "@/lib/vaultCategory";
+import { TCG_GAMES, isTcgGameCategory, type TcgGameSlug } from "@/lib/vaultCategory";
+import pokemonBg from "@/assets/tcg-bg/pokemon.png";
+import yugiohBg from "@/assets/tcg-bg/yugioh.png";
+import mtgBg from "@/assets/tcg-bg/mtg.png";
+import lorcanaBg from "@/assets/tcg-bg/lorcana.png";
+import swuBg from "@/assets/tcg-bg/swu.png";
+import riftboundBg from "@/assets/tcg-bg/riftbound.png";
+import digimonBg from "@/assets/tcg-bg/digimon.png";
+import onepieceBg from "@/assets/tcg-bg/onepiece.png";
 
 const NEONS = [
   "var(--neon-blue)",
@@ -11,6 +19,17 @@ const NEONS = [
   "var(--neon-red)",
   "var(--neon-yellow)",
 ];
+
+const TCG_BACKGROUNDS: Record<TcgGameSlug, string> = {
+  pokemon: pokemonBg,
+  yugioh: yugiohBg,
+  mtg: mtgBg,
+  lorcana: lorcanaBg,
+  swu: swuBg,
+  riftbound: riftboundBg,
+  digimon: digimonBg,
+  onepiece: onepieceBg,
+};
 
 export default function VaultTcgPage() {
   const { data } = useListVaultItems();
@@ -36,17 +55,27 @@ export default function VaultTcgPage() {
         {TCG_GAMES.map((g, idx) => {
           const count = items.filter((i) => isTcgGameCategory(i.category, g.slug)).length;
           const neon = NEONS[idx % NEONS.length];
+          const bg = TCG_BACKGROUNDS[g.slug];
           return (
             <Link key={g.slug} href={`/vault/tcg/${g.slug}`}>
               <Card
-                className="h-full hover:border-primary/40 cursor-pointer transition-colors"
+                className="h-full hover:border-primary/40 cursor-pointer transition-colors relative overflow-hidden group"
                 style={{ ["--neon" as never]: neon }}
               >
-                <CardContent className="p-5 space-y-3">
+                <div
+                  className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
+                  style={{ backgroundImage: `url(${bg})` }}
+                  aria-hidden
+                />
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-card/30"
+                  aria-hidden
+                />
+                <CardContent className="p-5 space-y-3 relative aspect-[4/3] flex flex-col justify-end">
                   <div
-                    className="size-10 rounded-lg grid place-items-center"
+                    className="size-10 rounded-lg grid place-items-center backdrop-blur-sm"
                     style={{
-                      backgroundColor: "color-mix(in srgb, var(--neon) 14%, transparent)",
+                      backgroundColor: "color-mix(in srgb, var(--neon) 22%, transparent)",
                       color: "var(--neon)",
                     }}
                   >
