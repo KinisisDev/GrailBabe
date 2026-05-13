@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   content: {
-    height: 52,
+    height: 64,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logo: {
-    height: 32,
-    width: 140,
+    height: 56,
+    width: 240,
   },
 });
