@@ -21,6 +21,7 @@ import SecurityRulesPage from "@/pages/SecurityRules";
 import SecurityLegalPage from "@/pages/SecurityLegal";
 import GrailPage from "@/pages/Grail";
 import TradesPage from "@/pages/Trades";
+import MyTradesPage from "@/pages/MyTrades";
 import ForumPage from "@/pages/Forum";
 import ForumPostPage from "@/pages/ForumPost";
 import CommunityPage from "@/pages/Community";
@@ -52,6 +53,7 @@ function ProtectedRoutes() {
           <Route path="/security/legal" component={SecurityLegalPage} />
           <Route path="/grail" component={GrailPage} />
           <Route path="/trades" component={TradesPage} />
+          <Route path="/my-trades" component={MyTradesPage} />
           <Route path="/forum" component={ForumPage} />
           <Route path="/forum/:id">{(params) => <ForumPostPage id={Number(params.id)} />}</Route>
           <Route path="/community" component={CommunityPage} />

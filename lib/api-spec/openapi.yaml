@@ -224,6 +224,25 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TradePost" }
 
+  /trades/mine:
+    get:
+      operationId: listMyTrades
+      tags: [trades]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, open, pending, completed, cancelled]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MyTrade" }
+
   /trades/{id}:
     get:
       operationId: getTrade
@@ -243,6 +262,78 @@ paths:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
         "204": { description: Deleted }
+
+  /trades/{id}/offer:
+    post:
+      operationId: makeTradeOffer
+      tags: [trades]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyTrade" }
+
+  /trades/{id}/confirm-complete:
+    post:
+      operationId: confirmTradeComplete
+      tags: [trades]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyTrade" }
+
+  /trades/{id}/cancel:
+    post:
+      operationId: cancelTrade
+      tags: [trades]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyTrade" }
+
+  /trades/{id}/review:
+    post:
+      operationId: leaveTradeReview
+      tags: [trades]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LeaveReviewInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyTrade" }
+
+  /users/{userId}/reviews:
+    get:
+      operationId: listUserReviews
+      tags: [profiles]
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/UserReview" }
 
   /posts:
     get:
@@ -930,7 +1021,97 @@ components:
         wantedItems:
           type: array
           items: { type: string }
-        status: { type: string, enum: [open, pending, closed] }
+        status:
+          type: string
+          enum: [open, pending, completed, cancelled, closed]
+        createdAt: { type: string, format: date-time }
+
+    MyTradeOtherParty:
+      type: object
+      required: [id, screenname, displayName, initials]
+      properties:
+        id: { type: string }
+        screenname: { type: string }
+        displayName: { type: string }
+        initials: { type: string }
+        avatarUrl: { type: ["string", "null"] }
+
+    MyTradeReviewSummary:
+      type: object
+      required: [rating, createdAt]
+      properties:
+        rating: { type: integer }
+        comment: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    MyTrade:
+      type: object
+      required:
+        - id
+        - role
+        - status
+        - title
+        - category
+        - condition
+        - kind
+        - wantedItems
+        - photos
+        - myConfirmed
+        - theirConfirmed
+        - postedAt
+      properties:
+        id: { type: integer }
+        role: { type: string, enum: [poster, requester] }
+        status:
+          type: string
+          enum: [open, pending, completed, cancelled, closed]
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        category: { type: string }
+        condition: { type: string }
+        askingPrice: { type: ["number", "null"] }
+        kind: { type: string, enum: [trade, sell, buy] }
+        wantedItems:
+          type: array
+          items: { type: string }
+        photos:
+          type: array
+          items: { type: string }
+        otherParty:
+          oneOf:
+            - { $ref: "#/components/schemas/MyTradeOtherParty" }
+            - { type: "null" }
+        myConfirmed: { type: boolean }
+        theirConfirmed: { type: boolean }
+        postedAt: { type: string, format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        myReview:
+          oneOf:
+            - { $ref: "#/components/schemas/MyTradeReviewSummary" }
+            - { type: "null" }
+        theirReview:
+          oneOf:
+            - { $ref: "#/components/schemas/MyTradeReviewSummary" }
+            - { type: "null" }
+
+    LeaveReviewInput:
+      type: object
+      required: [rating]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: ["string", "null"], maxLength: 300 }
+
+    UserReview:
+      type: object
+      required: [id, tradeId, rating, reviewerId, reviewerScreenname, reviewerInitials, createdAt]
+      properties:
+        id: { type: integer }
+        tradeId: { type: integer }
+        rating: { type: integer }
+        comment: { type: ["string", "null"] }
+        reviewerId: { type: string }
+        reviewerScreenname: { type: string }
+        reviewerInitials: { type: string }
         createdAt: { type: string, format: date-time }
 
     TradePostInput:
@@ -1332,7 +1513,7 @@ components:
       properties:
         reviewer: { type: string }
         stars: { type: integer }
-        quote: { type: string }
+        quote: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
 
     PublicProfile:

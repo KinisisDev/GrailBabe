@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PublicProfileTradeReview {
-  reviewer: string;
-  stars: number;
+export interface MyTradeReviewSummary {
+  rating: number;
   /** @nullable */
-  quote: string | null;
+  comment?: string | null;
   createdAt: Date;
 }

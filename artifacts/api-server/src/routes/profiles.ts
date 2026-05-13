@@ -7,8 +7,10 @@ import {
   forumPostsTable,
   forumVotesTable,
   forumRepliesTable,
+  tradePostsTable,
+  tradeReviewsTable,
 } from "@workspace/db";
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import {
   CreateProfileBody,
   UpdateProfileBody,
@@ -362,6 +364,48 @@ router.get("/profiles/:screenname", requireAuth, async (req, res) => {
     .orderBy(desc(forumPostsTable.createdAt))
     .limit(5);
 
+  // Trade reputation aggregates
+  const [tradeAgg] = await db
+    .select({
+      avg: sql<string>`coalesce(avg(${tradeReviewsTable.rating}), 0)::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(tradeReviewsTable)
+    .where(eq(tradeReviewsTable.reviewedUserId, p.id));
+
+  const [tradesCompletedAgg] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(tradePostsTable)
+    .where(
+      and(
+        eq(tradePostsTable.status, "completed"),
+        sql`(${tradePostsTable.userId} = ${p.id} OR ${tradePostsTable.requesterId} = ${p.id})`,
+      ),
+    );
+
+  const recentReviewRows = await db
+    .select()
+    .from(tradeReviewsTable)
+    .where(eq(tradeReviewsTable.reviewedUserId, p.id))
+    .orderBy(desc(tradeReviewsTable.createdAt))
+    .limit(3);
+
+  const reviewerIds = Array.from(
+    new Set(recentReviewRows.map((r) => r.reviewerId)),
+  );
+  const reviewerProfiles =
+    reviewerIds.length > 0
+      ? await db
+          .select({
+            id: userProfilesTable.id,
+            screenname: userProfilesTable.screenname,
+            displayName: userProfilesTable.displayName,
+          })
+          .from(userProfilesTable)
+          .where(inArray(userProfilesTable.id, reviewerIds))
+      : [];
+  const reviewerMap = new Map(reviewerProfiles.map((rp) => [rp.id, rp]));
+
   const formerVisible =
     p.formerScreenname &&
     p.formerScreennameChangedAt &&
@@ -386,8 +430,8 @@ router.get("/profiles/:screenname", requireAuth, async (req, res) => {
     formerScreenname: formerVisible ? p.formerScreenname : null,
     vaultItemCount: Number(vaultAgg?.count ?? 0),
     estimatedVaultValue: String(vaultAgg?.total ?? "0"),
-    tradesCompleted: 0,
-    tradeRepScore: 0,
+    tradesCompleted: Number(tradesCompletedAgg?.count ?? 0),
+    tradeRepScore: Number(tradeAgg?.avg ?? 0),
     communityPostCount: Number(postsAgg[0]?.count ?? 0),
     categories,
     featuredVaultItems: featuredVaultRows.map((r) => ({
@@ -413,7 +457,15 @@ router.get("/profiles/:screenname", requireAuth, async (req, res) => {
       commentCount: Number(r.commentCount),
       createdAt: r.createdAt.toISOString(),
     })),
-    recentTradeReviews: [],
+    recentTradeReviews: recentReviewRows.map((r) => {
+      const reviewer = reviewerMap.get(r.reviewerId);
+      return {
+        reviewer: reviewer?.screenname ?? reviewer?.displayName ?? "collector",
+        stars: r.rating,
+        quote: r.comment,
+        createdAt: r.createdAt.toISOString(),
+      };
+    }),
   });
 });
 

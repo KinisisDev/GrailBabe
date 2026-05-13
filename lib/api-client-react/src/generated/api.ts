@@ -55,12 +55,15 @@ import type {
   GrailItemInput,
   GrailItemUpdate,
   HealthStatus,
+  LeaveReviewInput,
   ListCommunityPostsParams,
+  ListMyTradesParams,
   ListTradesParams,
   ListVaultItemsParams,
   MeResponse,
   MessageInput,
   MyProfile,
+  MyTrade,
   PortfolioSummary,
   PriceSnapshot,
   ProfileUpdate,
@@ -74,7 +77,8 @@ import type {
   TradePostInput,
   UnreadCount,
   UpdateProfileInput,
-  UserProfile
+  UserProfile,
+  UserReview
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1118,6 +1122,82 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateTradeMutationOptions(options));
     }
     
+export const getListMyTradesUrl = (params?: ListMyTradesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/trades/mine?${stringifiedParams}` : `/api/trades/mine`
+}
+
+export const listMyTrades = async (params?: ListMyTradesParams, options?: RequestInit): Promise<MyTrade[]> => {
+  
+  return customFetch<MyTrade[]>(getListMyTradesUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getListMyTradesQueryKey = (params?: ListMyTradesParams,) => {
+    return [
+    `/api/trades/mine`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getListMyTradesQueryOptions = <TData = Awaited<ReturnType<typeof listMyTrades>>, TError = ErrorType<unknown>>(params?: ListMyTradesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTrades>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyTradesQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyTrades>>> = ({ signal }) => listMyTrades(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyTrades>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyTradesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyTrades>>>
+export type ListMyTradesQueryError = ErrorType<unknown>
+
+
+
+export function useListMyTrades<TData = Awaited<ReturnType<typeof listMyTrades>>, TError = ErrorType<unknown>>(
+ params?: ListMyTradesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTrades>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyTradesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
 export const getGetTradeUrl = (id: number,) => {
 
 
@@ -1251,6 +1331,333 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getDeleteTradeMutationOptions(options));
     }
     
+export const getMakeTradeOfferUrl = (id: number,) => {
+
+
+  
+
+  return `/api/trades/${id}/offer`
+}
+
+export const makeTradeOffer = async (id: number, options?: RequestInit): Promise<MyTrade> => {
+  
+  return customFetch<MyTrade>(getMakeTradeOfferUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+  
+
+
+
+export const getMakeTradeOfferMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof makeTradeOffer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof makeTradeOffer>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['makeTradeOffer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof makeTradeOffer>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  makeTradeOffer(id,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MakeTradeOfferMutationResult = NonNullable<Awaited<ReturnType<typeof makeTradeOffer>>>
+    
+    export type MakeTradeOfferMutationError = ErrorType<unknown>
+
+    export const useMakeTradeOffer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof makeTradeOffer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof makeTradeOffer>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getMakeTradeOfferMutationOptions(options));
+    }
+    
+export const getConfirmTradeCompleteUrl = (id: number,) => {
+
+
+  
+
+  return `/api/trades/${id}/confirm-complete`
+}
+
+export const confirmTradeComplete = async (id: number, options?: RequestInit): Promise<MyTrade> => {
+  
+  return customFetch<MyTrade>(getConfirmTradeCompleteUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+  
+
+
+
+export const getConfirmTradeCompleteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmTradeComplete>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmTradeComplete>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['confirmTradeComplete'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmTradeComplete>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  confirmTradeComplete(id,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmTradeCompleteMutationResult = NonNullable<Awaited<ReturnType<typeof confirmTradeComplete>>>
+    
+    export type ConfirmTradeCompleteMutationError = ErrorType<unknown>
+
+    export const useConfirmTradeComplete = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmTradeComplete>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmTradeComplete>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getConfirmTradeCompleteMutationOptions(options));
+    }
+    
+export const getCancelTradeUrl = (id: number,) => {
+
+
+  
+
+  return `/api/trades/${id}/cancel`
+}
+
+export const cancelTrade = async (id: number, options?: RequestInit): Promise<MyTrade> => {
+  
+  return customFetch<MyTrade>(getCancelTradeUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+  
+
+
+
+export const getCancelTradeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelTrade>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelTrade>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['cancelTrade'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelTrade>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelTrade(id,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelTradeMutationResult = NonNullable<Awaited<ReturnType<typeof cancelTrade>>>
+    
+    export type CancelTradeMutationError = ErrorType<unknown>
+
+    export const useCancelTrade = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelTrade>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelTrade>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCancelTradeMutationOptions(options));
+    }
+    
+export const getLeaveTradeReviewUrl = (id: number,) => {
+
+
+  
+
+  return `/api/trades/${id}/review`
+}
+
+export const leaveTradeReview = async (id: number,
+    leaveReviewInput: LeaveReviewInput, options?: RequestInit): Promise<MyTrade> => {
+  
+  return customFetch<MyTrade>(getLeaveTradeReviewUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      leaveReviewInput,)
+  }
+);}
+  
+
+
+
+export const getLeaveTradeReviewMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveTradeReview>>, TError,{id: number;data: BodyType<LeaveReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveTradeReview>>, TError,{id: number;data: BodyType<LeaveReviewInput>}, TContext> => {
+
+const mutationKey = ['leaveTradeReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveTradeReview>>, {id: number;data: BodyType<LeaveReviewInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  leaveTradeReview(id,data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveTradeReviewMutationResult = NonNullable<Awaited<ReturnType<typeof leaveTradeReview>>>
+    export type LeaveTradeReviewMutationBody = BodyType<LeaveReviewInput>
+    export type LeaveTradeReviewMutationError = ErrorType<unknown>
+
+    export const useLeaveTradeReview = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveTradeReview>>, TError,{id: number;data: BodyType<LeaveReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof leaveTradeReview>>,
+        TError,
+        {id: number;data: BodyType<LeaveReviewInput>},
+        TContext
+      > => {
+      return useMutation(getLeaveTradeReviewMutationOptions(options));
+    }
+    
+export const getListUserReviewsUrl = (userId: string,) => {
+
+
+  
+
+  return `/api/users/${userId}/reviews`
+}
+
+export const listUserReviews = async (userId: string, options?: RequestInit): Promise<UserReview[]> => {
+  
+  return customFetch<UserReview[]>(getListUserReviewsUrl(userId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getListUserReviewsQueryKey = (userId: string,) => {
+    return [
+    `/api/users/${userId}/reviews`
+    ] as const;
+    }
+
+    
+export const getListUserReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listUserReviews>>, TError = ErrorType<unknown>>(userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUserReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUserReviewsQueryKey(userId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUserReviews>>> = ({ signal }) => listUserReviews(userId, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUserReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListUserReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listUserReviews>>>
+export type ListUserReviewsQueryError = ErrorType<unknown>
+
+
+
+export function useListUserReviews<TData = Awaited<ReturnType<typeof listUserReviews>>, TError = ErrorType<unknown>>(
+ userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUserReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListUserReviewsQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
 export const getListPostsUrl = () => {
 
 

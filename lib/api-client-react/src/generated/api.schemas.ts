@@ -275,6 +275,8 @@ export type TradePostStatus = typeof TradePostStatus[keyof typeof TradePostStatu
 export const TradePostStatus = {
   open: 'open',
   pending: 'pending',
+  completed: 'completed',
+  cancelled: 'cancelled',
   closed: 'closed',
 } as const;
 
@@ -295,6 +297,99 @@ export interface TradePost {
   kind: TradePostKind;
   wantedItems?: string[];
   status?: TradePostStatus;
+  createdAt: string;
+}
+
+export interface MyTradeOtherParty {
+  id: string;
+  screenname: string;
+  displayName: string;
+  initials: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+}
+
+export interface MyTradeReviewSummary {
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+}
+
+export type MyTradeRole = typeof MyTradeRole[keyof typeof MyTradeRole];
+
+
+export const MyTradeRole = {
+  poster: 'poster',
+  requester: 'requester',
+} as const;
+
+export type MyTradeStatus = typeof MyTradeStatus[keyof typeof MyTradeStatus];
+
+
+export const MyTradeStatus = {
+  open: 'open',
+  pending: 'pending',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  closed: 'closed',
+} as const;
+
+export type MyTradeKind = typeof MyTradeKind[keyof typeof MyTradeKind];
+
+
+export const MyTradeKind = {
+  trade: 'trade',
+  sell: 'sell',
+  buy: 'buy',
+} as const;
+
+export interface MyTrade {
+  id: number;
+  role: MyTradeRole;
+  status: MyTradeStatus;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  category: string;
+  condition: string;
+  /** @nullable */
+  askingPrice?: number | null;
+  kind: MyTradeKind;
+  wantedItems: string[];
+  photos: string[];
+  otherParty?: MyTradeOtherParty | null;
+  myConfirmed: boolean;
+  theirConfirmed: boolean;
+  postedAt: string;
+  /** @nullable */
+  completedAt?: string | null;
+  myReview?: MyTradeReviewSummary | null;
+  theirReview?: MyTradeReviewSummary | null;
+}
+
+export interface LeaveReviewInput {
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  rating: number;
+  /**
+   * @maxLength 300
+   * @nullable
+   */
+  comment?: string | null;
+}
+
+export interface UserReview {
+  id: number;
+  tradeId: number;
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+  reviewerId: string;
+  reviewerScreenname: string;
+  reviewerInitials: string;
   createdAt: string;
 }
 
@@ -745,7 +840,8 @@ export interface PublicProfileRecentPost {
 export interface PublicProfileTradeReview {
   reviewer: string;
   stars: number;
-  quote: string;
+  /** @nullable */
+  quote: string | null;
   createdAt: string;
 }
 
@@ -798,6 +894,21 @@ export const ListVaultItemsSort = {
 export type ListTradesParams = {
 category?: string;
 };
+
+export type ListMyTradesParams = {
+status?: ListMyTradesStatus;
+};
+
+export type ListMyTradesStatus = typeof ListMyTradesStatus[keyof typeof ListMyTradesStatus];
+
+
+export const ListMyTradesStatus = {
+  all: 'all',
+  open: 'open',
+  pending: 'pending',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
 
 export type GetPortfolioTimelineParams = {
 range?: GetPortfolioTimelineRange;

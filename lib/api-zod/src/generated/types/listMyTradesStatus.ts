@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type TradePostStatus = typeof TradePostStatus[keyof typeof TradePostStatus];
+export type ListMyTradesStatus = typeof ListMyTradesStatus[keyof typeof ListMyTradesStatus];
 
 
-export const TradePostStatus = {
+export const ListMyTradesStatus = {
+  all: 'all',
   open: 'open',
   pending: 'pending',
   completed: 'completed',
   cancelled: 'cancelled',
-  closed: 'closed',
 } as const;

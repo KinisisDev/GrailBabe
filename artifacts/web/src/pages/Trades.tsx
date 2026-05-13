@@ -279,10 +279,18 @@ export default function TradesPage() {
             Browse and post item trades with other collectors.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="size-4 mr-1.5" />
-          Post a trade
-        </Button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/my-trades"
+            className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            View your active trades →
+          </Link>
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="size-4 mr-1.5" />
+            Post a trade
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

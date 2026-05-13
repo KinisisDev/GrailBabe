@@ -287,7 +287,7 @@ export const ListTradesResponseItem = zod.object({
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()).optional(),
-  "status": zod.enum(['open', 'pending', 'closed']).optional(),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']).optional(),
   "createdAt": zod.coerce.date()
 })
 export const ListTradesResponse = zod.array(ListTradesResponseItem)
@@ -309,6 +309,47 @@ export const CreateTradeBody = zod.object({
 })
 
 
+export const ListMyTradesQueryParams = zod.object({
+  "status": zod.enum(['all', 'open', 'pending', 'completed', 'cancelled']).optional()
+})
+
+export const ListMyTradesResponseItem = zod.object({
+  "id": zod.number(),
+  "role": zod.enum(['poster', 'requester']),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "category": zod.string(),
+  "condition": zod.string(),
+  "askingPrice": zod.number().nullish(),
+  "kind": zod.enum(['trade', 'sell', 'buy']),
+  "wantedItems": zod.array(zod.string()),
+  "photos": zod.array(zod.string()),
+  "otherParty": zod.union([zod.object({
+  "id": zod.string(),
+  "screenname": zod.string(),
+  "displayName": zod.string(),
+  "initials": zod.string(),
+  "avatarUrl": zod.string().nullish()
+}),zod.null()]).optional(),
+  "myConfirmed": zod.boolean(),
+  "theirConfirmed": zod.boolean(),
+  "postedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "myReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "theirReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+export const ListMyTradesResponse = zod.array(ListMyTradesResponseItem)
+
+
 export const GetTradeParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -326,7 +367,7 @@ export const GetTradeResponse = zod.object({
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()).optional(),
-  "status": zod.enum(['open', 'pending', 'closed']).optional(),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']).optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -334,6 +375,159 @@ export const GetTradeResponse = zod.object({
 export const DeleteTradeParams = zod.object({
   "id": zod.coerce.number()
 })
+
+
+export const MakeTradeOfferParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MakeTradeOfferResponse = zod.object({
+  "id": zod.number(),
+  "role": zod.enum(['poster', 'requester']),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "category": zod.string(),
+  "condition": zod.string(),
+  "askingPrice": zod.number().nullish(),
+  "kind": zod.enum(['trade', 'sell', 'buy']),
+  "wantedItems": zod.array(zod.string()),
+  "photos": zod.array(zod.string()),
+  "otherParty": zod.union([zod.object({
+  "id": zod.string(),
+  "screenname": zod.string(),
+  "displayName": zod.string(),
+  "initials": zod.string(),
+  "avatarUrl": zod.string().nullish()
+}),zod.null()]).optional(),
+  "myConfirmed": zod.boolean(),
+  "theirConfirmed": zod.boolean(),
+  "postedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "myReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "theirReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+export const ConfirmTradeCompleteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ConfirmTradeCompleteResponse = zod.object({
+  "id": zod.number(),
+  "role": zod.enum(['poster', 'requester']),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "category": zod.string(),
+  "condition": zod.string(),
+  "askingPrice": zod.number().nullish(),
+  "kind": zod.enum(['trade', 'sell', 'buy']),
+  "wantedItems": zod.array(zod.string()),
+  "photos": zod.array(zod.string()),
+  "otherParty": zod.union([zod.object({
+  "id": zod.string(),
+  "screenname": zod.string(),
+  "displayName": zod.string(),
+  "initials": zod.string(),
+  "avatarUrl": zod.string().nullish()
+}),zod.null()]).optional(),
+  "myConfirmed": zod.boolean(),
+  "theirConfirmed": zod.boolean(),
+  "postedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "myReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "theirReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+export const CancelTradeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CancelTradeResponse = zod.object({
+  "id": zod.number(),
+  "role": zod.enum(['poster', 'requester']),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "category": zod.string(),
+  "condition": zod.string(),
+  "askingPrice": zod.number().nullish(),
+  "kind": zod.enum(['trade', 'sell', 'buy']),
+  "wantedItems": zod.array(zod.string()),
+  "photos": zod.array(zod.string()),
+  "otherParty": zod.union([zod.object({
+  "id": zod.string(),
+  "screenname": zod.string(),
+  "displayName": zod.string(),
+  "initials": zod.string(),
+  "avatarUrl": zod.string().nullish()
+}),zod.null()]).optional(),
+  "myConfirmed": zod.boolean(),
+  "theirConfirmed": zod.boolean(),
+  "postedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullish(),
+  "myReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "theirReview": zod.union([zod.object({
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+export const LeaveTradeReviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const leaveTradeReviewBodyRatingMax = 5;
+
+export const leaveTradeReviewBodyCommentMax = 300;
+
+
+
+export const LeaveTradeReviewBody = zod.object({
+  "rating": zod.number().min(1).max(leaveTradeReviewBodyRatingMax),
+  "comment": zod.string().max(leaveTradeReviewBodyCommentMax).nullish()
+})
+
+
+export const ListUserReviewsParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const ListUserReviewsResponseItem = zod.object({
+  "id": zod.number(),
+  "tradeId": zod.number(),
+  "rating": zod.number(),
+  "comment": zod.string().nullish(),
+  "reviewerId": zod.string(),
+  "reviewerScreenname": zod.string(),
+  "reviewerInitials": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListUserReviewsResponse = zod.array(ListUserReviewsResponseItem)
 
 
 export const ListPostsResponseItem = zod.object({
@@ -576,7 +770,7 @@ export const GetDashboardResponse = zod.object({
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()).optional(),
-  "status": zod.enum(['open', 'pending', 'closed']).optional(),
+  "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']).optional(),
   "createdAt": zod.coerce.date()
 })),
   "activity": zod.array(zod.object({
@@ -1031,7 +1225,7 @@ export const GetProfileResponse = zod.object({
   "recentTradeReviews": zod.array(zod.object({
   "reviewer": zod.string(),
   "stars": zod.number(),
-  "quote": zod.string(),
+  "quote": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 }))
 })

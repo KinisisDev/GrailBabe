@@ -1,0 +1,230 @@
+Build the My Trades page and trade rating system for GrailBabe.
+Use the existing Drizzle + OpenAPI + generated hooks pattern.
+
+---
+
+## 1. Drizzle Schema Updates
+
+Update the existing trades/trading board table to add completion tracking,
+and add a new trade_reviews table:
+
+```ts
+// Update existing trades table — add these columns:
+requesterId: uuid("requester_id").references(() => users.id),  
+// the user who made the offer (null if just a listing with no offer yet)
+status: text("status").default("open"), 
+// 'open' | 'pending' | 'completed' | 'cancelled'
+completionConfirmedByPoster: boolean("completion_confirmed_by_poster").default(false),
+completionConfirmedByRequester: boolean("completion_confirmed_by_requester").default(false),
+completedAt: timestamp("completed_at"),
+
+// New table: trade reviews
+export const tradeReviews = pgTable("trade_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tradeId: uuid("trade_id").notNull().references(() => trades.id, { onDelete: "cascade" }),
+  reviewerId: uuid("reviewer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reviewedUserId: uuid("reviewed_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1-5
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  // One review per reviewer per trade
+  uniq: unique().on(t.tradeId, t.reviewerId),
+}));
+```
+
+Run the Drizzle migration after updating the schema.
+
+---
+
+## 2. API Endpoints
+
+**My Trades:**
+- GET /api/trades/mine — all trades involving the current user (as poster or requester)
+  Query param: status ('open'|'pending'|'completed'|'cancelled'|all)
+  Returns each trade with: have item, want item, other party's screenname + avatar,
+  status, postedAt, completedAt, myConfirmed, theirConfirmed,
+  myReview (if exists), theirReview (if exists, show rating only not comment)
+
+**Trade offers:**
+- POST /api/trades/:id/offer — make an offer on a trade (sets requesterId, status → 'pending')
+  (Update the Trading Board's "Make offer" button to call this instead of just opening messages)
+
+- POST /api/trades/:id/confirm-complete — current user confirms trade is complete
+  Sets completionConfirmedByPoster OR completionConfirmedByRequester = true depending on who calls it
+  If BOTH are now true: set status = 'completed', completedAt = now()
+
+- POST /api/trades/:id/cancel — cancel a trade (sets status = 'cancelled')
+  Only poster can cancel an open trade
+  Either party can cancel a pending trade
+
+**Reviews:**
+- POST /api/trades/:id/review — leave a review (auth required)
+  Body: { rating: 1-5, comment?: string }
+  - Only callable when trade status = 'completed'
+  - reviewer_id must be poster or requester of the trade
+  - Cannot review yourself
+  - One review per reviewer per trade (enforced by DB unique constraint)
+
+- GET /api/users/:userId/reviews — all reviews received by a user
+  Returns: rating, comment, reviewerScreenname, reviewerInitials, tradeId, createdAt
+  Used by the profile page to show real trade reputation
+
+**Profile rep score** (update existing profile endpoint):
+- tradeRepScore: average of all reviews where reviewed_user_id = this user
+- tradesCompleted: count of trades where status = 'completed' and user was poster or requester
+- recentTradeReviews: last 3 reviews received (rating + comment + reviewer info)
+
+---
+
+## 3. Generated Hooks
+
+```ts
+useMyTrades(status?: string)
+useConfirmTradeComplete(tradeId: string)
+useCancelTrade(tradeId: string)
+useLeaveReview(tradeId: string)
+useUserReviews(userId: string)
+useMakeOffer(tradeId: string)
+```
+
+---
+
+## 4. My Trades Page
+
+Create artifacts/web/src/pages/MyTrades.tsx
+Route: /my-trades
+
+**Header:** "My Trades" title + subtitle "Track your active and completed trades"
+
+**Stats row (3 cards):**
+- Active trades (count of open + pending)
+- Completed trades (count of completed)
+- Rep score (average star rating, show "—" if no reviews yet)
+
+**Tab navigation:** All | Active | Pending | Completed | Cancelled
+Tabs filter the list. Show count badge on each tab.
+
+**Trade list (full width stacked cards):**
+
+Each trade card shows:
+
+Top row: status badge + time posted/completed
+
+Trade items row (same have → want layout as Trading Board):
+- HAVE box: item name + detail
+- Arrow →
+- WANT box: item name + detail (or "Open to offers")
+
+Middle row: other party info
+- If I'm the poster: "Offer from @screenname" (when pending) or "Trade with @screenname" (when completed)
+- If I'm the requester: "Your offer to @screenname"
+- Other party's avatar + screenname + "Message" link → /messages?conversation=[userId]
+
+Action buttons (shown based on status + role):
+
+OPEN (I'm the poster):
+- "Cancel listing" button → calls useCancelTrade, confirms with a dialog first
+
+PENDING:
+- If I haven't confirmed: "Mark as complete" button (primary) + "Cancel trade" button (secondary)
+  Clicking Mark as complete calls useConfirmTradeComplete
+  Show helper text: "Waiting for @otherparty to also confirm"
+- If I confirmed but they haven't: 
+  Show "You confirmed completion — waiting for @screenname to confirm"
+  Greyed out button "Waiting for confirmation..."
+- If both confirmed: status flips to Completed automatically
+
+COMPLETED (no review yet from me):
+- Show green "✓ Trade complete" indicator
+- "Leave a review for @screenname" button → opens Review Modal
+
+COMPLETED (I already left a review):
+- Show my review (stars + comment)
+- Show their review of me if they left one (stars + rating only, no comment shown)
+- If they haven't reviewed yet: "Waiting for @screenname's review"
+
+CANCELLED:
+- Show "Cancelled" muted state, no action buttons
+
+**Empty state** per tab:
+- Active: "No active trades. Post one on the Trading Board."
+- Pending: "No pending trades."
+- Completed: "No completed trades yet."
+
+---
+
+## 5. Review Modal
+
+Triggered by "Leave a review" button. React state, no routing.
+
+- Heading: "Review your trade with @screenname"
+- Star rating selector: 5 clickable stars, highlight on hover + selection
+- Comment textarea: optional, placeholder "How did the trade go? (optional)", max 300 chars
+- Submit button: "Submit review" → calls useLeaveReview, closes modal, refreshes trade card
+- Cancel button
+
+Validation: rating is required (must select at least 1 star).
+
+---
+
+## 6. Trading Board Updates
+
+Update the "Make offer" button in TradingBoard.tsx:
+- On click: call useMakeOffer(trade.id) to set status → pending and record requesterId
+- Then navigate to /messages?conversation=[trade.userId] as before
+- If the current user IS the poster of the trade, hide the "Make offer" button entirely
+  (you can't offer on your own listing)
+
+Add a "My Trades" link in the empty state and in a subtle spot on the Trading Board header:
+"View your active trades →" linking to /my-trades
+
+---
+
+## 7. Profile Page Updates
+
+Update the profile page to use real data from the API:
+- tradeRepScore: real average from trade reviews
+- tradesCompleted: real count
+- recentTradeReviews: real last 3 reviews with reviewer screenname, stars, comment
+- If no reviews yet: show "No reviews yet" in the reputation section
+
+---
+
+## 8. Sidebar Nav
+
+In AppShell.tsx add after Trading Board:
+- Icon: ArrowLeftRight or GitCompare (lucide-react) — pick whichever isn't already used
+- Label: "My Trades"
+- href: "/my-trades"
+- Show a badge with count of pending trades needing action 
+  (trades where status=pending and I haven't confirmed yet)
+
+---
+
+## 9. Routing
+
+In App.tsx add:
+```tsx
+<Route path="/my-trades" component={MyTrades} />
+```
+
+---
+
+## Style Notes
+- Status badges: 
+  Open → blue, Pending → amber, Completed → green, Cancelled → muted gray
+- Star rating selector: gold stars (#ef9f27), empty stars outlined
+- "Mark as complete" button: green (bg-green-600 or success color)
+- Waiting state text: muted, italic
+- Trade cards same style as Trading Board (rounded-xl border bg-card)
+- Review modal: centered overlay, max-w-md
+
+---
+
+## Important
+- Do NOT use Supabase client directly — Drizzle + API + hooks only
+- Do NOT push to git — commit only
+- Reuse existing trade card styling from TradingBoard.tsx
+- The unique constraint on trade_reviews prevents double-reviewing
+- Both parties must independently confirm complete — never auto-complete on one confirmation

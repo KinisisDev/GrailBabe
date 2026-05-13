@@ -5,11 +5,8 @@
  * GrailBabe API - collectibles portfolio tracker
  * OpenAPI spec version: 0.1.0
  */
+import type { ListMyTradesStatus } from './listMyTradesStatus';
 
-export interface PublicProfileTradeReview {
-  reviewer: string;
-  stars: number;
-  /** @nullable */
-  quote: string | null;
-  createdAt: Date;
-}
+export type ListMyTradesParams = {
+status?: ListMyTradesStatus;
+};

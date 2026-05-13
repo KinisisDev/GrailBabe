@@ -6,10 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PublicProfileTradeReview {
-  reviewer: string;
-  stars: number;
+export interface MyTradeOtherParty {
+  id: string;
+  screenname: string;
+  displayName: string;
+  initials: string;
   /** @nullable */
-  quote: string | null;
-  createdAt: Date;
+  avatarUrl?: string | null;
 }

@@ -7,6 +7,8 @@ import {
   useGetMe,
   useGetUnreadMessageCount,
   getGetUnreadMessageCountQueryKey,
+  useListMyTrades,
+  getListMyTradesQueryKey,
 } from "@workspace/api-client-react";
 import {
   LayoutDashboard,
@@ -21,6 +23,7 @@ import {
   CreditCard,
   Settings as SettingsIcon,
   UserCircle,
+  GitCompare,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -33,6 +36,7 @@ const NAV = [
   { to: "/portfolio", label: "Portfolio", icon: TrendingUp },
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
   { to: "/trades", label: "Trading board", icon: ArrowLeftRight },
+  { to: "/my-trades", label: "My Trades", icon: GitCompare },
   { to: "/community", label: "Community", icon: MessagesSquare },
   { to: "/messages", label: "Messages", icon: Mail },
   { to: "/security", label: "Security", icon: Shield },
@@ -52,6 +56,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
     },
   });
   const unreadCount = unread?.count ?? 0;
+  const { data: myTradesAll } = useListMyTrades(
+    { status: "all" },
+    {
+      query: {
+        queryKey: getListMyTradesQueryKey({ status: "all" }),
+        refetchInterval: 30000,
+      },
+    },
+  );
+  const pendingTradeCount = (myTradesAll ?? []).filter(
+    (t) => t.status === "pending" && !t.myConfirmed,
+  ).length;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -114,6 +130,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
                       style={{ backgroundColor: "var(--neon-blue)" }}
                     >
                       {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                  {item.to === "/my-trades" && pendingTradeCount > 0 && (
+                    <span
+                      className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-semibold text-black"
+                      style={{ backgroundColor: "var(--neon-yellow)" }}
+                    >
+                      {pendingTradeCount > 99 ? "99+" : pendingTradeCount}
                     </span>
                   )}
                   {item.premium && tier === "free" && (
