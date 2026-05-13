@@ -7,7 +7,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/queryClient";
 import AppShell from "@/components/AppShell";
 import DashboardPage from "@/pages/Dashboard";
-import VaultPage from "@/pages/Vault";
+import VaultHubPage from "@/pages/VaultHub";
+import VaultTcgPage from "@/pages/VaultTcg";
+import VaultTcgGamePage from "@/pages/VaultTcgGame";
+import VaultLegoPage from "@/pages/VaultLego";
 import VaultItemPage from "@/pages/VaultItem";
 import GrailPage from "@/pages/Grail";
 import TradesPage from "@/pages/Trades";
@@ -26,7 +29,10 @@ function ProtectedRoutes() {
     <AppShell>
       <Switch>
         <Route path="/dashboard" component={DashboardPage} />
-        <Route path="/vault" component={VaultPage} />
+        <Route path="/vault" component={VaultHubPage} />
+        <Route path="/vault/tcg" component={VaultTcgPage} />
+        <Route path="/vault/tcg/:game">{(params) => <VaultTcgGamePage game={params.game} />}</Route>
+        <Route path="/vault/lego" component={VaultLegoPage} />
         <Route path="/vault/:id">{(params) => <VaultItemPage id={Number(params.id)} />}</Route>
         <Route path="/grail" component={GrailPage} />
         <Route path="/trades" component={TradesPage} />

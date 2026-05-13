@@ -27,7 +27,8 @@
     "inngest": "^3.54.2",
     "pino": "^9",
     "pino-http": "^10",
-    "stripe": "20.0.0"
+    "stripe": "20.0.0",
+    "stripe-replit-sync": "^1.0.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",

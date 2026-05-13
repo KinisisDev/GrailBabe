@@ -1,0 +1,45 @@
+Build sub-routes and collection pages under The Vault for TCG and LEGO. Here's exactly what's needed:
+Routing structure:
+
+/vault — main Vault hub (shows category cards: TCG, LEGO, Sports Cards placeholder)
+/vault/tcg — TCG landing page listing all supported games
+/vault/tcg/:game — individual game collection page (e.g. /vault/tcg/pokemon)
+/vault/lego — LEGO collection page
+
+TCG — supported games (each gets its own route):
+Pokemon, Yu-Gi-Oh, Magic: The Gathering, Disney Lorcana, Star Wars Unlimited, Riftbound, Digimon, One Piece
+Each game's collection page needs:
+
+A toggle/filter at the top: Sets | Singles (so users can view their full sealed sets separately from individual cards)
+A sort bar: sort by Name (A-Z), Date Added, Value (high to low), Condition
+Pagination — 24 items per page, with Next/Previous controls and a page indicator (Page 1 of N). Pages auto-add as the collection grows
+A card grid layout — each item card shows: card/set image, name, set name, condition, estimated value
+An Add Item button that opens a form/modal. The form fields differ by type:
+
+Single card: game, card name, set name, card number, condition (Raw / PSA / BGS / CGC), grade (if graded), quantity, estimated value
+Sealed set: game, set name, release year, sealed (yes/no), estimated value
+
+
+Empty state with a friendly message and Add Item CTA when the collection is empty
+
+LEGO collection page needs:
+
+Same Sets | Singles toggle (Sets = full sealed/built sets, Singles = individual minifigs or parts lots)
+Sort bar: Name, Set Number, Theme, Date Added, Value
+Pagination — same 24 per page pattern
+Item card shows: set image, set name, set number, theme, status (Sealed / Built / Incomplete), estimated value
+Add Item modal with fields: set name, set number, theme, year, status (Sealed/Built/Incomplete), minifig count, piece count, estimated value
+Empty state
+
+Vault hub page (/vault):
+
+Show category tiles for TCG, LEGO, and a "Sports Cards — Coming Soon" placeholder
+Each tile shows the category name, icon, and total item count from the user's collection
+
+Data:
+
+Store collection items in the existing database (or local state if no DB is connected yet)
+Each item needs: id, userId, category (tcg/lego), subcategory (pokemon/yugioh/etc or lego), type (set/single), and the relevant fields above
+Wire up the Add Item form to save to the database
+
+Use the existing app's dark theme, sidebar layout (AppShell), and neon blue accent color. Keep the UI consistent with the rest of the app.
