@@ -24,6 +24,8 @@ export interface TradePost {
   photos?: string[];
   kind: TradePostKind;
   wantedItems?: string[];
+  /** @nullable */
+  vaultItemId?: number | null;
   status?: TradePostStatus;
   createdAt: Date;
 }

@@ -442,6 +442,8 @@ export interface TradePost {
   photos?: string[];
   kind: TradePostKind;
   wantedItems?: string[];
+  /** @nullable */
+  vaultItemId?: number | null;
   status?: TradePostStatus;
   createdAt: string;
 }
@@ -504,6 +506,8 @@ export interface MyTrade {
   kind: MyTradeKind;
   wantedItems: string[];
   photos: string[];
+  /** @nullable */
+  vaultItemId?: number | null;
   otherParty?: MyTradeOtherParty | null;
   myConfirmed: boolean;
   theirConfirmed: boolean;
@@ -559,6 +563,7 @@ export interface TradePostInput {
   photos?: string[];
   kind: TradePostInputKind;
   wantedItems?: string[];
+  vaultItemId?: number;
 }
 
 export interface ForumPost {

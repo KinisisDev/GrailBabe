@@ -8,7 +8,9 @@ import {
   boolean,
   index,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const tradePostsTable = pgTable(
   "trade_posts",
@@ -32,6 +34,7 @@ export const tradePostsTable = pgTable(
       .notNull()
       .default(false),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    vaultItemId: integer("vault_item_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -40,6 +43,12 @@ export const tradePostsTable = pgTable(
     userIdx: index("trade_user_idx").on(t.userId),
     statusIdx: index("trade_status_idx").on(t.status),
     requesterIdx: index("trade_requester_idx").on(t.requesterId),
+    vaultItemIdx: index("trade_vault_item_idx").on(t.vaultItemId),
+    activeVaultItemUniq: uniqueIndex("trade_active_vault_item_uniq")
+      .on(t.userId, t.vaultItemId)
+      .where(
+        sql`${t.vaultItemId} is not null and ${t.status} in ('open', 'pending')`,
+      ),
   }),
 );
 

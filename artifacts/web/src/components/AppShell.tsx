@@ -38,7 +38,6 @@ const NAV = [
   { to: "/portfolio", label: "My Analytics", icon: TrendingUp },
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
   { to: "/trades", label: "Trading board", icon: ArrowLeftRight },
-  { to: "/my-trades", label: "My Trades", icon: GitCompare },
   { to: "/community", label: "Community", icon: MessagesSquare },
   { to: "/messages", label: "Messages", icon: Mail },
   { to: "/security", label: "Security", icon: Shield },

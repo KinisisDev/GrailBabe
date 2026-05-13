@@ -5,7 +5,11 @@ import {
   useListVaultItems,
   useCreateVaultItem,
   useGetMe,
+  type CollectionItem,
 } from "@workspace/api-client-react";
+import { useActiveTradeVaultItemIds } from "@/lib/activeTrades";
+import { ListForTradeDialog } from "@/components/ListForTradeDialog";
+import { ArrowLeftRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +61,8 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [listItem, setListItem] = useState<CollectionItem | null>(null);
+  const activeTradeIds = useActiveTradeVaultItemIds();
   const { data, isLoading } = useListVaultItems();
   const { data: me } = useGetMe();
   const isPro = (me?.profile.tier ?? "free") !== "free";
@@ -186,12 +192,28 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {pageItems.map((item) => {
               const notes = decodeNotes(item.notes);
+              const isActive = activeTradeIds.has(item.id);
               return (
                 <Link key={item.id} href={`/vault/${item.id}`}>
                   <Card className="h-full hover:border-primary/40 cursor-pointer transition-colors">
                     <CardContent className="p-4 space-y-3">
-                      <div className="aspect-[3/4] rounded-md bg-muted/40 grid place-items-center text-xs text-muted-foreground">
+                      <div className="aspect-[3/4] rounded-md bg-muted/40 grid place-items-center text-xs text-muted-foreground relative">
                         No image
+                        {isActive && (
+                          <Badge
+                            className="absolute top-2 left-2 text-[9px] uppercase tracking-wide"
+                            style={{
+                              backgroundColor:
+                                "color-mix(in srgb, var(--neon-yellow) 18%, transparent)",
+                              color: "var(--neon-yellow)",
+                              borderColor:
+                                "color-mix(in srgb, var(--neon-yellow) 50%, transparent)",
+                            }}
+                            variant="outline"
+                          >
+                            Active Trade
+                          </Badge>
+                        )}
                       </div>
                       <div className="space-y-1 min-w-0">
                         <div className="font-medium truncate">{item.name}</div>
@@ -211,6 +233,21 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
                           {formatCurrency(item.currentValue)}
                         </div>
                       </div>
+                      {!isActive && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-full"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setListItem(item);
+                          }}
+                        >
+                          <ArrowLeftRight className="size-3.5 mr-1.5" />
+                          List for trade
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 </Link>
@@ -242,6 +279,13 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
             </div>
           )}
         </>
+      )}
+      {listItem && (
+        <ListForTradeDialog
+          open={!!listItem}
+          onOpenChange={(v) => !v && setListItem(null)}
+          item={listItem}
+        />
       )}
     </div>
   );

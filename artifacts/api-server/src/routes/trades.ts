@@ -18,7 +18,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../lib/auth";
 import { fetchPublicUsers } from "../lib/users";
-import { userProfilesTable } from "@workspace/db";
+import { userProfilesTable, collectionItemsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -39,6 +39,7 @@ function serialize(
     photos: row.photos ?? [],
     kind: row.kind as "trade" | "sell" | "buy",
     wantedItems: row.wantedItems ?? [],
+    vaultItemId: row.vaultItemId,
     status: row.status as
       | "open"
       | "pending"
@@ -133,6 +134,7 @@ async function shapeMyTrade(
     kind: row.kind as "trade" | "sell" | "buy",
     wantedItems: row.wantedItems ?? [],
     photos: row.photos ?? [],
+    vaultItemId: row.vaultItemId,
     otherParty,
     myConfirmed,
     theirConfirmed,
@@ -228,6 +230,39 @@ router.get("/trades/mine", requireAuth, async (req, res) => {
 router.post("/trades", requireAuth, async (req, res) => {
   const userId = req.userId!;
   const body = CreateTradeBody.parse(req.body);
+  if (body.vaultItemId != null) {
+    const [item] = await db
+      .select({ id: collectionItemsTable.id })
+      .from(collectionItemsTable)
+      .where(
+        and(
+          eq(collectionItemsTable.id, body.vaultItemId),
+          eq(collectionItemsTable.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (!item) {
+      return res
+        .status(400)
+        .json({ error: "Vault item not found or not owned by you." });
+    }
+    const [existing] = await db
+      .select({ id: tradePostsTable.id })
+      .from(tradePostsTable)
+      .where(
+        and(
+          eq(tradePostsTable.userId, userId),
+          eq(tradePostsTable.vaultItemId, body.vaultItemId),
+          inArray(tradePostsTable.status, ["open", "pending"]),
+        ),
+      )
+      .limit(1);
+    if (existing) {
+      return res
+        .status(409)
+        .json({ error: "This vault item already has an active trade." });
+    }
+  }
   const [row] = await db
     .insert(tradePostsTable)
     .values({
@@ -240,6 +275,7 @@ router.post("/trades", requireAuth, async (req, res) => {
       photos: body.photos ?? [],
       kind: body.kind,
       wantedItems: body.wantedItems ?? [],
+      vaultItemId: body.vaultItemId ?? null,
     })
     .returning();
   await db.insert(activityEventsTable).values({
@@ -248,7 +284,7 @@ router.post("/trades", requireAuth, async (req, res) => {
     message: `Posted trade: "${row.title}"`,
   });
   const userMap = await fetchPublicUsers([userId]);
-  res
+  return res
     .status(201)
     .json(
       serialize(

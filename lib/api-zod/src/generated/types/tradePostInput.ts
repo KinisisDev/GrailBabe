@@ -18,4 +18,5 @@ export interface TradePostInput {
   photos?: string[];
   kind: TradePostInputKind;
   wantedItems?: string[];
+  vaultItemId?: number;
 }

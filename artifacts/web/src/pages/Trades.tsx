@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { useSearch, Link } from "wouter";
+import { MyTradesView } from "./MyTrades";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,6 +191,13 @@ type FilterKey = (typeof FILTERS)[number]["key"];
 type SortKey = "newest" | "activity" | "near";
 
 export default function TradesPage() {
+  const search0 = useSearch();
+  const queryView: "all" | "mine" =
+    new URLSearchParams(search0).get("view") === "mine" ? "mine" : "all";
+  const [view, setView] = useState<"all" | "mine">(queryView);
+  useEffect(() => {
+    setView(queryView);
+  }, [queryView]);
   const [trades, setTrades] = useState<Trade[]>(MOCK_TRADES);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
@@ -276,104 +284,56 @@ export default function TradesPage() {
         <div>
           <h1 className="font-serif text-3xl tracking-tight">Trading board</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Browse and post item trades with other collectors.
+            {view === "all"
+              ? "Browse and post item trades with other collectors."
+              : "Track your active and completed trades."}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/my-trades"
-            className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
-          >
-            View your active trades →
-          </Link>
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="size-4 mr-1.5" />
-            Post a trade
-          </Button>
+          {view === "all" && (
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="size-4 mr-1.5" />
+              Post a trade
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { label: "Active listings", value: 248 },
-          { label: "New today", value: 34 },
-          { label: "Completed trades", value: 91 },
-        ].map((s) => (
-          <div key={s.label} className="bg-muted/50 rounded-lg p-4 border border-border">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              {s.label}
-            </div>
-            <div className="font-serif text-2xl mt-1">{s.value}</div>
-          </div>
+      <div className="inline-flex rounded-md border border-border p-0.5 bg-card w-fit">
+        {([
+          { k: "all", label: "All trades" },
+          { k: "mine", label: "My trades" },
+        ] as const).map((opt) => (
+          <button
+            key={opt.k}
+            type="button"
+            onClick={() => setView(opt.k)}
+            className={`px-4 py-1.5 text-sm rounded-[5px] transition-colors ${
+              view === opt.k
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap items-center gap-1 rounded-md border border-border p-1">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                filter === f.key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-[180px]">
-          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Search items…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="activity">Most recent activity</SelectItem>
-            <SelectItem value="near">Near me</SelectItem>
-          </SelectContent>
-        </Select>
-        {sort === "near" && (
-          <Select value={radius} onValueChange={setRadius}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="25">Within 25 miles</SelectItem>
-              <SelectItem value="50">Within 50 miles</SelectItem>
-              <SelectItem value="100">Within 100 miles</SelectItem>
-              <SelectItem value="any">Any distance</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-
-      {/* Grid */}
-      {visible.length === 0 ? (
-        <Card>
-          <CardContent className="p-10 text-center text-sm text-muted-foreground">
-            No trades match your filters.
-          </CardContent>
-        </Card>
+      {view === "mine" ? (
+        <MyTradesView />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {visible.map((t) => (
-            <TradeCard key={t.id} trade={t} showDistance={sort === "near"} />
-          ))}
-        </div>
+        <AllTradesContent
+          trades={trades}
+          filter={filter}
+          setFilter={setFilter}
+          search={search}
+          setSearch={setSearch}
+          sort={sort}
+          setSort={setSort}
+          radius={radius}
+          setRadius={setRadius}
+          visible={visible}
+        />
       )}
 
       {/* Post Trade Modal */}
@@ -482,6 +442,117 @@ export default function TradesPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function AllTradesContent({
+  filter,
+  setFilter,
+  search,
+  setSearch,
+  sort,
+  setSort,
+  radius,
+  setRadius,
+  visible,
+}: {
+  trades: Trade[];
+  filter: FilterKey;
+  setFilter: (v: FilterKey) => void;
+  search: string;
+  setSearch: (v: string) => void;
+  sort: SortKey;
+  setSort: (v: SortKey) => void;
+  radius: string;
+  setRadius: (v: string) => void;
+  visible: Trade[];
+}) {
+  return (
+    <>
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { label: "Active listings", value: 248 },
+          { label: "New today", value: 34 },
+          { label: "Completed trades", value: 91 },
+        ].map((s) => (
+          <div key={s.label} className="bg-muted/50 rounded-lg p-4 border border-border">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              {s.label}
+            </div>
+            <div className="font-serif text-2xl mt-1">{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-1 rounded-md border border-border p-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFilter(f.key)}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                filter === f.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search items…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="activity">Most recent activity</SelectItem>
+            <SelectItem value="near">Near me</SelectItem>
+          </SelectContent>
+        </Select>
+        {sort === "near" && (
+          <Select value={radius} onValueChange={setRadius}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">Within 25 miles</SelectItem>
+              <SelectItem value="50">Within 50 miles</SelectItem>
+              <SelectItem value="100">Within 100 miles</SelectItem>
+              <SelectItem value="any">Any distance</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Grid */}
+      {visible.length === 0 ? (
+        <Card>
+          <CardContent className="p-10 text-center text-sm text-muted-foreground">
+            No trades match your filters.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {visible.map((t) => (
+            <TradeCard key={t.id} trade={t} showDistance={sort === "near"} />
+          ))}
+        </div>
+      )}
+
+    </>
   );
 }
 

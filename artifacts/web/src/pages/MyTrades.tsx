@@ -98,6 +98,20 @@ function StarsDisplay({ value }: { value: number }) {
 }
 
 export default function MyTradesPage() {
+  return (
+    <div className="p-8 max-w-6xl mx-auto space-y-6">
+      <div>
+        <h1 className="font-serif text-3xl tracking-tight">My Trades</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Track your active and completed trades.
+        </p>
+      </div>
+      <MyTradesView />
+    </div>
+  );
+}
+
+export function MyTradesView() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>("all");
 
@@ -159,14 +173,7 @@ export default function MyTradesPage() {
     qc.invalidateQueries({ queryKey: getListMyTradesQueryKey({ status: "all" }) });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl tracking-tight">My Trades</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track your active and completed trades.
-        </p>
-      </div>
-
+    <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="Active trades" value={String(stats.active)} />
         <StatCard label="Completed trades" value={String(stats.completed)} />

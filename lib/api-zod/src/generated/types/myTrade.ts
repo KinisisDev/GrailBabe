@@ -25,6 +25,8 @@ export interface MyTrade {
   kind: MyTradeKind;
   wantedItems: string[];
   photos: string[];
+  /** @nullable */
+  vaultItemId?: number | null;
   otherParty?: MyTradeOtherParty | null;
   myConfirmed: boolean;
   theirConfirmed: boolean;

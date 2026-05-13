@@ -1247,6 +1247,7 @@ components:
         wantedItems:
           type: array
           items: { type: string }
+        vaultItemId: { type: ["integer", "null"] }
         status:
           type: string
           enum: [open, pending, completed, cancelled, closed]
@@ -1303,6 +1304,7 @@ components:
         photos:
           type: array
           items: { type: string }
+        vaultItemId: { type: ["integer", "null"] }
         otherParty:
           oneOf:
             - { $ref: "#/components/schemas/MyTradeOtherParty" }
@@ -1356,6 +1358,7 @@ components:
         wantedItems:
           type: array
           items: { type: string }
+        vaultItemId: { type: integer }
 
     ForumPost:
       type: object

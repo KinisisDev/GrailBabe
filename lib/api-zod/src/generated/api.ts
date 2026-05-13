@@ -287,6 +287,7 @@ export const ListTradesResponseItem = zod.object({
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()).optional(),
+  "vaultItemId": zod.number().nullish(),
   "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -305,7 +306,8 @@ export const CreateTradeBody = zod.object({
   "askingPrice": zod.number().optional(),
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
-  "wantedItems": zod.array(zod.string()).optional()
+  "wantedItems": zod.array(zod.string()).optional(),
+  "vaultItemId": zod.number().optional()
 })
 
 
@@ -325,6 +327,7 @@ export const ListMyTradesResponseItem = zod.object({
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()),
   "photos": zod.array(zod.string()),
+  "vaultItemId": zod.number().nullish(),
   "otherParty": zod.union([zod.object({
   "id": zod.string(),
   "screenname": zod.string(),
@@ -367,6 +370,7 @@ export const GetTradeResponse = zod.object({
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()).optional(),
+  "vaultItemId": zod.number().nullish(),
   "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -393,6 +397,7 @@ export const MakeTradeOfferResponse = zod.object({
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()),
   "photos": zod.array(zod.string()),
+  "vaultItemId": zod.number().nullish(),
   "otherParty": zod.union([zod.object({
   "id": zod.string(),
   "screenname": zod.string(),
@@ -433,6 +438,7 @@ export const ConfirmTradeCompleteResponse = zod.object({
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()),
   "photos": zod.array(zod.string()),
+  "vaultItemId": zod.number().nullish(),
   "otherParty": zod.union([zod.object({
   "id": zod.string(),
   "screenname": zod.string(),
@@ -473,6 +479,7 @@ export const CancelTradeResponse = zod.object({
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()),
   "photos": zod.array(zod.string()),
+  "vaultItemId": zod.number().nullish(),
   "otherParty": zod.union([zod.object({
   "id": zod.string(),
   "screenname": zod.string(),
@@ -770,6 +777,7 @@ export const GetDashboardResponse = zod.object({
   "photos": zod.array(zod.string()).optional(),
   "kind": zod.enum(['trade', 'sell', 'buy']),
   "wantedItems": zod.array(zod.string()).optional(),
+  "vaultItemId": zod.number().nullish(),
   "status": zod.enum(['open', 'pending', 'completed', 'cancelled', 'closed']).optional(),
   "createdAt": zod.coerce.date()
 })),
