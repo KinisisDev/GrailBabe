@@ -22,6 +22,7 @@ import cardhedgerRouter from "./cardhedger";
 import messagesRouter from "./messages";
 import communityRouter from "./community";
 import profilesRouter from "./profiles";
+import scannerRouter from "./scanner";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use(cardhedgerRouter);
 router.use(messagesRouter);
 router.use(communityRouter);
 router.use(profilesRouter);
+router.use(scannerRouter);
 
 export default router;

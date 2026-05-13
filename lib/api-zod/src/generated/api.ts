@@ -1231,3 +1231,49 @@ export const GetProfileResponse = zod.object({
 })
 
 
+export const RemoveBackgroundBody = zod.object({
+  "imageBase64": zod.string()
+})
+
+export const RemoveBackgroundResponse = zod.object({
+  "imageBase64": zod.string()
+})
+
+
+export const ScannerAnalyzeBody = zod.object({
+  "itemId": zod.string(),
+  "category": zod.enum(['tcg', 'sports', 'lego']),
+  "imageBase64": zod.string().nullish(),
+  "mode": zod.enum(['standard', 'advanced'])
+})
+
+export const ScannerAnalyzeResponse = zod.object({
+  "name": zod.string(),
+  "set": zod.string().nullish(),
+  "year": zod.number().nullish(),
+  "priceRange": zod.object({
+  "low": zod.number(),
+  "mid": zod.number(),
+  "high": zod.number()
+}),
+  "recentSoldCount": zod.number(),
+  "sources": zod.array(zod.string()),
+  "isMockData": zod.boolean(),
+  "aiGrade": zod.string().nullish(),
+  "aiGradeRange": zod.string().nullish(),
+  "defects": zod.array(zod.string()),
+  "centering": zod.string().nullish(),
+  "surfaceNotes": zod.string().nullish(),
+  "authenticityFlags": zod.array(zod.string()),
+  "authenticityOk": zod.boolean().nullish(),
+  "extendedPrices": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "note": zod.string().nullish()
+})),
+  "priceHistorySparkline": zod.array(zod.number()),
+  "aiError": zod.boolean(),
+  "aiErrorReason": zod.string().nullish()
+})
+
+

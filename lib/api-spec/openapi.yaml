@@ -817,6 +817,38 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PublicProfile" }
 
+  /scanner/remove-background:
+    post:
+      operationId: removeBackground
+      tags: [scanner]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RemoveBackgroundInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RemoveBackgroundResult" }
+
+  /scanner/analyze:
+    post:
+      operationId: scannerAnalyze
+      tags: [scanner]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScannerAnalyzeInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScannerAnalyzeResult" }
+
 components:
   schemas:
     HealthStatus:
@@ -824,6 +856,86 @@ components:
       required: [status]
       properties:
         status: { type: string }
+
+    RemoveBackgroundInput:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64: { type: string }
+
+    RemoveBackgroundResult:
+      type: object
+      required: [imageBase64]
+      properties:
+        imageBase64: { type: string }
+
+    ScannerPriceRange:
+      type: object
+      required: [low, mid, high]
+      properties:
+        low: { type: number }
+        mid: { type: number }
+        high: { type: number }
+
+    ScannerExtendedPrice:
+      type: object
+      required: [label, value]
+      properties:
+        label: { type: string }
+        value: { type: string }
+        note: { type: ["string", "null"] }
+
+    ScannerAnalyzeInput:
+      type: object
+      required: [itemId, category, mode]
+      properties:
+        itemId: { type: string }
+        category: { type: string, enum: [tcg, sports, lego] }
+        imageBase64: { type: ["string", "null"] }
+        mode: { type: string, enum: [standard, advanced] }
+
+    ScannerAnalyzeResult:
+      type: object
+      required:
+        - name
+        - priceRange
+        - recentSoldCount
+        - sources
+        - isMockData
+        - defects
+        - authenticityFlags
+        - extendedPrices
+        - priceHistorySparkline
+        - aiError
+      properties:
+        name: { type: string }
+        set: { type: ["string", "null"] }
+        year: { type: ["integer", "null"] }
+        priceRange: { $ref: "#/components/schemas/ScannerPriceRange" }
+        recentSoldCount: { type: integer }
+        sources:
+          type: array
+          items: { type: string }
+        isMockData: { type: boolean }
+        aiGrade: { type: ["string", "null"] }
+        aiGradeRange: { type: ["string", "null"] }
+        defects:
+          type: array
+          items: { type: string }
+        centering: { type: ["string", "null"] }
+        surfaceNotes: { type: ["string", "null"] }
+        authenticityFlags:
+          type: array
+          items: { type: string }
+        authenticityOk: { type: ["boolean", "null"] }
+        extendedPrices:
+          type: array
+          items: { $ref: "#/components/schemas/ScannerExtendedPrice" }
+        priceHistorySparkline:
+          type: array
+          items: { type: number }
+        aiError: { type: boolean }
+        aiErrorReason: { type: ["string", "null"] }
 
     ApiErrorResponse:
       type: object

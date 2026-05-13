@@ -69,7 +69,11 @@ import type {
   ProfileUpdate,
   PublicProfile,
   ReactionInput,
+  RemoveBackgroundInput,
+  RemoveBackgroundResult,
   ReplyInput,
+  ScannerAnalyzeInput,
+  ScannerAnalyzeResult,
   ScreennameAvailability,
   ScreennameCooldownError,
   TimelinePoint,
@@ -3907,3 +3911,133 @@ export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TE
 
 
 
+export const getRemoveBackgroundUrl = () => {
+
+
+  
+
+  return `/api/scanner/remove-background`
+}
+
+export const removeBackground = async (removeBackgroundInput: RemoveBackgroundInput, options?: RequestInit): Promise<RemoveBackgroundResult> => {
+  
+  return customFetch<RemoveBackgroundResult>(getRemoveBackgroundUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      removeBackgroundInput,)
+  }
+);}
+  
+
+
+
+export const getRemoveBackgroundMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBackground>>, TError,{data: BodyType<RemoveBackgroundInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeBackground>>, TError,{data: BodyType<RemoveBackgroundInput>}, TContext> => {
+
+const mutationKey = ['removeBackground'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeBackground>>, {data: BodyType<RemoveBackgroundInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  removeBackground(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveBackgroundMutationResult = NonNullable<Awaited<ReturnType<typeof removeBackground>>>
+    export type RemoveBackgroundMutationBody = BodyType<RemoveBackgroundInput>
+    export type RemoveBackgroundMutationError = ErrorType<unknown>
+
+    export const useRemoveBackground = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBackground>>, TError,{data: BodyType<RemoveBackgroundInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeBackground>>,
+        TError,
+        {data: BodyType<RemoveBackgroundInput>},
+        TContext
+      > => {
+      return useMutation(getRemoveBackgroundMutationOptions(options));
+    }
+    
+export const getScannerAnalyzeUrl = () => {
+
+
+  
+
+  return `/api/scanner/analyze`
+}
+
+export const scannerAnalyze = async (scannerAnalyzeInput: ScannerAnalyzeInput, options?: RequestInit): Promise<ScannerAnalyzeResult> => {
+  
+  return customFetch<ScannerAnalyzeResult>(getScannerAnalyzeUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      scannerAnalyzeInput,)
+  }
+);}
+  
+
+
+
+export const getScannerAnalyzeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scannerAnalyze>>, TError,{data: BodyType<ScannerAnalyzeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof scannerAnalyze>>, TError,{data: BodyType<ScannerAnalyzeInput>}, TContext> => {
+
+const mutationKey = ['scannerAnalyze'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof scannerAnalyze>>, {data: BodyType<ScannerAnalyzeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  scannerAnalyze(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ScannerAnalyzeMutationResult = NonNullable<Awaited<ReturnType<typeof scannerAnalyze>>>
+    export type ScannerAnalyzeMutationBody = BodyType<ScannerAnalyzeInput>
+    export type ScannerAnalyzeMutationError = ErrorType<unknown>
+
+    export const useScannerAnalyze = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scannerAnalyze>>, TError,{data: BodyType<ScannerAnalyzeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof scannerAnalyze>>,
+        TError,
+        {data: BodyType<ScannerAnalyzeInput>},
+        TContext
+      > => {
+      return useMutation(getScannerAnalyzeMutationOptions(options));
+    }
+    

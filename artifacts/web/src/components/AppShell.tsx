@@ -24,6 +24,7 @@ import {
   Settings as SettingsIcon,
   UserCircle,
   GitCompare,
+  ScanLine,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/dashboard", label: "My Dashboard", icon: LayoutDashboard },
   { to: "/profile", label: "My Profile", icon: UserCircle },
   { to: "/vault", label: "The Vault", icon: Box },
+  { to: "/scanner", label: "Scanner", icon: ScanLine },
   { to: "/grail", label: "My Grail List", icon: Star },
   { to: "/portfolio", label: "Portfolio", icon: TrendingUp },
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },

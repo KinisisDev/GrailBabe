@@ -9,6 +9,81 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface RemoveBackgroundInput {
+  imageBase64: string;
+}
+
+export interface RemoveBackgroundResult {
+  imageBase64: string;
+}
+
+export interface ScannerPriceRange {
+  low: number;
+  mid: number;
+  high: number;
+}
+
+export interface ScannerExtendedPrice {
+  label: string;
+  value: string;
+  /** @nullable */
+  note?: string | null;
+}
+
+export type ScannerAnalyzeInputCategory = typeof ScannerAnalyzeInputCategory[keyof typeof ScannerAnalyzeInputCategory];
+
+
+export const ScannerAnalyzeInputCategory = {
+  tcg: 'tcg',
+  sports: 'sports',
+  lego: 'lego',
+} as const;
+
+export type ScannerAnalyzeInputMode = typeof ScannerAnalyzeInputMode[keyof typeof ScannerAnalyzeInputMode];
+
+
+export const ScannerAnalyzeInputMode = {
+  standard: 'standard',
+  advanced: 'advanced',
+} as const;
+
+export interface ScannerAnalyzeInput {
+  itemId: string;
+  category: ScannerAnalyzeInputCategory;
+  /** @nullable */
+  imageBase64?: string | null;
+  mode: ScannerAnalyzeInputMode;
+}
+
+export interface ScannerAnalyzeResult {
+  name: string;
+  /** @nullable */
+  set?: string | null;
+  /** @nullable */
+  year?: number | null;
+  priceRange: ScannerPriceRange;
+  recentSoldCount: number;
+  sources: string[];
+  isMockData: boolean;
+  /** @nullable */
+  aiGrade?: string | null;
+  /** @nullable */
+  aiGradeRange?: string | null;
+  defects: string[];
+  /** @nullable */
+  centering?: string | null;
+  /** @nullable */
+  surfaceNotes?: string | null;
+  authenticityFlags: string[];
+  /** @nullable */
+  authenticityOk?: boolean | null;
+  extendedPrices: ScannerExtendedPrice[];
+  priceHistorySparkline: number[];
+  aiError: boolean;
+  /** @nullable */
+  aiErrorReason?: string | null;
+}
+
 export interface ApiErrorResponse {
   error: string;
   /** @nullable */
