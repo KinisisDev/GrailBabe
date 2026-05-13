@@ -1,226 +1,191 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from "react-native";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import { useGetVaultItem, useGetVaultItemPrices } from "@workspace/api-client-react";
+
 import { useColors } from "@/hooks/useColors";
 import { DUMMY_VAULT_ITEMS } from "@/constants/demoData";
-import { Feather } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { IridescentHeader } from "@/components/IridescentHeader";
+import { useIsSignedIn } from "@/components/AuthGate";
+import { PageShell } from "@/components/PageShell";
+import { qopt } from "@/lib/api";
+import { formatCurrency, formatPercent, formatRelativeDate, conditionLabel } from "@/lib/format";
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
+  const { isSignedIn } = useIsSignedIn();
+  const numericId = Number(id);
+  const isNumeric = !Number.isNaN(numericId);
 
-  const item = DUMMY_VAULT_ITEMS.find(i => i.id === id);
+  const { data: detail, isLoading } = useGetVaultItem(numericId, qopt(isSignedIn && isNumeric));
+  const { data: prices } = useGetVaultItemPrices(numericId, qopt(isSignedIn && isNumeric));
 
-  if (!item) {
+  const demoItem = DUMMY_VAULT_ITEMS.find((i) => i.id === id);
+
+  const item =
+    detail?.item ??
+    (demoItem
+      ? {
+          id: 0,
+          name: demoItem.name,
+          brand: demoItem.gameOrTheme,
+          category: demoItem.category,
+          condition: demoItem.condition,
+          purchasePrice: demoItem.purchasePrice,
+          currentValue: demoItem.currentValue,
+          notes: demoItem.notes,
+          photos: [] as string[],
+          tags: [] as string[],
+          purchaseDate: demoItem.dateAdded,
+          createdAt: demoItem.dateAdded,
+          updatedAt: demoItem.dateAdded,
+        }
+      : null);
+
+  if (!item && !isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.foreground }}>Item not found</Text>
-        <Pressable onPress={() => router.back()} style={{ marginTop: 20 }}>
-          <Text style={{ color: colors.primary }}>Go Back</Text>
-        </Pressable>
-      </View>
+      <PageShell title="Item">
+        <View style={styles.center}>
+          <Feather name="alert-circle" size={32} color={colors.mutedForeground} />
+          <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", marginTop: 8 }}>
+            Item not found
+          </Text>
+          <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+            <Text style={{ color: colors.neonBlue, fontFamily: "Inter_600SemiBold" }}>Go back</Text>
+          </Pressable>
+        </View>
+      </PageShell>
     );
   }
 
-  const profit = item.changeAmount;
-  const profitPercent = item.changePct;
-  const isPositive = profit >= 0;
-  const deltaColor = isPositive ? colors.neonGreen : colors.neonRed;
+  if (!item) {
+    return (
+      <PageShell title="Item">
+        <ActivityIndicator color={colors.neonBlue} style={{ marginTop: 40 }} />
+      </PageShell>
+    );
+  }
+
+  const value = item.currentValue ?? 0;
+  const cost = item.purchasePrice ?? 0;
+  const gain = value - cost;
+  const gainPct = cost > 0 ? (gain / cost) * 100 : 0;
+  const positive = gain >= 0;
+  const deltaColor = positive ? colors.neonGreen : colors.neonRed;
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <IridescentHeader 
-          title="Item Details" 
-          left={
-            <Pressable onPress={() => router.back()} style={{ padding: 8, marginLeft: -8 }}>
-              <Feather name="chevron-left" size={24} color="#0a0a0f" />
-            </Pressable>
-          } 
-        />
-        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}>
-          <View style={[styles.imageBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="image" size={48} color={colors.mutedForeground} />
-          </View>
-
-          <View style={styles.header}>
-            <View style={[styles.categoryBadge, { backgroundColor: colors.muted }]}>
-              <Text style={[styles.categoryText, { color: colors.foreground }]}>{item.category}</Text>
-            </View>
-            <View style={[styles.conditionBadge, { borderColor: colors.accent }]}>
-              <Text style={[styles.conditionText, { color: colors.accent }]}>{item.condition}</Text>
-            </View>
-          </View>
-
-          <Text style={[styles.title, { color: colors.foreground }]}>{item.name}</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            {item.gameOrTheme} {item.setNumber && `• ${item.setNumber}`}
-          </Text>
-
-          <View style={[styles.valueCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View>
-              <Text style={[styles.valueLabel, { color: colors.mutedForeground }]}>Current Value</Text>
-              <Text style={[styles.currentValue, { color: colors.foreground }]}>
-                ${item.currentValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={[styles.valueLabel, { color: colors.mutedForeground }]}>Total Return</Text>
-              <Text style={[
-                styles.profit, 
-                { color: deltaColor }
-              ]}>
-                {isPositive ? "+" : ""}${Math.abs(profit).toLocaleString()} ({isPositive ? "+" : ""}{profitPercent.toFixed(1)}%)
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.detailsList}>
-            <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Purchase Price</Text>
-              <Text style={[styles.detailValue, { color: colors.foreground }]}>
-                ${item.purchasePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </Text>
-            </View>
-            <View style={[styles.detailRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Date Added</Text>
-              <Text style={[styles.detailValue, { color: colors.foreground }]}>
-                {new Date(item.dateAdded).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-
-          {item.notes && (
-            <View style={styles.notesSection}>
-              <Text style={[styles.notesLabel, { color: colors.foreground }]}>Collector Notes</Text>
-              <View style={[styles.notesBox, { backgroundColor: colors.muted }]}>
-                <Text style={[styles.notesText, { color: colors.foreground }]}>{item.notes}</Text>
-              </View>
-            </View>
-          )}
-
-        </ScrollView>
+    <PageShell title="Item Details">
+      <View style={[styles.thumb, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Feather name="image" size={48} color={colors.mutedForeground} />
       </View>
-    </>
+
+      <View style={styles.section}>
+        <Text style={[styles.cat, { color: colors.neonGreen }]}>{item.category}</Text>
+        <Text style={[styles.name, { color: colors.foreground }]}>{item.name}</Text>
+        {item.brand && (
+          <Text style={[styles.brand, { color: colors.mutedForeground }]}>{item.brand}</Text>
+        )}
+
+        <View style={[styles.priceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Current value</Text>
+            <Text style={[styles.priceVal, { color: colors.foreground }]}>{formatCurrency(value)}</Text>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Gain</Text>
+            <Text style={[styles.priceVal, { color: deltaColor }]}>{formatCurrency(gain)}</Text>
+            <Text style={[styles.pricePct, { color: deltaColor }]}>{formatPercent(gainPct)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.metaGrid}>
+          <Meta label="Condition" value={conditionLabel(item.condition)} />
+          <Meta label="Cost basis" value={formatCurrency(cost)} />
+          <Meta label="Added" value={formatRelativeDate(item.createdAt)} />
+          {item.purchaseDate && <Meta label="Purchased" value={formatRelativeDate(item.purchaseDate)} />}
+        </View>
+
+        {item.notes && (
+          <View style={[styles.notes, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.notesLabel, { color: colors.mutedForeground }]}>Notes</Text>
+            <Text style={[styles.notesText, { color: colors.foreground }]}>{item.notes}</Text>
+          </View>
+        )}
+
+        {prices && prices.length > 0 && (
+          <View style={styles.notes}>
+            <Text style={[styles.notesLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>
+              Recent prices
+            </Text>
+            {prices.slice(0, 6).map((p) => (
+              <View key={p.id} style={styles.priceRow}>
+                <Text style={[styles.priceSrc, { color: colors.mutedForeground }]}>
+                  {p.source} · {formatRelativeDate(p.recordedAt)}
+                </Text>
+                <Text style={[styles.priceVal2, { color: colors.foreground }]}>
+                  {formatCurrency(p.price)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </PageShell>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.metaCell, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={{ fontFamily: "Inter_500Medium", fontSize: 11, color: colors.mutedForeground }}>
+        {label}
+      </Text>
+      <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: colors.foreground, marginTop: 2 }}>
+        {value}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  imageBox: {
-    aspectRatio: 1,
+  thumb: {
+    margin: 16,
+    height: 220,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
   },
-  header: {
+  section: { paddingHorizontal: 20, gap: 6 },
+  cat: { fontFamily: "Inter_600SemiBold", fontSize: 12, textTransform: "uppercase", letterSpacing: 1 },
+  name: { fontFamily: "Fraunces_700Bold", fontSize: 26, marginTop: 4 },
+  brand: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  priceCard: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  categoryBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  categoryText: {
-    fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-  },
-  conditionBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  conditionText: {
-    fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: "Fraunces_700Bold",
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    marginBottom: 24,
-  },
-  valueCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 32,
-  },
-  valueLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  currentValue: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-  },
-  profit: {
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-  },
-  detailsList: {
-    marginBottom: 32,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  detailLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
-  detailValue: {
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-  },
-  notesSection: {
-    marginTop: 8,
-  },
-  notesLabel: {
-    fontSize: 18,
-    fontFamily: "Fraunces_600SemiBold",
-    letterSpacing: -0.5,
-    marginBottom: 12,
-  },
-  notesBox: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 16,
   },
-  notesText: {
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 22,
+  priceLabel: { fontFamily: "Inter_500Medium", fontSize: 11 },
+  priceVal: { fontFamily: "Fraunces_700Bold", fontSize: 22, marginTop: 2 },
+  pricePct: { fontFamily: "Inter_600SemiBold", fontSize: 12, marginTop: 2 },
+  metaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 },
+  metaCell: {
+    flexBasis: "48%",
+    flexGrow: 1,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
   },
+  notes: { marginTop: 16, padding: 14, borderRadius: 12, borderWidth: 1 },
+  notesLabel: { fontFamily: "Inter_500Medium", fontSize: 11 },
+  notesText: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 4, lineHeight: 18 },
+  priceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
+  priceSrc: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  priceVal2: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
+  center: { alignItems: "center", padding: 60 },
 });

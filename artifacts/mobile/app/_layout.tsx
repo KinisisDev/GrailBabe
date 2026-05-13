@@ -17,19 +17,62 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { tokenCache } from "@/lib/tokenCache";
+import { configureApi } from "@/lib/api";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+function ApiBridge({ children }: { children: React.ReactNode }) {
+  const { getToken, isLoaded } = useAuth();
+  useEffect(() => {
+    configureApi(async () => {
+      try {
+        if (!isLoaded) return null;
+        return (await getToken()) ?? null;
+      } catch {
+        return null;
+      }
+    });
+  }, [getToken, isLoaded]);
+  return <>{children}</>;
+}
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="item/[id]" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#0a0a0f" } }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="sign-in" options={{ presentation: "modal" }} />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="item/[id]" />
+      <Stack.Screen name="scanner" />
+      <Stack.Screen name="grail" />
+      <Stack.Screen name="trades" />
+      <Stack.Screen name="my-trades" />
+      <Stack.Screen name="messages/index" />
+      <Stack.Screen name="messages/[id]" />
+      <Stack.Screen name="portfolio" />
+      <Stack.Screen name="billing" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="security/index" />
+      <Stack.Screen name="security/rules" />
+      <Stack.Screen name="security/legal" />
+      <Stack.Screen name="community/[id]" />
+      <Stack.Screen name="vault/add" options={{ presentation: "modal" }} />
     </Stack>
   );
 }
@@ -53,16 +96,36 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
+  if (!PUBLISHABLE_KEY) {
+    return (
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView>
+              <KeyboardProvider>
+                <RootLayoutNav />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
+        <ClerkProvider publishableKey={PUBLISHABLE_KEY} tokenCache={tokenCache}>
+          <ApiBridge>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ApiBridge>
+        </ClerkProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );
