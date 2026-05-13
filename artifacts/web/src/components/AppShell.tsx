@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { UserButton } from "@clerk/react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import {
   Sparkles,
   CreditCard,
   Settings as SettingsIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 const NAV = [
@@ -35,6 +37,8 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
+const SIDEBAR_KEY = "gb_sidebar_collapsed";
+
 export default function AppShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { data: me } = useGetMe();
@@ -47,27 +51,59 @@ export default function AppShell({ children }: { children: ReactNode }) {
   });
   const unreadCount = unread?.count ?? 0;
 
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SIDEBAR_KEY) === "1";
+  });
+  useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
+  }, [collapsed]);
+
   return (
     <div className="min-h-screen flex bg-background">
-      <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
-        <div className="h-14 px-1 flex items-center justify-center border-b border-border overflow-visible relative">
-          <Link href="/dashboard" className="block mx-auto">
-            <img src="/grailbabe-logo.png" alt="GrailBabe" className="block mx-auto h-auto w-auto max-h-36 max-w-full object-contain" />
-          </Link>
-        </div>
-        <nav className="flex-1 px-3 space-y-1">
-          {NAV.map((item, idx) => {
-            const active = location === item.to || location.startsWith(item.to + "/");
-            const Icon = item.icon;
-            const neons = ["var(--neon-blue)", "var(--neon-green)", "var(--neon-red)", "var(--neon-yellow)"];
-            const neon = neons[idx % neons.length];
-            return (
-              <Link
-                key={item.to}
-                href={item.to}
-                style={{ ["--neon" as any]: neon }}
-                className={`nav-neon flex items-center gap-3 px-3 py-2 rounded-md text-sm ${ active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground" }`}
-              >
+      {!collapsed && (
+        <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
+          <div className="h-14 px-1 flex items-center justify-center border-b border-border overflow-visible relative">
+            <Link href="/dashboard" className="block mx-auto">
+              <img
+                src="/grailbabe-logo.png"
+                alt="GrailBabe"
+                className="block mx-auto h-auto w-auto max-h-36 max-w-full object-contain"
+              />
+            </Link>
+          </div>
+          <div className="px-3 pt-3">
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              data-testid="button-collapse-sidebar"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors border border-border/60"
+            >
+              <PanelLeftClose className="size-3.5" />
+              Hide sidebar
+            </button>
+          </div>
+          <nav className="flex-1 px-3 pt-3 space-y-1">
+            {NAV.map((item, idx) => {
+              const active =
+                location === item.to || location.startsWith(item.to + "/");
+              const Icon = item.icon;
+              const neons = [
+                "var(--neon-blue)",
+                "var(--neon-green)",
+                "var(--neon-red)",
+                "var(--neon-yellow)",
+              ];
+              const neon = neons[idx % neons.length];
+              return (
+                <Link
+                  key={item.to}
+                  href={item.to}
+                  style={{ ["--neon" as any]: neon }}
+                  className={`nav-neon flex items-center gap-3 px-3 py-2 rounded-md text-sm ${active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground"}`}
+                >
                   <Icon className="size-4" />
                   <span className="flex-1">{item.label}</span>
                   {item.to === "/messages" && unreadCount > 0 && (
@@ -87,28 +123,34 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     </Badge>
                   )}
                 </Link>
-            );
-          })}
-        </nav>
-        <div className="p-3 border-t border-border space-y-2">
-          {tier === "free" ? (
-            <Link href="/billing">
+              );
+            })}
+          </nav>
+          <div className="p-3 border-t border-border space-y-2">
+            {tier === "free" ? (
+              <Link href="/billing">
                 <Button className="w-full" size="sm">
                   Upgrade to Premium
                 </Button>
               </Link>
-          ) : (
-            <div className="px-3 py-2 rounded-md bg-primary/10 border border-primary/20 text-xs">
-              <div className="font-medium text-primary">Premium Member</div>
-              <div className="text-muted-foreground">Thank you for supporting</div>
-            </div>
-          )}
-          <Link href="/billing" className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground rounded-md">
+            ) : (
+              <div className="px-3 py-2 rounded-md bg-primary/10 border border-primary/20 text-xs">
+                <div className="font-medium text-primary">Premium Member</div>
+                <div className="text-muted-foreground">
+                  Thank you for supporting
+                </div>
+              </div>
+            )}
+            <Link
+              href="/billing"
+              className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground rounded-md"
+            >
               <CreditCard className="size-3.5" />
               Billing
             </Link>
-        </div>
-      </aside>
+          </div>
+        </aside>
+      )}
       <div className="flex-1 flex flex-col min-w-0">
         <header
           className="h-14 border-b border-border flex items-center justify-between px-6 sticky top-0 z-10"
@@ -117,8 +159,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
               "linear-gradient(90deg, var(--neon-blue), var(--neon-green), var(--neon-yellow), var(--neon-red))",
           }}
         >
-          <div className="text-sm font-semibold text-black drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
-            {NAV.find((n) => location.startsWith(n.to))?.label ?? "GrailBabe"}
+          <div className="flex items-center gap-3">
+            {collapsed && (
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                data-testid="button-expand-sidebar"
+                aria-label="Show sidebar"
+                title="Show sidebar"
+                className="inline-flex items-center justify-center size-8 rounded-md bg-black/20 text-black hover:bg-black/30 transition-colors"
+              >
+                <PanelLeftOpen className="size-4" />
+              </button>
+            )}
+            <div className="text-sm font-semibold text-black drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
+              {NAV.find((n) => location.startsWith(n.to))?.label ?? "GrailBabe"}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {me && (
