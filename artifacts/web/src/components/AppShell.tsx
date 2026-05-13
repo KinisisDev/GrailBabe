@@ -14,7 +14,7 @@ import {
   TrendingUp,
   Sparkles,
   CreditCard,
-  Settings,
+  Settings as SettingsIcon,
 } from "lucide-react";
 
 const NAV = [
@@ -26,6 +26,7 @@ const NAV = [
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
   { to: "/trades", label: "Trading", icon: ArrowLeftRight },
   { to: "/forum", label: "Forum", icon: MessagesSquare },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
@@ -81,10 +82,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <div className="text-muted-foreground">Thank you for supporting</div>
             </div>
           )}
-          <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground rounded-md">
-              <Settings className="size-3.5" />
-              Settings
-            </Link>
           <Link href="/billing" className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground rounded-md">
               <CreditCard className="size-3.5" />
               Billing

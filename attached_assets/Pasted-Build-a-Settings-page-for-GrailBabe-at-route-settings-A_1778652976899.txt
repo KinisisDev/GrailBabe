@@ -1,0 +1,72 @@
+Build a Settings page for GrailBabe at route /settings. Add "Settings" to the left sidebar nav in AppShell.tsx with a Settings/gear icon (from lucide-react) linking to /settings.
+
+The page should follow the same layout pattern as the Vault Hub — a clean page header, sections with cards, using our neon blue accent color (primary CSS variable).
+
+Create the file: artifacts/web/src/pages/Settings.tsx
+
+Structure the page with three sections:
+
+---
+
+### 1. Email Notifications
+Card section titled "Email Notifications" with subtitle "We'll send alerts to your registered email address."
+
+Fields:
+- Notification Email — text input (label: "This email receives all alerts (defaults to your login email)")
+- Notification Frequency — select dropdown with options: "Instant — as soon as it happens", "Daily digest — once per day", "Weekly digest — once per week"
+
+Toggle switches (using a reusable Toggle/Switch component or inline styled checkbox):
+- Watchlist price-drop alerts — "Alert when a watchlisted item drops below your threshold"
+- Price drop alerts — "Alert when tracked items drop in value"
+- Price rise alerts — "Alert when tracked items rise in value"
+- New listing alerts — "Alert when new items match your saved searches"
+- Trade & offer updates — "Alert on new offers, counters, and trade responses"
+
+---
+
+### 2. Display Preferences
+Card section titled "Display Preferences"
+
+Fields:
+- Display Currency — select dropdown with options: USD, EUR, GBP, CAD, AUD, JPY
+
+Toggles:
+- Show portfolio value on dashboard — "Display total value prominently on your dashboard"
+- Show ROI percentage — "Display gain/loss as a percentage next to values"
+- Compact card view — "Smaller card tiles in the collection grid"
+
+---
+
+### 3. Account
+Card section titled "Account"
+
+Display-only fields (read-only, grayed out):
+- Email — show placeholder "user@example.com"
+- Display Name — show placeholder "Your Name"
+- Member Since — show placeholder "—"
+- Plan — show "Free" with a small badge
+
+---
+
+### Save Button
+A "Save Changes" button at the bottom of the page (or sticky at the top-right of the header, matching HolyGrailR's pattern). Use the primary/neon blue color. All toggles and inputs should be local React state for now — no backend wiring needed yet. Show a brief "Settings saved!" success toast/message on click.
+
+---
+
+### Routing
+In App.tsx, add the route:
+<Route path="/settings" component={Settings} />
+
+In AppShell.tsx, add to the sidebar nav items array:
+{ href: "/settings", label: "Settings", icon: Settings } (use the Settings icon from lucide-react — alias it as SettingsIcon to avoid naming conflict)
+
+---
+
+### Style Notes
+- Match the dark theme (bg-background, text-foreground, border CSS variables)
+- Section cards: bg-card rounded-xl border p-6
+- Toggle switches: use a simple styled checkbox or shadcn Switch if available
+- Spacing between sections: space-y-6
+- Neon blue accent on focused inputs and the Save button
+
+Do NOT make any database changes. Do NOT push to git — only commit.
