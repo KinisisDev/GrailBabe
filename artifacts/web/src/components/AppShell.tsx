@@ -34,7 +34,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex bg-background">
       <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
-        <div className="px-3 pt-0 pb-0 -mt-4">
+        <div className="px-3 pt-0 pb-0 -mt-8">
           <Link href="/dashboard" className="block">
             <img src="/grailbabe-logo.png" alt="GrailBabe" className="block w-full h-auto object-contain" />
           </Link>
