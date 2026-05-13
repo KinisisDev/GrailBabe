@@ -60,10 +60,6 @@ export default function ScannerScreen() {
   }, []);
 
   const analyze = useCallback(async () => {
-    if (!isSignedIn) {
-      setErr("Sign in to use the AI scanner.");
-      return;
-    }
     if (!imageBase64) {
       setErr("Pick or capture an image first.");
       return;

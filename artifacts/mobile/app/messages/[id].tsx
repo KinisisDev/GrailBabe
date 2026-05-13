@@ -65,14 +65,6 @@ export default function ConversationScreen() {
     }
   }, [draft, sending, conversationId, getToken, qc]);
 
-  if (!isSignedIn) {
-    return (
-      <PageShell title="Conversation">
-        <SignInPrompt />
-      </PageShell>
-    );
-  }
-
   return (
     <PageShell title="Conversation" scroll={false}>
       <KeyboardAvoidingView

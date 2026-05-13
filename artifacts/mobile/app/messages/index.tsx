@@ -10,25 +10,43 @@ import { useIsSignedIn, SignInPrompt } from "@/components/AuthGate";
 import { qopt } from "@/lib/api";
 import { formatRelativeDate } from "@/lib/format";
 
+const DEMO_CONVERSATIONS = [
+  {
+    id: "demo-1",
+    otherUser: { displayName: "kiyo", screenname: "kiyo" },
+    lastMessage: { content: "Deal! sending payment now 🔥" },
+    updatedAt: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
+    unreadCount: 2,
+  },
+  {
+    id: "demo-2",
+    otherUser: { displayName: "brickfan", screenname: "brickfan" },
+    lastMessage: { content: "Would you take $800 for the Falcon?" },
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    unreadCount: 0,
+  },
+  {
+    id: "demo-3",
+    otherUser: { displayName: "vintage_psa", screenname: "vintage_psa" },
+    lastMessage: { content: "Cool, will check back tonight." },
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
+    unreadCount: 0,
+  },
+];
+
 export default function MessagesScreen() {
   const colors = useColors();
   const router = useRouter();
   const { isSignedIn } = useIsSignedIn();
   const { data, isLoading } = useListConversations(qopt(isSignedIn));
 
-  if (!isSignedIn) {
-    return (
-      <PageShell title="Messages">
-        <SignInPrompt message="Sign in to message other collectors." />
-      </PageShell>
-    );
-  }
+  const list = isSignedIn && data ? data : DEMO_CONVERSATIONS;
 
   return (
     <PageShell title="Messages">
-      {isLoading && <ActivityIndicator color={colors.neonRed} style={{ marginTop: 24 }} />}
+      {isSignedIn && isLoading && <ActivityIndicator color={colors.neonRed} style={{ marginTop: 24 }} />}
       <View style={styles.list}>
-        {(data ?? []).map((c) => (
+        {list.map((c) => (
           <Pressable
             key={c.id}
             onPress={() => router.push({ pathname: "/messages/[id]", params: { id: String(c.id) } })}
@@ -60,7 +78,7 @@ export default function MessagesScreen() {
             )}
           </Pressable>
         ))}
-        {(data ?? []).length === 0 && !isLoading && (
+        {list.length === 0 && !isLoading && (
           <Text style={[styles.empty, { color: colors.mutedForeground }]}>
             No conversations yet.
           </Text>

@@ -70,14 +70,6 @@ export default function AddVaultItemScreen() {
     }
   }, [name, category, condition, purchasePrice, currentValue, notes, create, router]);
 
-  if (!isSignedIn) {
-    return (
-      <PageShell title="Add Item">
-        <SignInPrompt message="Sign in to add items to your real vault." />
-      </PageShell>
-    );
-  }
-
   const inputStyle = [
     styles.input,
     { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border },

@@ -16,24 +16,51 @@ const STATUS_COLORS: Record<string, string> = {
   closed: "#a3a3ac",
 };
 
+const DEMO_MY_TRADES = [
+  {
+    id: "demo-1",
+    title: "1999 Charizard Holo PSA 9 (looking for vintage holos)",
+    status: "open",
+    role: "owner",
+    kind: "trade",
+    postedAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+    askingPrice: 1800,
+    otherParty: null as null | { screenname: string },
+  },
+  {
+    id: "demo-2",
+    title: "Black Lotus offer accepted",
+    status: "completed",
+    role: "buyer",
+    kind: "buy",
+    postedAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
+    askingPrice: 48500,
+    otherParty: { screenname: "kiyo" },
+  },
+  {
+    id: "demo-3",
+    title: "Awaiting response on UCS Falcon offer",
+    status: "pending",
+    role: "buyer",
+    kind: "buy",
+    postedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    askingPrice: 850,
+    otherParty: { screenname: "brickfan" },
+  },
+];
+
 export default function MyTradesScreen() {
   const colors = useColors();
   const { isSignedIn } = useIsSignedIn();
   const { data, isLoading } = useListMyTrades({ status: "all" }, qopt(isSignedIn));
 
-  if (!isSignedIn) {
-    return (
-      <PageShell title="My Trades">
-        <SignInPrompt message="Sign in to manage your trades and offers." />
-      </PageShell>
-    );
-  }
+  const list = isSignedIn && data ? data : DEMO_MY_TRADES;
 
   return (
     <PageShell title="My Trades">
-      {isLoading && <ActivityIndicator color={colors.neonAmber} style={{ marginTop: 24 }} />}
+      {isSignedIn && isLoading && <ActivityIndicator color={colors.neonAmber} style={{ marginTop: 24 }} />}
       <View style={styles.list}>
-        {(data ?? []).map((t) => (
+        {list.map((t) => (
           <View key={t.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.row}>
               <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>
@@ -66,7 +93,7 @@ export default function MyTradesScreen() {
             )}
           </View>
         ))}
-        {(data ?? []).length === 0 && !isLoading && (
+        {list.length === 0 && !isLoading && (
           <Text style={[styles.empty, { color: colors.mutedForeground }]}>
             No trades yet. Browse the trading board to make offers.
           </Text>

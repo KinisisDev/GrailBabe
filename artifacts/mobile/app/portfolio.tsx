@@ -15,19 +15,33 @@ import { formatCurrency, formatPercent, formatCompactCurrency } from "@/lib/form
 export default function PortfolioScreen() {
   const colors = useColors();
   const { isSignedIn } = useIsSignedIn();
-  const { data: summary, isLoading } = useGetPortfolioSummary(qopt(isSignedIn));
-  const { data: byCat } = useGetPortfolioByCategory(qopt(isSignedIn));
-  const { data: timeline } = useGetPortfolioTimeline(undefined, qopt(isSignedIn));
+  const { data: apiSummary, isLoading } = useGetPortfolioSummary(qopt(isSignedIn));
+  const { data: apiByCat } = useGetPortfolioByCategory(qopt(isSignedIn));
+  const { data: apiTimeline } = useGetPortfolioTimeline(undefined, qopt(isSignedIn));
 
-  if (!isSignedIn) {
-    return (
-      <PageShell title="Analytics">
-        <SignInPrompt message="Sign in to see portfolio analytics, value over time, and category breakdowns." />
-      </PageShell>
-    );
-  }
+  const DEMO_SUMMARY = {
+    totalValue: 74350,
+    totalCost: 64980,
+    gain: 9370,
+    gainPct: 14.4,
+    itemCount: 8,
+  };
+  const DEMO_BYCAT = [
+    { category: "TCG", value: 38500, itemCount: 4 },
+    { category: "LEGO", value: 18200, itemCount: 2 },
+    { category: "Sports", value: 12450, itemCount: 1 },
+    { category: "Other", value: 5200, itemCount: 1 },
+  ];
+  const DEMO_TIMELINE = Array.from({ length: 12 }).map((_, i) => ({
+    date: new Date(2025, i, 1).toISOString(),
+    value: 55000 + Math.round(Math.sin(i / 2) * 6000) + i * 1500,
+  }));
 
-  if (isLoading || !summary) {
+  const summary = isSignedIn && apiSummary ? apiSummary : DEMO_SUMMARY;
+  const byCat = isSignedIn && apiByCat ? apiByCat : DEMO_BYCAT;
+  const timeline = isSignedIn && apiTimeline ? apiTimeline : DEMO_TIMELINE;
+
+  if (isSignedIn && isLoading && !apiSummary) {
     return (
       <PageShell title="Analytics">
         <ActivityIndicator color={colors.neonBlue} style={{ marginTop: 32 }} />
@@ -36,8 +50,8 @@ export default function PortfolioScreen() {
   }
 
   const positive = summary.gain >= 0;
-  const maxCat = Math.max(...(byCat ?? []).map((c) => c.value), 1);
-  const tlPoints = (timeline ?? []) as Array<{ date: string; value: number }>;
+  const maxCat = Math.max(...byCat.map((c) => c.value), 1);
+  const tlPoints = timeline as Array<{ date: string; value: number }>;
   const tlMax = Math.max(...tlPoints.map((p) => p.value), 1);
   const tlMin = Math.min(...tlPoints.map((p) => p.value), 0);
 

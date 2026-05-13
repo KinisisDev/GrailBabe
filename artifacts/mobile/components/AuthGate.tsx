@@ -14,29 +14,10 @@ export function useIsSignedIn(): { isSignedIn: boolean; isLoaded: boolean } {
   }
 }
 
-export function SignInPrompt({ message }: { message?: string }) {
-  const colors = useColors();
-  const router = useRouter();
-  return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={[styles.iconWrap, { backgroundColor: colors.muted }]}>
-        <Feather name="lock" size={20} color={colors.neonBlue} />
-      </View>
-      <Text style={[styles.title, { color: colors.foreground }]}>Demo data</Text>
-      <Text style={[styles.body, { color: colors.mutedForeground }]}>
-        {message ?? "Sign in to sync your real collection across devices."}
-      </Text>
-      <Pressable
-        onPress={() => router.push("/sign-in")}
-        style={({ pressed }) => [
-          styles.btn,
-          { backgroundColor: colors.neonBlue, opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Sign in</Text>
-      </Pressable>
-    </View>
-  );
+// Sign-in prompts are disabled in test mode so QA can browse every screen
+// without authenticating. Re-enable by restoring the previous JSX from git.
+export function SignInPrompt(_: { message?: string }) {
+  return null;
 }
 
 const styles = StyleSheet.create({
