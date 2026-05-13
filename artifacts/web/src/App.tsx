@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { SplashScreen } from "./components/SplashScreen";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,6 +44,8 @@ function ProtectedRoutes() {
 }
 
 function App() {
+  const [splashDone, setSplashDone] = useState(false);
+  if (!splashDone) return <SplashScreen onEnter={() => setSplashDone(true)} />;
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
