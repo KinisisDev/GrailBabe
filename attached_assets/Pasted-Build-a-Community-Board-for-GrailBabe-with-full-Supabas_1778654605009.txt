@@ -1,0 +1,228 @@
+Build a Community Board for GrailBabe with full Supabase integration — real posts, real votes, real comments.
+
+---
+
+## 1. Supabase Migration
+
+Create: supabase/migrations/[timestamp]_create_community.sql
+
+```sql
+-- Posts table
+create table posts (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid references auth.users(id) on delete cascade not null,
+  category text not null check (category in ('tcg','lego','sports','grail','price-check','general')),
+  title text not null,
+  body text not null,
+  is_pinned boolean default false,
+  created_at timestamptz default now()
+);
+
+-- Comments table
+create table comments (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid references posts(id) on delete cascade not null,
+  author_id uuid references auth.users(id) on delete cascade not null,
+  body text not null,
+  created_at timestamptz default now()
+);
+
+-- Votes table (one row per user per post)
+create table post_votes (
+  user_id uuid references auth.users(id) on delete cascade,
+  post_id uuid references posts(id) on delete cascade,
+  value int not null check (value in (1, -1)),
+  primary key (user_id, post_id)
+);
+
+-- Profiles table (display names + avatars)
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text,
+  initials text,
+  created_at timestamptz default now()
+);
+
+-- Enable RLS
+alter table posts enable row level security;
+alter table comments enable row level security;
+alter table post_votes enable row level security;
+alter table profiles enable row level security;
+
+-- Posts policies
+create policy "Anyone can read posts" on posts for select using (true);
+create policy "Authenticated users can create posts" on posts for insert with check (auth.uid() = author_id);
+create policy "Authors can update their posts" on posts for update using (auth.uid() = author_id);
+
+-- Comments policies
+create policy "Anyone can read comments" on comments for select using (true);
+create policy "Authenticated users can comment" on comments for insert with check (auth.uid() = author_id);
+
+-- Votes policies
+create policy "Anyone can read votes" on post_votes for select using (true);
+create policy "Users can vote" on post_votes for insert with check (auth.uid() = user_id);
+create policy "Users can change their vote" on post_votes for update using (auth.uid() = user_id);
+create policy "Users can remove their vote" on post_votes for delete using (auth.uid() = user_id);
+
+-- Profiles policies
+create policy "Anyone can read profiles" on profiles for select using (true);
+create policy "Users manage own profile" on profiles for all using (auth.uid() = id);
+
+-- Auto-create profile on signup
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into profiles (id, display_name, initials)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
+    upper(left(coalesce(new.raw_user_meta_data->>'display_name', new.email), 2))
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+```
+
+---
+
+## 2. Hooks — create artifacts/web/src/hooks/useCommunity.ts
+
+```ts
+// Fetch posts with vote totals + comment counts, optionally filtered by category
+// Sort options: 'hot' (score desc), 'new' (created_at desc), 'top' (all-time score desc)
+export function usePosts(category?: string, sort?: 'hot' | 'new' | 'top')
+
+// Fetch a single post by id
+export function usePost(postId: string)
+
+// Create a new post
+export function useCreatePost()
+
+// Upvote or downvote — handles upsert and removal (clicking same vote removes it)
+export function useVotePost()
+
+// Fetch comments for a post (ordered by created_at asc)
+export function useComments(postId: string)
+
+// Create a comment
+export function useCreateComment()
+```
+
+For vote score, use a Supabase RPC or compute in the query:
+```sql
+select posts.*, 
+  coalesce(sum(post_votes.value), 0) as score,
+  count(distinct comments.id) as comment_count,
+  profiles.display_name,
+  profiles.initials
+from posts
+left join post_votes on post_votes.post_id = posts.id
+left join comments on comments.post_id = posts.id
+left join profiles on profiles.id = posts.author_id
+group by posts.id, profiles.display_name, profiles.initials
+```
+
+---
+
+## 3. Page 1 — Community feed: artifacts/web/src/pages/Community.tsx
+
+### Layout: two-column (category sidebar + main feed)
+
+**Left sidebar (~190px):**
+- Section "Categories": All, TCG, LEGO, Sports Cards, Grail Posts, Price Checks, General — each showing live count from usePosts
+- Section "My Activity": My Upvoted, My Posts, Saved (these can be placeholders for now)
+- Clicking a category filters the feed
+
+**Main feed:**
+
+Header: "Community" title + "New post" button (opens modal)
+
+Compose bar below header: avatar + "Share something with the community..." placeholder + Image and Link icon buttons (both open the new post modal)
+
+Sort tabs: 🔥 Hot | ✨ New | ⬆ Top
+
+Search input: filters posts by title client-side
+
+**Post cards (list, not grid):**
+Each card has:
+- Vote column (left): upvote chevron, score number, downvote chevron. Clicking upvote calls useVotePost with value 1. Clicking again removes the vote. Downvote uses value -1. Highlight the active vote in neon blue.
+- Post body (right):
+  - Top row: category badge (color-coded) + "Pinned" label if is_pinned
+  - Title (bold, 14px)
+  - Body snippet (1 line, truncated)
+  - Meta row: avatar + display name, comment count, time ago
+- Clicking anywhere on the card (except vote buttons) navigates to /community/[id]
+- Pinned posts always appear first regardless of sort
+
+**New Post Modal:**
+Fields:
+- Category: select dropdown (TCG | LEGO | Sports Cards | Grail Post | Price Check | General)
+- Title: text input (required, max 200 chars)
+- Body: textarea (required, min 20 chars)
+- Submit button: "Post to community" — calls useCreatePost, closes modal, refreshes feed
+
+---
+
+## 4. Page 2 — Post thread: artifacts/web/src/pages/CommunityPost.tsx
+
+Route: /community/:postId
+
+Layout:
+- Back button → /community
+- Full post card at top (same vote column, full body text, author + timestamp)
+- Comment count heading: "X replies"
+- Comment list: avatar + display name + body + timestamp, ordered oldest first
+- Comment input at bottom: textarea + "Reply" button — calls useCreateComment, appends to list
+
+Use Supabase Realtime to subscribe to new comments on this post so they appear live without refreshing.
+
+---
+
+## 5. Category badge colors
+- tcg → purple tint
+- lego → green tint
+- sports → amber tint
+- grail → pink tint
+- price-check → teal tint
+- general → gray/muted
+
+---
+
+## 6. Sidebar nav
+
+In AppShell.tsx add:
+- Icon: Users (lucide-react)
+- Label: "Community"
+- href: "/community"
+
+---
+
+## 7. Routing
+
+In App.tsx add:
+```tsx
+<Route path="/community" component={Community} />
+<Route path="/community/:postId" component={CommunityPost} />
+```
+
+---
+
+## Style Notes
+- Match dark theme throughout
+- Neon blue (--primary) for active vote, Post button, reply button
+- Pinned cards get a left border accent (2px, --primary color)
+- Post cards are full width, not a grid — this is a feed
+- Smooth hover state on cards (border brightens)
+- Empty state when no posts in a category: centered icon + "No posts yet. Be the first to post."
+
+---
+
+## Important
+- Do NOT push to git — commit only
+- Reuse the existing Supabase client from the project (check lib/supabase.ts or similar — do not create new credentials)
+- Run the migration via Supabase CLI or paste into Supabase SQL editor — do NOT auto-run against production without confirming
+- Check for existing usePosts/useCommunity hooks before creating new ones
