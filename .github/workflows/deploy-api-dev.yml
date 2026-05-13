@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'artifacts/api-server/**
+      - 'artifacts/api-server/**'
       - 'lib/**'
       - '.github/workflows/deploy-api-dev.yml'
   workflow_dispatch:
