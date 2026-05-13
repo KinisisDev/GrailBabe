@@ -1,0 +1,145 @@
+Add automatic background removal and Standard/Advanced scan modes to the Scanner. Build in this exact order:
+
+---
+
+## STEP 1 — Replit Secret (prerequisite)
+Ensure BGREMOVE_API_KEY exists in Replit Secrets. The key is already added. Also confirm OPENAI_API_KEY is present (used in Advanced mode). Both should already be set.
+
+---
+
+## STEP 2 — Server: BGRemove Endpoint
+
+Create POST /api/scanner/remove-background
+
+Accepts: { imageBase64: string }  // base64 encoded image (jpeg/png/webp)
+Returns: { imageBase64: string }  // base64 encoded PNG with background removed
+
+Logic:
+- Convert the incoming base64 to a buffer
+- POST to the BGRemove API with Authorization/X-Api-Key header using process.env.BGREMOVE_API_KEY
+- Send image as multipart form data or base64 per their API spec, request PNG output
+- Return the result image as base64 PNG
+- Add 10-second AbortController timeout — on timeout return 408
+- On any API error return 502 with reason
+- This endpoint never writes to the database or storage
+
+---
+
+## STEP 3 — Server: Scanner Analyze Endpoint
+
+Create POST /api/scanner/analyze
+
+Accepts:
+{
+  itemId: string,
+  category: string,       // tcg | sports | lego
+  imageBase64?: string,   // only sent in advanced mode when photo was taken
+  mode: 'standard' | 'advanced'
+}
+
+Standard mode — fetch based on category:
+- TCG Cards: TCGPlayer market price (near mint)
+- Sports Cards: eBay sold listings (last 30 days)
+- LEGO: Rebrickable set data + BrickLink average sold price
+- Return: { name, set, year, priceRange: { low, mid, high }, recentSoldCount, sources: string[] }
+
+Advanced mode — everything in standard PLUS (when imageBase64 provided):
+- Call OpenAI Chat Completions with vision (model: gpt-4o)
+  System prompt: "You are an expert collectibles grader. Analyze this card/item image and provide: (1) estimated condition grade on PSA 1-10 scale with brief reasoning, (2) any visible defects (creases, scratches, stains, print defects), (3) centering estimate (left/right, top/bottom percentages), (4) surface condition notes, (5) overall authenticity flags if anything looks off. Be concise and precise."
+- Use process.env.OPENAI_API_KEY
+- Fetch extended price data:
+  - TCG: also foil/holo variant prices, graded card premiums (PSA 9/10 multipliers)
+  - Sports: also rookie card premium if applicable, graded vs raw price difference
+  - LEGO: also sealed vs opened price difference, retired set premium
+- Return everything from standard plus: { aiGrade, aiGradeRange, defects, centering, surfaceNotes, authenticityFlags, extendedPrices, priceHistorySparkline }
+- If OpenAI call fails, still return standard data with aiError: true
+
+Important: No database writes, no storage writes. All scanner analysis is in-memory only.
+
+---
+
+## STEP 4 — Regenerate OpenAPI Spec + React Query Hooks
+
+After adding both endpoints in Steps 2 and 3, regenerate the OpenAPI spec and the frontend generated hooks so the React app has:
+- useRemoveBackground()
+- useScannerAnalyze()
+
+Follow the existing OpenAPI + generated hooks pattern used throughout the codebase.
+
+---
+
+## STEP 5 — Frontend: Scan Mode Selector
+
+Add a mode selector to the Scanner page header, visible at all times during a scan session.
+
+UI: Two segmented toggle buttons — "Standard" | "Advanced"
+- Standard is the default
+- Subtitle under selector:
+  - Standard: "Quick lookup — barcode + current market prices"
+  - Advanced: "Full analysis — all price sources + AI photo grading"
+- Persist selected mode in localStorage key "grailbabe_scan_mode"
+- Mode applies to all scans in the session until changed
+- The selector should be changeable at any point, not just at session start
+
+---
+
+## STEP 6 — Frontend: Automatic Background Removal in Photo Capture
+
+In the scanner photo capture flow, immediately after the user captures a photo and BEFORE canvas compression:
+
+For TCG Cards and Sports Cards ONLY — skip entirely for LEGO:
+
+1. Show loading indicator overlay on the preview: "Removing background..."
+2. Call useRemoveBackground() with the image base64
+3. On success: replace the captured image with the returned PNG, dismiss loading indicator
+4. On failure or timeout: dismiss loading indicator silently, continue with original image — never block or crash
+5. Then run canvas compression as normal (1200px max, JPEG 85% for cards)
+6. Show the final result in the preview so the user sees the cleaned image before confirming
+
+Background removal runs automatically in BOTH Standard and Advanced modes.
+
+---
+
+## STEP 7 — Frontend: Standard Mode Results Display
+
+After item is identified (barcode, search, or photo), call useScannerAnalyze() with mode: 'standard'.
+
+Show a clean results card:
+- Item name, set/series, year
+- Thumbnail image (with bg removed if card)
+- Price range: Low / Mid / High with currency formatting
+- Recent sales count badge
+- Source badges (e.g. "TCGPlayer", "eBay Sold")
+- "Add to Vault" button
+- "Scan Another" button
+
+Show a loading skeleton while fetching. If fetch fails, show retry option.
+
+---
+
+## STEP 8 — Frontend: Advanced Mode Results Display
+
+When mode is 'advanced', call useScannerAnalyze() with mode: 'advanced' and include imageBase64 if a photo was taken.
+
+Show an expanded results card with three accordion sections:
+
+Section 1 — "AI Grade Analysis" (expanded by default, highlighted with accent color):
+- Grade estimate (e.g. "PSA 7–8") in large text
+- Defects list
+- Centering estimate
+- Surface condition notes
+- Authenticity flag (green checkmark or yellow warning)
+- Show "AI analysis unavailable" dismissible banner if aiError: true, but still show other sections
+
+Section 2 — "Market Data" (expanded by default):
+- Everything from Standard results
+- Extended prices for the category (graded premiums, variant prices, sealed vs open, etc.)
+
+Section 3 — "Price History" (collapsed by default):
+- Sparkline chart of last 6 months if priceHistorySparkline data available
+- Otherwise show "Price history not available"
+
+Two loading states run in parallel:
+- Price data loading: "Fetching prices..."
+- AI analysis loading: "AI analyzing..." (shown only in Advanced mode)
+Each resolves independently — price data can display before AI analysis finishes.
