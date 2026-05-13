@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -23,8 +23,22 @@ import { useColors } from "@/hooks/useColors";
 import { PageShell } from "@/components/PageShell";
 import { useIsSignedIn, SignInPrompt } from "@/components/AuthGate";
 import { CONDITIONS } from "@/lib/format";
+import {
+  TCG_GAMES,
+  type TcgGameSlug,
+  type ItemType,
+  tcgCategory,
+  legoCategory,
+  sportsCategory,
+  encodeNotes,
+} from "@/lib/vaultCategory";
 
-const CATEGORIES = ["TCG", "LEGO", "Sports", "Comics", "Coins", "Other"];
+type TopCategory = "tcg" | "lego" | "sports";
+const TOP_CATEGORIES: { key: TopCategory; label: string }[] = [
+  { key: "tcg", label: "TCG" },
+  { key: "lego", label: "LEGO" },
+  { key: "sports", label: "Sports" },
+];
 
 export default function AddVaultItemScreen() {
   const colors = useColors();
@@ -40,77 +54,314 @@ export default function AddVaultItemScreen() {
   });
 
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("TCG");
+  const [topCategory, setTopCategory] = useState<TopCategory>("tcg");
+  const [tcgGame, setTcgGame] = useState<TcgGameSlug>("pokemon");
+  const [itemType, setItemType] = useState<ItemType>("single");
   const [condition, setCondition] = useState<CollectionItemInputCondition>("near_mint");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [currentValue, setCurrentValue] = useState("");
-  const [notes, setNotes] = useState("");
+  // Detail fields kept generic but stored in notes JSON
+  const [cardNumber, setCardNumber] = useState("");
+  const [gradingService, setGradingService] = useState<"Raw" | "PSA" | "BGS" | "CGC">("Raw");
+  const [grade, setGrade] = useState("");
+  const [setNumber, setSetNumber] = useState("");
+  const [theme, setTheme] = useState("");
+  const [year, setYear] = useState("");
+  const [legoStatus, setLegoStatus] = useState<"Sealed" | "Built" | "Incomplete">("Sealed");
+  const [freeNotes, setFreeNotes] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
+  const encodedCategory = useMemo(() => {
+    if (topCategory === "tcg") return tcgCategory(tcgGame, itemType);
+    if (topCategory === "lego") return legoCategory(itemType);
+    return sportsCategory();
+  }, [topCategory, tcgGame, itemType]);
+
   const submit = useCallback(async () => {
-    if (!name.trim() || !category) {
-      setErr("Name and category are required.");
+    if (!name.trim()) {
+      setErr("Name is required.");
       return;
     }
     setErr(null);
+    const notes =
+      topCategory === "tcg"
+        ? itemType === "single"
+          ? encodeNotes({
+              text: freeNotes || undefined,
+              cardNumber: cardNumber || undefined,
+              gradingService,
+              grade: grade || undefined,
+            })
+          : encodeNotes({
+              text: freeNotes || undefined,
+              releaseYear: year ? Number(year) : undefined,
+              sealed: legoStatus === "Sealed",
+            })
+        : topCategory === "lego"
+          ? encodeNotes({
+              text: freeNotes || undefined,
+              setNumber: setNumber || undefined,
+              theme: theme || undefined,
+              year: year ? Number(year) : undefined,
+              status: legoStatus,
+            })
+          : encodeNotes({
+              text: freeNotes || undefined,
+              cardNumber: cardNumber || undefined,
+              gradingService,
+              grade: grade || undefined,
+              year: year ? Number(year) : undefined,
+            });
     try {
       await create.mutateAsync({
         data: {
           name: name.trim(),
-          category,
+          category: encodedCategory,
           condition,
           purchasePrice: purchasePrice ? Number(purchasePrice) : undefined,
           currentValue: currentValue ? Number(currentValue) : undefined,
-          notes: notes || undefined,
+          notes,
         },
       });
       router.back();
     } catch (e) {
       setErr((e as Error).message);
     }
-  }, [name, category, condition, purchasePrice, currentValue, notes, create, router]);
+  }, [
+    name,
+    topCategory,
+    itemType,
+    encodedCategory,
+    condition,
+    purchasePrice,
+    currentValue,
+    cardNumber,
+    gradingService,
+    grade,
+    setNumber,
+    theme,
+    year,
+    legoStatus,
+    freeNotes,
+    create,
+    router,
+  ]);
 
   const inputStyle = [
     styles.input,
     { backgroundColor: colors.input, color: colors.foreground, borderColor: colors.border },
   ];
 
+  const Chips = <T extends string>({
+    options,
+    value,
+    onChange,
+    accent,
+  }: {
+    options: { value: T; label: string }[];
+    value: T;
+    onChange: (v: T) => void;
+    accent: string;
+  }) => (
+    <View style={styles.chipRow}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: active ? accent : colors.card,
+                borderColor: active ? accent : colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.chipText, { color: active ? "#0a0a0f" : colors.foreground }]}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+
   return (
     <PageShell title="Add Item" scroll={false}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          {!isSignedIn && <SignInPrompt message="Sign in to add items to your vault." />}
+
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Name *</Text>
           <TextInput
             style={inputStyle}
             value={name}
             onChangeText={setName}
-            placeholder="Charizard 4/102"
+            placeholder={
+              topCategory === "lego" ? "Hogwarts Castle 71043" : "Charizard 4/102"
+            }
             placeholderTextColor={colors.mutedForeground}
           />
 
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Category</Text>
-          <View style={styles.chipRow}>
-            {CATEGORIES.map((c) => {
-              const active = c === category;
-              return (
-                <Pressable
-                  key={c}
-                  onPress={() => setCategory(c)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: active ? colors.neonGreen : colors.card,
-                      borderColor: active ? colors.neonGreen : colors.border,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.chipText, { color: active ? "#0a0a0f" : colors.foreground }]}>
-                    {c}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Chips
+            options={TOP_CATEGORIES.map((c) => ({ value: c.key, label: c.label }))}
+            value={topCategory}
+            onChange={setTopCategory}
+            accent={colors.neonGreen}
+          />
+
+          {topCategory === "tcg" && (
+            <>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Game</Text>
+              <Chips
+                options={TCG_GAMES.map((g) => ({ value: g.slug, label: g.name }))}
+                value={tcgGame}
+                onChange={setTcgGame}
+                accent={colors.neonBlue}
+              />
+            </>
+          )}
+
+          {(topCategory === "tcg" || topCategory === "lego") && (
+            <>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Type</Text>
+              <Chips
+                options={[
+                  { value: "single", label: topCategory === "lego" ? "Minifig" : "Single" },
+                  { value: "set", label: topCategory === "lego" ? "Set" : "Sealed Set" },
+                ]}
+                value={itemType}
+                onChange={setItemType}
+                accent={colors.neonYellow}
+              />
+            </>
+          )}
+
+          {topCategory === "tcg" && itemType === "single" && (
+            <>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Card #</Text>
+              <TextInput
+                style={inputStyle}
+                value={cardNumber}
+                onChangeText={setCardNumber}
+                placeholder="4/102"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Grading</Text>
+              <Chips
+                options={(["Raw", "PSA", "BGS", "CGC"] as const).map((g) => ({
+                  value: g,
+                  label: g,
+                }))}
+                value={gradingService}
+                onChange={setGradingService}
+                accent={colors.neonBlue}
+              />
+              {gradingService !== "Raw" && (
+                <>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>Grade</Text>
+                  <TextInput
+                    style={inputStyle}
+                    value={grade}
+                    onChangeText={setGrade}
+                    placeholder="9.5"
+                    keyboardType="decimal-pad"
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                </>
+              )}
+            </>
+          )}
+
+          {topCategory === "lego" && (
+            <>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Set number</Text>
+              <TextInput
+                style={inputStyle}
+                value={setNumber}
+                onChangeText={setSetNumber}
+                placeholder="71043"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Theme</Text>
+              <TextInput
+                style={inputStyle}
+                value={theme}
+                onChangeText={setTheme}
+                placeholder="Harry Potter"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Year</Text>
+              <TextInput
+                style={inputStyle}
+                value={year}
+                onChangeText={setYear}
+                placeholder="2018"
+                keyboardType="number-pad"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Status</Text>
+              <Chips
+                options={(["Sealed", "Built", "Incomplete"] as const).map((s) => ({
+                  value: s,
+                  label: s,
+                }))}
+                value={legoStatus}
+                onChange={setLegoStatus}
+                accent={colors.neonGreen}
+              />
+            </>
+          )}
+
+          {topCategory === "sports" && (
+            <>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Card #</Text>
+              <TextInput
+                style={inputStyle}
+                value={cardNumber}
+                onChangeText={setCardNumber}
+                placeholder="#27"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Year</Text>
+              <TextInput
+                style={inputStyle}
+                value={year}
+                onChangeText={setYear}
+                placeholder="2018"
+                keyboardType="number-pad"
+                placeholderTextColor={colors.mutedForeground}
+              />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Grading</Text>
+              <Chips
+                options={(["Raw", "PSA", "BGS", "CGC"] as const).map((g) => ({
+                  value: g,
+                  label: g,
+                }))}
+                value={gradingService}
+                onChange={setGradingService}
+                accent={colors.neonBlue}
+              />
+              {gradingService !== "Raw" && (
+                <>
+                  <Text style={[styles.label, { color: colors.mutedForeground }]}>Grade</Text>
+                  <TextInput
+                    style={inputStyle}
+                    value={grade}
+                    onChangeText={setGrade}
+                    placeholder="9.5"
+                    keyboardType="decimal-pad"
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                </>
+              )}
+            </>
+          )}
 
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Condition</Text>
           <View style={styles.chipRow}>
@@ -164,8 +415,8 @@ export default function AddVaultItemScreen() {
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Notes</Text>
           <TextInput
             style={[inputStyle, { minHeight: 80, textAlignVertical: "top" }]}
-            value={notes}
-            onChangeText={setNotes}
+            value={freeNotes}
+            onChangeText={setFreeNotes}
             multiline
             placeholder="Storage, condition details…"
             placeholderTextColor={colors.mutedForeground}
@@ -175,10 +426,13 @@ export default function AddVaultItemScreen() {
 
           <Pressable
             onPress={submit}
-            disabled={create.isPending}
+            disabled={create.isPending || !isSignedIn}
             style={({ pressed }) => [
               styles.btn,
-              { backgroundColor: colors.neonGreen, opacity: create.isPending || pressed ? 0.85 : 1 },
+              {
+                backgroundColor: colors.neonGreen,
+                opacity: create.isPending || pressed || !isSignedIn ? 0.5 : 1,
+              },
             ]}
           >
             {create.isPending ? (
