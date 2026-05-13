@@ -63,12 +63,12 @@ export default function VaultTcgPage() {
                 style={{ ["--neon" as never]: neon }}
               >
                 <div
-                  className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity"
-                  style={{ backgroundImage: `url(${bg})` }}
+                  className="absolute inset-0 bg-cover bg-center opacity-90 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundImage: `url(${bg})`, filter: "brightness(1.35) saturate(1.1)" }}
                   aria-hidden
                 />
                 <div
-                  className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-card/30"
+                  className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-card via-card/70 to-transparent"
                   aria-hidden
                 />
                 <CardContent className="p-5 space-y-3 relative aspect-[4/3] flex flex-col justify-end">
