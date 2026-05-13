@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useCreateVaultItem,
   useRemoveBackground,
@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -35,14 +36,20 @@ import {
   RefreshCw,
   Plus,
   X,
+  Vault,
+  DollarSign,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 type Mode = "standard" | "advanced";
 type Category = "tcg" | "sports" | "lego";
+type Intent = "add" | "price";
 
 const MODE_KEY = "grailbabe_scan_mode";
+const AUTO_SCAN_KEY = "grailbabe_auto_scan";
+const INTENT_KEY = "grailbabe_scan_intent";
 const MAX_DIM = 1200;
 const JPEG_QUALITY = 0.85;
 
@@ -51,6 +58,18 @@ function loadMode(): Mode {
   return window.localStorage.getItem(MODE_KEY) === "advanced"
     ? "advanced"
     : "standard";
+}
+
+function loadAutoScan(): boolean {
+  if (typeof window === "undefined") return true;
+  const v = window.localStorage.getItem(AUTO_SCAN_KEY);
+  return v === null ? true : v === "1";
+}
+
+function loadIntent(): Intent | null {
+  if (typeof window === "undefined") return null;
+  const v = window.localStorage.getItem(INTENT_KEY);
+  return v === "add" || v === "price" ? v : null;
 }
 
 async function dataUrlFromBlob(b: Blob): Promise<string> {
@@ -83,6 +102,7 @@ async function compressImage(src: string): Promise<string> {
 }
 
 export default function ScannerPage() {
+  const [, navigate] = useLocation();
   const [mode, setMode] = useState<Mode>(loadMode);
   const [category, setCategory] = useState<Category>("tcg");
   const [itemId, setItemId] = useState("");
@@ -91,19 +111,79 @@ export default function ScannerPage() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [result, setResult] = useState<ScannerAnalyzeResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [autoScan, setAutoScan] = useState<boolean>(loadAutoScan);
+  const [intent, setIntent] = useState<Intent | null>(loadIntent);
+  const [intentDialogOpen, setIntentDialogOpen] = useState<boolean>(
+    () => loadIntent() === null,
+  );
+  const [committing, setCommitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const removeBgMut = useRemoveBackground();
   const analyzeMut = useScannerAnalyze();
+  const createMut = useCreateVaultItem();
 
   useEffect(() => {
     window.localStorage.setItem(MODE_KEY, mode);
   }, [mode]);
 
-  const handleImageInput = async (file: File) => {
+  useEffect(() => {
+    window.localStorage.setItem(AUTO_SCAN_KEY, autoScan ? "1" : "0");
+  }, [autoScan]);
+
+  useEffect(() => {
+    if (intent) window.localStorage.setItem(INTENT_KEY, intent);
+  }, [intent]);
+
+  const ensureIntent = useCallback((): Intent | null => {
+    if (intent) return intent;
+    setIntentDialogOpen(true);
+    return null;
+  }, [intent]);
+
+  const autoCommitToVault = useCallback(
+    async (
+      res: ScannerAnalyzeResult,
+      capturedImages: string[],
+      cat: Category,
+    ) => {
+      const notesParts: string[] = [];
+      if (res.set) notesParts.push(`Set: ${res.set}`);
+      if (res.year) notesParts.push(`Year: ${res.year}`);
+      if (res.aiGrade) notesParts.push(`AI grade: ${res.aiGrade}`);
+      if (res.aiGradeRange) notesParts.push(`Range: ${res.aiGradeRange}`);
+      notesParts.push(
+        `Scanner price range: $${res.priceRange.low.toFixed(2)} – $${res.priceRange.high.toFixed(2)} (mid $${res.priceRange.mid.toFixed(2)})`,
+      );
+      setCommitting(true);
+      try {
+        await createMut.mutateAsync({
+          data: {
+            name: res.name,
+            category: cat,
+            condition: gradeToCondition(res.aiGrade),
+            currentValue: res.priceRange.mid,
+            photos: capturedImages,
+            notes: notesParts.join("\n"),
+          },
+        });
+        toast.success("Added to your Vault");
+        navigate(vaultRouteForCategory(cat));
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Could not add to vault",
+        );
+      } finally {
+        setCommitting(false);
+      }
+    },
+    [createMut, navigate],
+  );
+
+  const handleImageInput = async (file: File): Promise<string | null> => {
     if (images.length >= 6) {
       toast.error("Maximum 6 photos");
-      return;
+      return null;
     }
     try {
       let dataUrl = await dataUrlFromBlob(file);
@@ -124,8 +204,10 @@ export default function ScannerPage() {
 
       const compressed = await compressImage(dataUrl);
       setImages((prev) => [...prev, compressed]);
+      return compressed;
     } catch {
       toast.error("Could not process image");
+      return null;
     }
   };
 
@@ -139,15 +221,19 @@ export default function ScannerPage() {
     e.target.value = "";
   };
 
-  const runAnalyze = async () => {
+  const runAnalyze = async (overrideImages?: string[]) => {
+    if (analyzeMut.isPending || committing) return;
     if (!itemId.trim()) {
       toast.error("Enter an item name or set number first");
       return;
     }
+    const activeIntent = ensureIntent();
+    if (!activeIntent) return;
     setAnalyzeError(null);
     setResult(null);
+    const sourceImages = overrideImages ?? images;
     try {
-      const useImages = mode === "advanced" ? images : [];
+      const useImages = mode === "advanced" ? sourceImages : [];
       const res = await analyzeMut.mutateAsync({
         data: {
           itemId: itemId.trim(),
@@ -158,6 +244,10 @@ export default function ScannerPage() {
         },
       });
       setResult(res);
+      if (activeIntent === "add") {
+        await autoCommitToVault(res, sourceImages, category);
+        reset();
+      }
     } catch (err) {
       setAnalyzeError(
         err instanceof Error ? err.message : "Analysis failed",
@@ -187,6 +277,44 @@ export default function ScannerPage() {
           </p>
         </div>
         <ModeToggle mode={mode} onChange={setMode} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-md border border-border bg-card/40">
+        <div className="flex items-center gap-2 text-xs">
+          {intent === "add" ? (
+            <Vault className="size-4" style={{ color: "var(--neon-green)" }} />
+          ) : intent === "price" ? (
+            <DollarSign className="size-4" style={{ color: "var(--neon-blue)" }} />
+          ) : (
+            <ScanLine className="size-4 text-muted-foreground" />
+          )}
+          <span className="text-muted-foreground">Scanning to:</span>
+          <span className="font-medium text-foreground">
+            {intent === "add"
+              ? "Add to Vault"
+              : intent === "price"
+                ? "Price Check"
+                : "Choose…"}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => setIntentDialogOpen(true)}
+          >
+            Change
+          </Button>
+        </div>
+        <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+          <Zap
+            className="size-3.5"
+            style={{ color: autoScan ? "var(--neon-blue)" : undefined }}
+          />
+          <span className={autoScan ? "text-foreground" : "text-muted-foreground"}>
+            Auto-scan when item is in frame
+          </span>
+          <Switch checked={autoScan} onCheckedChange={setAutoScan} />
+        </label>
       </div>
 
       <Card>
@@ -328,7 +456,7 @@ export default function ScannerPage() {
 
           <div className="flex justify-end pt-2">
             <Button
-              onClick={runAnalyze}
+              onClick={() => void runAnalyze()}
               disabled={analyzeMut.isPending || bgRemoving}
             >
               {analyzeMut.isPending ? (
@@ -350,7 +478,7 @@ export default function ScannerPage() {
         <Card>
           <CardContent className="p-6 text-sm text-center space-y-3">
             <div className="text-red-400">{analyzeError}</div>
-            <Button variant="outline" size="sm" onClick={runAnalyze}>
+            <Button variant="outline" size="sm" onClick={() => void runAnalyze()}>
               <RefreshCw className="size-4 mr-1.5" />
               Try again
             </Button>
@@ -379,14 +507,107 @@ export default function ScannerPage() {
 
       {cameraOpen && (
         <CameraCapture
+          autoScan={autoScan}
           onClose={() => setCameraOpen(false)}
-          onCapture={(file) => {
+          onCapture={async (file) => {
             setCameraOpen(false);
-            void handleImageInput(file);
+            const captured = await handleImageInput(file);
+            if (autoScan && captured && itemId.trim()) {
+              void runAnalyze([...images, captured]);
+            }
           }}
         />
       )}
+
+      <IntentDialog
+        open={intentDialogOpen}
+        currentIntent={intent}
+        onChoose={(i) => {
+          setIntent(i);
+          setIntentDialogOpen(false);
+        }}
+        onOpenChange={(v) => {
+          if (!v && intent) setIntentDialogOpen(false);
+        }}
+      />
+
+      {committing && (
+        <div className="fixed inset-0 z-40 bg-black/40 grid place-items-center pointer-events-none">
+          <div className="bg-background border border-border rounded-md px-4 py-3 flex items-center gap-2 shadow-lg">
+            <Loader2 className="size-4 animate-spin" />
+            <span className="text-sm">Adding to your Vault…</span>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function IntentDialog({
+  open,
+  currentIntent,
+  onChoose,
+  onOpenChange,
+}: {
+  open: boolean;
+  currentIntent: Intent | null;
+  onChoose: (i: Intent) => void;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const dismissable = currentIntent !== null;
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v && !dismissable) return;
+        onOpenChange(v);
+      }}
+    >
+      <DialogContent
+        className="max-w-md"
+        onInteractOutside={(e) => {
+          if (!dismissable) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (!dismissable) e.preventDefault();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle className="font-serif">What are you scanning for?</DialogTitle>
+          <DialogDescription>
+            Pick once and we'll handle the rest each time you scan.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
+          <button
+            type="button"
+            onClick={() => onChoose("add")}
+            className={`text-left rounded-lg border p-4 hover:border-primary transition-colors ${
+              currentIntent === "add" ? "border-primary bg-primary/5" : "border-border"
+            }`}
+          >
+            <Vault className="size-5 mb-2" style={{ color: "var(--neon-green)" }} />
+            <div className="font-serif text-base">Add to Vault</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Scan and instantly save to your collection with the AI's grade and price.
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChoose("price")}
+            className={`text-left rounded-lg border p-4 hover:border-primary transition-colors ${
+              currentIntent === "price" ? "border-primary bg-primary/5" : "border-border"
+            }`}
+          >
+            <DollarSign className="size-5 mb-2" style={{ color: "var(--neon-blue)" }} />
+            <div className="font-serif text-base">Price Check</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Just look up market price — don't save anything.
+            </div>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -524,35 +745,16 @@ function ItemHeader({
 }
 
 function ResultsActions({
-  result,
-  images,
-  category,
   onScanAnother,
 }: {
-  result: ScannerAnalyzeResult;
-  images: string[];
-  category: Category;
   onScanAnother: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border">
       <Button variant="outline" size="sm" onClick={onScanAnother}>
         <X className="size-4 mr-1.5" />
-        Dismiss
+        Done
       </Button>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        <Plus className="size-4 mr-1.5" />
-        Commit to Vault
-      </Button>
-      <AddToVaultDialog
-        open={open}
-        onOpenChange={setOpen}
-        result={result}
-        images={images}
-        category={category}
-        onScanAnother={onScanAnother}
-      />
     </div>
   );
 }
@@ -588,158 +790,6 @@ function gradeToCondition(
   return "poor";
 }
 
-function AddToVaultDialog({
-  open,
-  onOpenChange,
-  result,
-  images,
-  category,
-  onScanAnother,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  result: ScannerAnalyzeResult;
-  images: string[];
-  category: Category;
-  onScanAnother: () => void;
-}) {
-  const [, navigate] = useLocation();
-  const createMut = useCreateVaultItem();
-  const [name, setName] = useState(result.name);
-  const [condition, setCondition] = useState(gradeToCondition(result.aiGrade));
-  const [currentValue, setCurrentValue] = useState(
-    String(result.priceRange.mid.toFixed(2)),
-  );
-
-  useEffect(() => {
-    if (open) {
-      setName(result.name);
-      setCondition(gradeToCondition(result.aiGrade));
-      setCurrentValue(String(result.priceRange.mid.toFixed(2)));
-    }
-  }, [open, result]);
-
-  const submit = () => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast.error("Name is required");
-      return;
-    }
-    const value = Number(currentValue);
-    const notesParts: string[] = [];
-    if (result.set) notesParts.push(`Set: ${result.set}`);
-    if (result.year) notesParts.push(`Year: ${result.year}`);
-    if (result.aiGrade) notesParts.push(`AI grade: ${result.aiGrade}`);
-    if (result.aiGradeRange) notesParts.push(`Range: ${result.aiGradeRange}`);
-    notesParts.push(
-      `Scanner price range: $${result.priceRange.low.toFixed(2)} – $${result.priceRange.high.toFixed(2)} (mid $${result.priceRange.mid.toFixed(2)})`,
-    );
-
-    createMut.mutate(
-      {
-        data: {
-          name: trimmed,
-          category,
-          condition,
-          currentValue: Number.isFinite(value) ? value : result.priceRange.mid,
-          photos: images,
-          notes: notesParts.join("\n"),
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success("Added to your Vault");
-          onOpenChange(false);
-          onScanAnother();
-          navigate(vaultRouteForCategory(category));
-        },
-        onError: (err) => {
-          toast.error(err instanceof Error ? err.message : "Failed to add to vault");
-        },
-      },
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Commit to Vault</DialogTitle>
-          <DialogDescription>
-            Save this scanned item to your collection. You can edit any details later.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs text-muted-foreground">Name</label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Condition</label>
-            <select
-              value={condition}
-              onChange={(e) =>
-                setCondition(e.target.value as typeof condition)
-              }
-              className="mt-1 w-full h-9 rounded-md border border-border bg-background px-2 text-sm"
-            >
-              {CONDITION_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">
-              Current value (USD)
-            </label>
-            <Input
-              value={currentValue}
-              onChange={(e) => setCurrentValue(e.target.value)}
-              type="number"
-              step="0.01"
-              min="0"
-              className="mt-1"
-            />
-            <div className="text-[10px] text-muted-foreground mt-1">
-              Pre-filled from scanner mid price.
-            </div>
-          </div>
-          <div className="text-[10px] text-muted-foreground">
-            {images.length} photo{images.length === 1 ? "" : "s"} will be saved
-            with this item.
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            disabled={createMut.isPending}
-          >
-            Cancel
-          </Button>
-          <Button size="sm" onClick={submit} disabled={createMut.isPending}>
-            {createMut.isPending ? (
-              <Loader2 className="size-4 animate-spin mr-1.5" />
-            ) : (
-              <Plus className="size-4 mr-1.5" />
-            )}
-            Add to Vault
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function StandardResults({
   result,
   image,
@@ -758,12 +808,7 @@ function StandardResults({
       <CardContent className="p-6 space-y-4">
         <ItemHeader result={result} image={image} />
         <PriceTriple result={result} />
-        <ResultsActions
-          result={result}
-          images={images}
-          category={category}
-          onScanAnother={onScanAnother}
-        />
+        <ResultsActions onScanAnother={onScanAnother} />
       </CardContent>
     </Card>
   );
@@ -1091,12 +1136,7 @@ function AdvancedResults({
           </AccordionItem>
         </Accordion>
 
-        <ResultsActions
-          result={result}
-          images={images}
-          category={category}
-          onScanAnother={onScanAnother}
-        />
+        <ResultsActions onScanAnother={onScanAnother} />
       </CardContent>
     </Card>
   );
@@ -1142,13 +1182,22 @@ function ResultsSkeleton({
 function CameraCapture({
   onClose,
   onCapture,
+  autoScan,
 }: {
   onClose: () => void;
   onCapture: (file: File) => void;
+  autoScan: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const probeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const prevFrameRef = useRef<Uint8ClampedArray | null>(null);
+  const stableCountRef = useRef(0);
+  const capturedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [autoStatus, setAutoStatus] = useState<"searching" | "stabilizing" | "captured">(
+    "searching",
+  );
 
   useEffect(() => {
     let active = true;
@@ -1167,7 +1216,7 @@ function CameraCapture({
           videoRef.current.srcObject = s;
           await videoRef.current.play().catch(() => {});
         }
-      } catch (err) {
+      } catch {
         setError("Camera unavailable. Try uploading a file instead.");
       }
     })();
@@ -1182,12 +1231,14 @@ function CameraCapture({
     };
   }, [stream]);
 
-  const snap = () => {
+  const snap = useCallback(() => {
+    if (capturedRef.current) return;
     const v = videoRef.current;
-    if (!v) return;
+    if (!v || !v.videoWidth) return;
+    capturedRef.current = true;
     const canvas = document.createElement("canvas");
-    canvas.width = v.videoWidth || 1280;
-    canvas.height = v.videoHeight || 720;
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
@@ -1200,7 +1251,86 @@ function CameraCapture({
       "image/jpeg",
       0.92,
     );
-  };
+  }, [onCapture]);
+
+  // Auto-scan: poll downsampled frames; when stable + content present, capture.
+  useEffect(() => {
+    if (!autoScan || error) return;
+    let raf = 0;
+    let lastSampleAt = 0;
+    const SAMPLE_W = 32;
+    const SAMPLE_H = 24;
+    const SAMPLE_INTERVAL_MS = 350;
+    const STABILITY_THRESHOLD = 6;
+    const REQUIRED_STABLE_SAMPLES = 3;
+    const MIN_VARIANCE = 250;
+
+    const probe = (ts: number) => {
+      raf = requestAnimationFrame(probe);
+      if (capturedRef.current) return;
+      if (ts - lastSampleAt < SAMPLE_INTERVAL_MS) return;
+      lastSampleAt = ts;
+      const v = videoRef.current;
+      if (!v || !v.videoWidth) return;
+      if (!probeCanvasRef.current) {
+        probeCanvasRef.current = document.createElement("canvas");
+        probeCanvasRef.current.width = SAMPLE_W;
+        probeCanvasRef.current.height = SAMPLE_H;
+      }
+      const c = probeCanvasRef.current;
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return;
+      ctx.drawImage(v, 0, 0, SAMPLE_W, SAMPLE_H);
+      const data = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H).data;
+
+      // Variance check ensures we're not pointed at a blank wall.
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += (data[i] + data[i + 1] + data[i + 2]) / 3;
+      }
+      const mean = sum / (data.length / 4);
+      let variance = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        variance += (lum - mean) ** 2;
+      }
+      variance /= data.length / 4;
+
+      const prev = prevFrameRef.current;
+      if (!prev) {
+        prevFrameRef.current = new Uint8ClampedArray(data);
+        return;
+      }
+      let diff = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        diff +=
+          Math.abs(data[i] - prev[i]) +
+          Math.abs(data[i + 1] - prev[i + 1]) +
+          Math.abs(data[i + 2] - prev[i + 2]);
+      }
+      const avgDiff = diff / ((data.length / 4) * 3);
+      prevFrameRef.current = new Uint8ClampedArray(data);
+
+      if (variance < MIN_VARIANCE) {
+        stableCountRef.current = 0;
+        setAutoStatus("searching");
+        return;
+      }
+      if (avgDiff < STABILITY_THRESHOLD) {
+        stableCountRef.current += 1;
+        setAutoStatus("stabilizing");
+        if (stableCountRef.current >= REQUIRED_STABLE_SAMPLES) {
+          setAutoStatus("captured");
+          snap();
+        }
+      } else {
+        stableCountRef.current = 0;
+        setAutoStatus("searching");
+      }
+    };
+    raf = requestAnimationFrame(probe);
+    return () => cancelAnimationFrame(raf);
+  }, [autoScan, error, snap]);
 
   return (
     <div
@@ -1212,7 +1342,22 @@ function CameraCapture({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <div className="font-serif text-lg">Take a photo</div>
+          <div className="font-serif text-lg flex items-center gap-2">
+            Take a photo
+            {autoScan && (
+              <Badge
+                variant="outline"
+                className="text-[10px] gap-1"
+                style={{
+                  color: "var(--neon-blue)",
+                  borderColor:
+                    "color-mix(in srgb, var(--neon-blue) 60%, transparent)",
+                }}
+              >
+                <Zap className="size-3" /> Auto
+              </Badge>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -1227,12 +1372,51 @@ function CameraCapture({
             {error}
           </div>
         ) : (
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            className="w-full rounded-md bg-black aspect-video object-contain"
-          />
+          <div className="relative">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className="w-full rounded-md bg-black aspect-video object-contain"
+            />
+            {autoScan && (
+              <div className="absolute inset-0 pointer-events-none rounded-md border-2"
+                style={{
+                  borderColor:
+                    autoStatus === "captured"
+                      ? "var(--neon-green)"
+                      : autoStatus === "stabilizing"
+                        ? "var(--neon-blue)"
+                        : "color-mix(in srgb, var(--neon-blue) 30%, transparent)",
+                  transition: "border-color 200ms",
+                }}
+              />
+            )}
+            {autoScan && (
+              <div className="absolute bottom-2 left-2 right-2 text-center">
+                <span
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] bg-background/80 border border-border"
+                >
+                  {autoStatus === "captured" ? (
+                    <>
+                      <ScanLine className="size-3" style={{ color: "var(--neon-green)" }} />
+                      Captured!
+                    </>
+                  ) : autoStatus === "stabilizing" ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      Hold still…
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="size-3" />
+                      Point camera at item
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
         )}
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={onClose}>

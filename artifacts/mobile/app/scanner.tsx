@@ -10,8 +10,12 @@ import {
   ScrollView,
   Animated,
   Easing,
+  Switch,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as FileSystem from "expo-file-system/legacy";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Polyline } from "react-native-svg";
 import { Modal, Alert } from "react-native";
@@ -28,8 +32,12 @@ import { PageShell } from "@/components/PageShell";
 
 type Mode = "standard" | "advanced";
 type Category = "tcg" | "sports" | "lego";
+type Intent = "add" | "price";
 
 const MAX_PHOTOS = 6;
+const AUTO_SCAN_KEY = "grailbabe_auto_scan";
+const INTENT_KEY = "grailbabe_scan_intent";
+const AUTO_CAPTURE_MS = 2500;
 
 function ScanOverlay() {
   const anim = useRef(new Animated.Value(0)).current;
@@ -116,6 +124,7 @@ function fmt(n: number): string {
 
 export default function ScannerScreen() {
   const colors = useColors();
+  const router = useRouter();
 
   const [mode, setMode] = useState<Mode>("standard");
   const [category, setCategory] = useState<Category>("tcg");
@@ -125,6 +134,12 @@ export default function ScannerScreen() {
   const [result, setResult] = useState<ScannerAnalyzeResult | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [aiBannerDismissed, setAiBannerDismissed] = useState(false);
+  const [autoScan, setAutoScan] = useState(true);
+  const [intent, setIntent] = useState<Intent | null>(null);
+  const [intentDialogOpen, setIntentDialogOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     ai: true,
     market: true,
@@ -134,9 +149,53 @@ export default function ScannerScreen() {
 
   const analyzeMut = useScannerAnalyze();
   const removeBgMut = useRemoveBackground();
+  const createMut = useCreateVaultItem();
+
+  // Hydrate persisted settings on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [a, i] = await Promise.all([
+          AsyncStorage.getItem(AUTO_SCAN_KEY),
+          AsyncStorage.getItem(INTENT_KEY),
+        ]);
+        if (cancelled) return;
+        if (a !== null) setAutoScan(a === "1");
+        if (i === "add" || i === "price") {
+          setIntent(i);
+        } else {
+          setIntentDialogOpen(true);
+        }
+      } catch {
+        if (!cancelled) setIntentDialogOpen(true);
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    void AsyncStorage.setItem(AUTO_SCAN_KEY, autoScan ? "1" : "0");
+  }, [autoScan, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !intent) return;
+    void AsyncStorage.setItem(INTENT_KEY, intent);
+  }, [intent, hydrated]);
+
+  const ensureIntent = useCallback((): Intent | null => {
+    if (intent) return intent;
+    setIntentDialogOpen(true);
+    return null;
+  }, [intent]);
 
   const addImage = useCallback(
-    async (base64: string, mime: string) => {
+    async (base64: string, mime: string): Promise<string | null> => {
       let dataUrl = `data:${mime};base64,${base64}`;
       if (category === "tcg" || category === "sports") {
         setBgRemoving(true);
@@ -152,6 +211,7 @@ export default function ScannerScreen() {
         }
       }
       setImages((prev) => [...prev, dataUrl]);
+      return dataUrl;
     },
     [category, removeBgMut],
   );
@@ -173,47 +233,104 @@ export default function ScannerScreen() {
     }
   }, [images.length, addImage]);
 
-  const camera = useCallback(async () => {
+  const camera = useCallback(() => {
     if (images.length >= MAX_PHOTOS) return;
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      setAnalyzeError("Camera permission required.");
-      return;
-    }
-    const r = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.7 });
-    if (!r.canceled && r.assets[0]?.base64) {
-      await addImage(r.assets[0].base64, r.assets[0].mimeType ?? "image/jpeg");
-    }
-  }, [images.length, addImage]);
+    setCameraOpen(true);
+  }, [images.length]);
+
+  const handleCameraCapture = useCallback(
+    async (base64: string) => {
+      setCameraOpen(false);
+      const captured = await addImage(base64, "image/jpeg");
+      if (autoScan && captured && itemId.trim()) {
+        // Pass the explicit next-images list to avoid races with async setImages.
+        void runAnalyzeRef.current?.([...images, captured]);
+      }
+    },
+    [addImage, autoScan, itemId, images],
+  );
 
   const removeImage = useCallback((idx: number) => {
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
-  const runAnalyze = useCallback(async () => {
-    if (!itemId.trim()) {
-      setAnalyzeError("Enter an item name or set number first.");
-      return;
-    }
-    setAnalyzeError(null);
-    setResult(null);
-    setAiBannerDismissed(false);
-    try {
-      const useImages = mode === "advanced" ? images : [];
-      const res = await analyzeMut.mutateAsync({
-        data: {
-          itemId: itemId.trim(),
-          category,
-          mode,
-          imageBase64: useImages[0] ?? null,
-          imageBase64s: useImages.length > 1 ? useImages.slice(1) : null,
-        },
-      });
-      setResult(res);
-    } catch (err) {
-      setAnalyzeError(err instanceof Error ? err.message : "Analysis failed.");
-    }
-  }, [itemId, mode, category, images, analyzeMut]);
+  const autoCommitToVault = useCallback(
+    async (res: ScannerAnalyzeResult, capturedImages: string[], cat: Category) => {
+      const notes: string[] = [];
+      if (res.set) notes.push(`Set: ${res.set}`);
+      if (res.year) notes.push(`Year: ${res.year}`);
+      if (res.aiGrade) notes.push(`AI grade: ${res.aiGrade}`);
+      if (res.aiGradeRange) notes.push(`Range: ${res.aiGradeRange}`);
+      notes.push(
+        `Scanner price range: $${res.priceRange.low.toFixed(2)} – $${res.priceRange.high.toFixed(2)} (mid $${res.priceRange.mid.toFixed(2)})`,
+      );
+      setCommitting(true);
+      try {
+        await createMut.mutateAsync({
+          data: {
+            name: res.name,
+            category: cat,
+            condition: gradeToCondition(res.aiGrade),
+            currentValue: res.priceRange.mid,
+            photos: capturedImages,
+            notes: notes.join("\n"),
+          },
+        });
+        router.push("/(tabs)/vault");
+      } catch (err) {
+        Alert.alert(
+          "Couldn't add to vault",
+          err instanceof Error ? err.message : "Something went wrong.",
+        );
+      } finally {
+        setCommitting(false);
+      }
+    },
+    [createMut, router],
+  );
+
+  const runAnalyze = useCallback(
+    async (overrideImages?: string[]) => {
+      if (analyzeMut.isPending || committing) return;
+      if (!itemId.trim()) {
+        setAnalyzeError("Enter an item name or set number first.");
+        return;
+      }
+      const activeIntent = ensureIntent();
+      if (!activeIntent) return;
+      setAnalyzeError(null);
+      setResult(null);
+      setAiBannerDismissed(false);
+      const sourceImages = overrideImages ?? images;
+      try {
+        const useImages = mode === "advanced" ? sourceImages : [];
+        const res = await analyzeMut.mutateAsync({
+          data: {
+            itemId: itemId.trim(),
+            category,
+            mode,
+            imageBase64: useImages[0] ?? null,
+            imageBase64s: useImages.length > 1 ? useImages.slice(1) : null,
+          },
+        });
+        setResult(res);
+        if (activeIntent === "add") {
+          await autoCommitToVault(res, sourceImages, category);
+          setResult(null);
+          setImages([]);
+          setItemId("");
+        }
+      } catch (err) {
+        setAnalyzeError(err instanceof Error ? err.message : "Analysis failed.");
+      }
+    },
+    [itemId, mode, category, images, analyzeMut, ensureIntent, autoCommitToVault, committing],
+  );
+
+  const runAnalyzeRef = useRef(runAnalyze);
+  useEffect(() => {
+    runAnalyzeRef.current = runAnalyze;
+  }, [runAnalyze]);
 
   const reset = useCallback(() => {
     setResult(null);
@@ -244,6 +361,46 @@ export default function ScannerScreen() {
         </View>
 
         <ModeToggle mode={mode} onChange={setMode} colors={colors} />
+
+        {/* Intent + auto-scan settings strip */}
+        <View
+          style={[
+            styles.settingsStrip,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+            <Feather
+              name={intent === "add" ? "archive" : intent === "price" ? "dollar-sign" : "help-circle"}
+              size={14}
+              color={
+                intent === "add"
+                  ? colors.neonGreen
+                  : intent === "price"
+                    ? colors.neonBlue
+                    : colors.mutedForeground
+              }
+            />
+            <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>Scanning to:</Text>
+            <Text style={{ color: colors.foreground, fontSize: 12, fontFamily: "Inter_600SemiBold" }}>
+              {intent === "add" ? "Add to Vault" : intent === "price" ? "Price Check" : "Choose…"}
+            </Text>
+            <Pressable
+              onPress={() => setIntentDialogOpen(true)}
+              hitSlop={6}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginLeft: 4 })}
+            >
+              <Text style={{ color: colors.neonBlue, fontSize: 11, fontFamily: "Inter_500Medium" }}>
+                Change
+              </Text>
+            </Pressable>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Feather name="zap" size={12} color={autoScan ? colors.neonBlue : colors.mutedForeground} />
+            <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>Auto</Text>
+            <Switch value={autoScan} onValueChange={setAutoScan} />
+          </View>
+        </View>
 
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Category */}
@@ -307,7 +464,7 @@ export default function ScannerScreen() {
               },
             ]}
             returnKeyType="search"
-            onSubmitEditing={runAnalyze}
+            onSubmitEditing={() => void runAnalyze()}
           />
 
           {/* Photos */}
@@ -398,7 +555,7 @@ export default function ScannerScreen() {
 
           {/* Analyze */}
           <Pressable
-            onPress={runAnalyze}
+            onPress={() => void runAnalyze()}
             disabled={isPending || bgRemoving}
             style={({ pressed }) => [
               styles.primaryBtn,
@@ -427,7 +584,7 @@ export default function ScannerScreen() {
               {analyzeError}
             </Text>
             <Pressable
-              onPress={runAnalyze}
+              onPress={() => void runAnalyze()}
               style={({ pressed }) => [
                 styles.secondaryBtn,
                 { borderColor: colors.border, alignSelf: "flex-start", marginTop: 10, opacity: pressed ? 0.85 : 1 },
@@ -457,7 +614,363 @@ export default function ScannerScreen() {
           />
         )}
       </View>
+
+      <IntentDialog
+        visible={intentDialogOpen}
+        currentIntent={intent}
+        colors={colors}
+        onChoose={(i) => {
+          setIntent(i);
+          setIntentDialogOpen(false);
+        }}
+        onClose={() => {
+          if (intent) setIntentDialogOpen(false);
+        }}
+      />
+
+      {cameraOpen && (
+        <CameraScanModal
+          autoScan={autoScan}
+          colors={colors}
+          onClose={() => setCameraOpen(false)}
+          onCapture={(b64) => {
+            void handleCameraCapture(b64);
+          }}
+        />
+      )}
+
+      {committing && (
+        <View pointerEvents="none" style={committingStyles.overlay}>
+          <View
+            style={[
+              committingStyles.toast,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <ActivityIndicator color={colors.neonBlue} size="small" />
+            <Text style={{ color: colors.foreground, fontSize: 13, fontFamily: "Inter_500Medium" }}>
+              Adding to your Vault…
+            </Text>
+          </View>
+        </View>
+      )}
     </PageShell>
+  );
+}
+
+function IntentDialog({
+  visible,
+  currentIntent,
+  colors,
+  onChoose,
+  onClose,
+}: {
+  visible: boolean;
+  currentIntent: Intent | null;
+  colors: ReturnType<typeof useColors>;
+  onChoose: (i: Intent) => void;
+  onClose: () => void;
+}) {
+  const dismissable = currentIntent !== null;
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={() => {
+        if (dismissable) onClose();
+      }}
+    >
+      <Pressable
+        style={intentStyles.backdrop}
+        onPress={() => {
+          if (dismissable) onClose();
+        }}
+      >
+        <Pressable
+          onPress={() => {}}
+          style={[
+            intentStyles.sheet,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text
+            style={{
+              color: colors.foreground,
+              fontFamily: "Fraunces_700Bold",
+              fontSize: 20,
+              marginBottom: 4,
+            }}
+          >
+            What are you scanning for?
+          </Text>
+          <Text style={{ color: colors.mutedForeground, fontSize: 12, marginBottom: 16 }}>
+            Pick once and we'll handle the rest each time you scan.
+          </Text>
+          <Pressable
+            onPress={() => onChoose("add")}
+            style={({ pressed }) => [
+              intentStyles.option,
+              {
+                borderColor: currentIntent === "add" ? colors.primary : colors.border,
+                backgroundColor:
+                  currentIntent === "add" ? "rgba(0,255,136,0.06)" : "transparent",
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Feather name="archive" size={18} color={colors.neonGreen} />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontFamily: "Fraunces_600SemiBold",
+                  fontSize: 15,
+                }}
+              >
+                Add to Vault
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 2 }}>
+                Scan and instantly save with the AI's grade and price.
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => onChoose("price")}
+            style={({ pressed }) => [
+              intentStyles.option,
+              {
+                borderColor: currentIntent === "price" ? colors.primary : colors.border,
+                backgroundColor:
+                  currentIntent === "price" ? "rgba(0,212,255,0.06)" : "transparent",
+                opacity: pressed ? 0.85 : 1,
+                marginTop: 10,
+              },
+            ]}
+          >
+            <Feather name="dollar-sign" size={18} color={colors.neonBlue} />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontFamily: "Fraunces_600SemiBold",
+                  fontSize: 15,
+                }}
+              >
+                Price Check
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 2 }}>
+                Just look up market price — don't save anything.
+              </Text>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function CameraScanModal({
+  autoScan,
+  colors,
+  onClose,
+  onCapture,
+}: {
+  autoScan: boolean;
+  colors: ReturnType<typeof useColors>;
+  onClose: () => void;
+  onCapture: (base64: string) => void;
+}) {
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView | null>(null);
+  const [ready, setReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(Math.ceil(AUTO_CAPTURE_MS / 1000));
+  const capturedRef = useRef(false);
+
+  useEffect(() => {
+    if (!permission) return;
+    if (!permission.granted && permission.canAskAgain) {
+      void requestPermission();
+    }
+  }, [permission, requestPermission]);
+
+  const doCapture = useCallback(async () => {
+    if (capturedRef.current) return;
+    const cam = cameraRef.current;
+    if (!cam) return;
+    capturedRef.current = true;
+    setCapturing(true);
+    try {
+      const photo = await cam.takePictureAsync({
+        quality: 0.7,
+        skipProcessing: true,
+      });
+      if (!photo) {
+        capturedRef.current = false;
+        setCapturing(false);
+        return;
+      }
+      let b64 = photo.base64;
+      if (!b64 && photo.uri) {
+        b64 = await FileSystem.readAsStringAsync(photo.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+      if (b64) onCapture(b64);
+      else {
+        capturedRef.current = false;
+        setCapturing(false);
+      }
+    } catch {
+      capturedRef.current = false;
+      setCapturing(false);
+    }
+  }, [onCapture]);
+
+  // Auto-capture countdown
+  useEffect(() => {
+    if (!autoScan || !ready || capturedRef.current) return;
+    setSecondsLeft(Math.ceil(AUTO_CAPTURE_MS / 1000));
+    const tickStart = Date.now();
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, AUTO_CAPTURE_MS - (Date.now() - tickStart));
+      setSecondsLeft(Math.ceil(remaining / 1000));
+    }, 200);
+    const timeout = setTimeout(() => {
+      void doCapture();
+    }, AUTO_CAPTURE_MS);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [autoScan, ready, doCapture]);
+
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "#000" }}>
+        {!permission ? (
+          <View style={cameraStyles.center}>
+            <ActivityIndicator color={colors.neonBlue} />
+          </View>
+        ) : !permission.granted ? (
+          <View style={cameraStyles.center}>
+            <Feather name="camera-off" size={32} color={colors.mutedForeground} />
+            <Text
+              style={{
+                color: colors.foreground,
+                fontFamily: "Inter_500Medium",
+                fontSize: 14,
+                marginTop: 12,
+                textAlign: "center",
+                paddingHorizontal: 24,
+              }}
+            >
+              Camera permission is required to scan items.
+            </Text>
+            <Pressable
+              onPress={requestPermission}
+              style={({ pressed }) => [
+                cameraStyles.permBtn,
+                { backgroundColor: colors.neonBlue, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <Text style={{ color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }}>
+                Grant permission
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => ({ marginTop: 12, opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>Cancel</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <CameraView
+              ref={cameraRef}
+              style={{ flex: 1 }}
+              facing="back"
+              onCameraReady={() => setReady(true)}
+            />
+            {/* Frame overlay */}
+            <View pointerEvents="none" style={cameraStyles.frameWrap}>
+              <View
+                style={[
+                  cameraStyles.frame,
+                  {
+                    borderColor: capturing
+                      ? colors.neonGreen
+                      : autoScan
+                        ? colors.neonBlue
+                        : "rgba(255,255,255,0.6)",
+                  },
+                ]}
+              />
+            </View>
+            {/* Top bar */}
+            <View style={cameraStyles.topBar}>
+              <Pressable
+                onPress={onClose}
+                style={({ pressed }) => [
+                  cameraStyles.iconBtn,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+                hitSlop={10}
+              >
+                <Feather name="x" size={22} color="#fff" />
+              </Pressable>
+              {autoScan && (
+                <View style={cameraStyles.autoBadge}>
+                  <Feather name="zap" size={12} color={colors.neonBlue} />
+                  <Text style={{ color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" }}>
+                    Auto-scan
+                  </Text>
+                </View>
+              )}
+            </View>
+            {/* Bottom area: status + capture */}
+            <View style={cameraStyles.bottomBar}>
+              {autoScan ? (
+                <View style={cameraStyles.statusPill}>
+                  {capturing ? (
+                    <>
+                      <ActivityIndicator color="#fff" size="small" />
+                      <Text style={{ color: "#fff", fontSize: 13, fontFamily: "Inter_500Medium" }}>
+                        Capturing…
+                      </Text>
+                    </>
+                  ) : !ready ? (
+                    <Text style={{ color: "#fff", fontSize: 13 }}>Starting camera…</Text>
+                  ) : (
+                    <Text style={{ color: "#fff", fontSize: 13, fontFamily: "Inter_500Medium" }}>
+                      Hold steady — auto in {secondsLeft}s
+                    </Text>
+                  )}
+                </View>
+              ) : (
+                <Pressable
+                  onPress={doCapture}
+                  disabled={!ready || capturing}
+                  style={({ pressed }) => [
+                    cameraStyles.shutter,
+                    {
+                      borderColor: "#fff",
+                      opacity: !ready || capturing || pressed ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[cameraStyles.shutterInner, { backgroundColor: "#fff" }]}
+                  />
+                </Pressable>
+              )}
+            </View>
+          </>
+        )}
+      </View>
+    </Modal>
   );
 }
 
@@ -566,7 +1079,6 @@ function ResultsCard({
   onReset: () => void;
 }) {
   const hasAi = Boolean(result.aiGrade) && !result.aiError;
-  const [vaultModalOpen, setVaultModalOpen] = useState(false);
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -850,56 +1362,17 @@ function ResultsCard({
         <Pressable
           onPress={onReset}
           style={({ pressed }) => [
-            styles.secondaryBtn,
-            { borderColor: colors.border, opacity: pressed ? 0.85 : 1, flex: 1 },
-          ]}
-        >
-          <Feather name="x" size={14} color={colors.foreground} />
-          <Text style={[styles.btnText, { color: colors.foreground }]}>
-            Dismiss
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setVaultModalOpen(true)}
-          style={({ pressed }) => [
             styles.primaryBtn,
-            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, flex: 1 },
+            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, flex: 1, marginTop: 0 },
           ]}
         >
-          <Feather name="plus" size={14} color={colors.primaryForeground} />
-          <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-            Commit to Vault
-          </Text>
+          <Feather name="check" size={14} color={colors.primaryForeground} />
+          <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Done</Text>
         </Pressable>
       </View>
-
-      <AddToVaultModal
-        visible={vaultModalOpen}
-        onClose={() => setVaultModalOpen(false)}
-        result={result}
-        images={images}
-        category={category}
-        colors={colors}
-        onAdded={() => {
-          setVaultModalOpen(false);
-          onReset();
-        }}
-      />
     </View>
   );
 }
-
-const CONDITIONS: Array<{
-  value: "mint" | "near_mint" | "excellent" | "good" | "fair" | "poor";
-  label: string;
-}> = [
-  { value: "mint", label: "Mint" },
-  { value: "near_mint", label: "Near Mint" },
-  { value: "excellent", label: "Excellent" },
-  { value: "good", label: "Good" },
-  { value: "fair", label: "Fair" },
-  { value: "poor", label: "Poor" },
-];
 
 function gradeToCondition(
   grade: string | null | undefined,
@@ -915,289 +1388,6 @@ function gradeToCondition(
   if (g.includes("fair") || g.includes("4") || g.includes("3")) return "fair";
   return "poor";
 }
-
-function AddToVaultModal({
-  visible,
-  onClose,
-  result,
-  images,
-  category,
-  colors,
-  onAdded,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  result: ScannerAnalyzeResult;
-  images: string[];
-  category: Category;
-  colors: ReturnType<typeof useColors>;
-  onAdded: () => void;
-}) {
-  const router = useRouter();
-  const createMut = useCreateVaultItem();
-  const [name, setName] = useState(result.name);
-  const [condition, setCondition] = useState(gradeToCondition(result.aiGrade));
-  const [valueStr, setValueStr] = useState(result.priceRange.mid.toFixed(2));
-
-  useEffect(() => {
-    if (visible) {
-      setName(result.name);
-      setCondition(gradeToCondition(result.aiGrade));
-      setValueStr(result.priceRange.mid.toFixed(2));
-    }
-  }, [visible, result]);
-
-  const submit = () => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      Alert.alert("Name required", "Please enter a name for this item.");
-      return;
-    }
-    const v = Number(valueStr);
-    const notes: string[] = [];
-    if (result.set) notes.push(`Set: ${result.set}`);
-    if (result.year) notes.push(`Year: ${result.year}`);
-    if (result.aiGrade) notes.push(`AI grade: ${result.aiGrade}`);
-    notes.push(
-      `Scanner price range: $${result.priceRange.low.toFixed(2)} – $${result.priceRange.high.toFixed(2)} (mid $${result.priceRange.mid.toFixed(2)})`,
-    );
-
-    createMut.mutate(
-      {
-        data: {
-          name: trimmed,
-          category,
-          condition,
-          currentValue: Number.isFinite(v) ? v : result.priceRange.mid,
-          photos: images,
-          notes: notes.join("\n"),
-        },
-      },
-      {
-        onSuccess: () => {
-          onAdded();
-          router.push("/(tabs)/vault");
-        },
-        onError: (err) => {
-          Alert.alert(
-            "Failed to add",
-            err instanceof Error ? err.message : "Something went wrong.",
-          );
-        },
-      },
-    );
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
-      <View style={vaultModalStyles.backdrop}>
-        <View
-          style={[
-            vaultModalStyles.sheet,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={vaultModalStyles.handle} />
-          <Text
-            style={{
-              color: colors.foreground,
-              fontFamily: "Fraunces_700Bold",
-              fontSize: 20,
-              marginBottom: 4,
-            }}
-          >
-            Commit to Vault
-          </Text>
-          <Text
-            style={{
-              color: colors.mutedForeground,
-              fontSize: 12,
-              marginBottom: 16,
-            }}
-          >
-            Save this scan to your collection. You can edit details later.
-          </Text>
-
-          <Text style={[vaultModalStyles.label, { color: colors.mutedForeground }]}>
-            Name
-          </Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Item name"
-            placeholderTextColor={colors.mutedForeground}
-            style={[
-              vaultModalStyles.input,
-              { borderColor: colors.border, color: colors.foreground },
-            ]}
-          />
-
-          <Text style={[vaultModalStyles.label, { color: colors.mutedForeground }]}>
-            Condition
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 6, paddingVertical: 4 }}
-            style={{ marginBottom: 12 }}
-          >
-            {CONDITIONS.map((c) => {
-              const active = c.value === condition;
-              return (
-                <Pressable
-                  key={c.value}
-                  onPress={() => setCondition(c.value)}
-                  style={({ pressed }) => [
-                    vaultModalStyles.chip,
-                    {
-                      borderColor: active ? colors.primary : colors.border,
-                      backgroundColor: active ? colors.primary : "transparent",
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={{
-                      color: active ? colors.primaryForeground : colors.foreground,
-                      fontFamily: "Inter_600SemiBold",
-                      fontSize: 11,
-                    }}
-                  >
-                    {c.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <Text style={[vaultModalStyles.label, { color: colors.mutedForeground }]}>
-            Current value (USD)
-          </Text>
-          <TextInput
-            value={valueStr}
-            onChangeText={setValueStr}
-            keyboardType="decimal-pad"
-            placeholder="0.00"
-            placeholderTextColor={colors.mutedForeground}
-            style={[
-              vaultModalStyles.input,
-              { borderColor: colors.border, color: colors.foreground },
-            ]}
-          />
-          <Text
-            style={{ color: colors.mutedForeground, fontSize: 10, marginTop: -8, marginBottom: 12 }}
-          >
-            Pre-filled from scanner mid price.
-          </Text>
-
-          <Text style={{ color: colors.mutedForeground, fontSize: 10, marginBottom: 16 }}>
-            {images.length} photo{images.length === 1 ? "" : "s"} will be saved with this item.
-          </Text>
-
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <Pressable
-              onPress={onClose}
-              disabled={createMut.isPending}
-              style={({ pressed }) => [
-                vaultModalStyles.btn,
-                {
-                  borderColor: colors.border,
-                  backgroundColor: "transparent",
-                  opacity: pressed || createMut.isPending ? 0.7 : 1,
-                  flex: 1,
-                },
-              ]}
-            >
-              <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
-                Cancel
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={submit}
-              disabled={createMut.isPending}
-              style={({ pressed }) => [
-                vaultModalStyles.btn,
-                {
-                  borderColor: colors.primary,
-                  backgroundColor: colors.primary,
-                  opacity: pressed || createMut.isPending ? 0.85 : 1,
-                  flex: 1,
-                  flexDirection: "row",
-                  gap: 6,
-                },
-              ]}
-            >
-              {createMut.isPending ? (
-                <ActivityIndicator color={colors.primaryForeground} size="small" />
-              ) : (
-                <Feather name="plus" size={14} color={colors.primaryForeground} />
-              )}
-              <Text
-                style={{ color: colors.primaryForeground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}
-              >
-                Add to Vault
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-const vaultModalStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 20,
-    paddingBottom: 32,
-  },
-  handle: {
-    alignSelf: "center",
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  btn: {
-    paddingVertical: 11,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
 
 function PriceTriple({
   result,
@@ -1474,5 +1664,143 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     marginTop: 12,
     borderTopWidth: 1,
+  },
+  settingsStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+});
+
+const intentStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  sheet: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+  },
+  option: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+  },
+});
+
+const cameraStyles = StyleSheet.create({
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  permBtn: {
+    marginTop: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  frameWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  frame: {
+    width: "78%",
+    aspectRatio: 0.72,
+    borderWidth: 2,
+    borderRadius: 14,
+  },
+  topBar: {
+    position: "absolute",
+    top: 50,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  autoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+  },
+  shutter: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shutterInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+});
+
+const committingStyles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  toast: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
   },
 });
