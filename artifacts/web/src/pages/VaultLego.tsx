@@ -84,7 +84,7 @@ export default function VaultLegoPage() {
   const pageItems = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <Link href="/vault">

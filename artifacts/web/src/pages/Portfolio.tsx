@@ -55,7 +55,7 @@ export default function PortfolioPage() {
   const positive = summary ? summary.gain >= 0 : true;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="font-serif text-3xl tracking-tight">My Analytics</h1>
         <p className="text-sm text-muted-foreground mt-1">

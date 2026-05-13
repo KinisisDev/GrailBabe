@@ -265,7 +265,7 @@ export default function ScannerPage() {
   const primaryImage = images[0] ?? null;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl tracking-tight flex items-center gap-2">
@@ -945,7 +945,7 @@ function AdvancedResults({
                     )}
                   </div>
                   {result.aiSubGrades && (
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {(
                         [
                           { label: "Centering", v: result.aiSubGrades.centering },

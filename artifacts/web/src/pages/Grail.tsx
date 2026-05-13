@@ -37,7 +37,7 @@ export default function GrailPage() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex items-end justify-between">
         <div>
           <h1 className="font-serif text-3xl tracking-tight">Grail List</h1>

@@ -79,7 +79,7 @@ export default function Profile() {
 
   if (!lookupName && me && !me.screenname) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-4 md:p-8 max-w-3xl mx-auto">
         <Card>
           <CardContent className="p-6">
             Finish onboarding to set up your profile.
@@ -99,7 +99,7 @@ export default function Profile() {
 
   if (isError || !profile) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-4 md:p-8 max-w-3xl mx-auto">
         <Card>
           <CardContent className="p-6">
             <h1 className="font-serif text-xl">Profile not found</h1>
@@ -115,7 +115,7 @@ export default function Profile() {
   const loc = formatLocation(profile);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6 pb-16">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 pb-16">
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-6">

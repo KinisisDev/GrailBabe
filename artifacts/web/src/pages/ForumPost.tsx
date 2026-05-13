@@ -32,7 +32,7 @@ export default function ForumPostPage({ id }: { id: number }) {
 
   if (isLoading || !data) {
     return (
-      <div className="p-8 space-y-4 max-w-3xl mx-auto">
+      <div className="p-4 md:p-8 space-y-4 max-w-3xl mx-auto">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-48" />
       </div>
@@ -55,7 +55,7 @@ export default function ForumPostPage({ id }: { id: number }) {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6">
       <Link href="/forum" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
           <ArrowLeft className="size-4" /> Back to forum
         </Link>

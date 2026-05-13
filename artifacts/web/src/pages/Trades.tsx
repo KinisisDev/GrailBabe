@@ -279,7 +279,7 @@ export default function TradesPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl tracking-tight">Trading board</h1>
@@ -603,7 +603,7 @@ function TradeCard({
           <span className="text-[10px] text-muted-foreground">{trade.postedAt}</span>
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-stretch gap-2">
           <div className="rounded-md bg-muted/50 border border-border p-3 min-w-0">
             <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
               Have
@@ -611,7 +611,7 @@ function TradeCard({
             <div className="text-sm font-semibold truncate mt-1">{trade.have.name}</div>
             <div className="text-xs text-muted-foreground truncate">{trade.have.detail}</div>
           </div>
-          <div className="self-center text-muted-foreground">
+          <div className="self-center justify-self-center text-muted-foreground rotate-90 sm:rotate-0">
             <ArrowRight className="size-4" />
           </div>
           <div className="rounded-md border border-dashed border-border p-3 min-w-0">

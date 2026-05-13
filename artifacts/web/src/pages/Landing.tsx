@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="px-8 py-6 flex items-center justify-between">
+      <header className="px-4 md:px-8 py-6 flex items-center justify-between">
         <Link href="/" className="block">
           <img
             src="/grailbabe-logo.png"
@@ -43,12 +43,12 @@ export default function LandingPage() {
         </p>
         <div className="mt-12 flex items-center justify-center gap-3">
           <Link href="/sign-up">
-            <Button size="lg" className="px-8">
+            <Button size="lg" className="px-4 md:px-8">
               Start free
             </Button>
           </Link>
           <Link href="/sign-in">
-            <Button size="lg" variant="outline" className="px-8">
+            <Button size="lg" variant="outline" className="px-4 md:px-8">
               I already have an account
             </Button>
           </Link>

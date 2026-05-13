@@ -99,7 +99,7 @@ function StarsDisplay({ value }: { value: number }) {
 
 export default function MyTradesPage() {
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="font-serif text-3xl tracking-tight">My Trades</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -321,7 +321,7 @@ function TradeRow({
           </span>
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-stretch gap-2">
           <div className="rounded-md bg-muted/50 border border-border p-3 min-w-0">
             <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
               Have
@@ -333,7 +333,7 @@ function TradeRow({
               {trade.condition}
             </div>
           </div>
-          <div className="self-center text-muted-foreground">
+          <div className="self-center justify-self-center text-muted-foreground rotate-90 sm:rotate-0">
             <ArrowRight className="size-4" />
           </div>
           <div className="rounded-md border border-dashed border-border p-3 min-w-0">

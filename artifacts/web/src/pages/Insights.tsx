@@ -29,7 +29,7 @@ export default function InsightsPage() {
 
   if (!isPremium) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-4 md:p-8 max-w-3xl mx-auto">
         <Card>
           <CardContent className="py-16 text-center space-y-5">
             <div className="size-12 rounded-full bg-primary/15 grid place-items-center mx-auto">
@@ -52,7 +52,7 @@ export default function InsightsPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="font-serif text-3xl tracking-tight flex items-center gap-3">
           <Sparkles className="size-6 text-primary" />

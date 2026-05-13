@@ -17,7 +17,7 @@ export default function DashboardPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const positive = p.gain >= 0;
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
       <div>
         <h1 className="font-serif text-3xl tracking-tight">Welcome back.</h1>
         <p className="text-sm text-muted-foreground mt-1">

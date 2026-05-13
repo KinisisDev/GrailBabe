@@ -32,7 +32,7 @@ const SECTIONS = [
 
 export default function SecurityRulesPage() {
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
       <div>
         <Link href="/security">
           <Button variant="ghost" size="sm" className="mb-3 -ml-3 text-muted-foreground">

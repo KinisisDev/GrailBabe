@@ -205,7 +205,7 @@ export default function MessagesPage() {
   const headerTitle = active?.otherUser.displayName ?? "Messages";
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] p-4 sm:p-6 lg:p-8">
+    <div className="h-[calc(100vh-3.5rem)] p-2 sm:p-6 lg:p-8">
       <Card className="h-full overflow-hidden">
         <div className="grid h-full md:grid-cols-[320px_1fr]">
           {/* Conversation list */}

@@ -89,7 +89,7 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
 
   if (!isValid) {
     return (
-      <div className="p-8 max-w-3xl mx-auto space-y-4">
+      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">
         <Link href="/vault/tcg">
           <Button variant="ghost" size="sm" className="-ml-2">
             <ArrowLeft className="size-4 mr-1" /> TCG
@@ -105,7 +105,7 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <Link href="/vault/tcg">

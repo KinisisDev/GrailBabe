@@ -57,7 +57,7 @@ export default function VaultItemPage({ id }: { id: number }) {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-6">
+      <div className="p-4 md:p-8 space-y-6">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-64" />
       </div>
@@ -66,7 +66,7 @@ export default function VaultItemPage({ id }: { id: number }) {
 
   if (isError || !data) {
     return (
-      <div className="p-8 max-w-2xl mx-auto space-y-4">
+      <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-4">
         <Link href="/vault" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
           <ArrowLeft className="size-4" /> Back to vault
         </Link>
@@ -97,7 +97,7 @@ export default function VaultItemPage({ id }: { id: number }) {
   }));
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <Link href="/vault" className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
           <ArrowLeft className="size-4" /> Back to vault
         </Link>
