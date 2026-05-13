@@ -24,7 +24,7 @@ const NAV = [
   { to: "/grail", label: "My Grail List", icon: Star },
   { to: "/portfolio", label: "Portfolio", icon: TrendingUp },
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
-  { to: "/trades", label: "Trading", icon: ArrowLeftRight },
+  { to: "/trades", label: "Trading board", icon: ArrowLeftRight },
   { to: "/forum", label: "Community", icon: MessagesSquare },
   { to: "/messages", label: "Messages", icon: Mail },
   { to: "/security", label: "Security", icon: Shield },

@@ -1,0 +1,222 @@
+Build a Trading Board page for GrailBabe with mock data only — no backend, no database changes.
+
+---
+
+## 1. Create artifacts/web/src/pages/TradingBoard.tsx
+
+---
+
+## Mock Data
+
+Define these constants at the top of the file:
+
+```ts
+const MOCK_TRADES = [
+  {
+    id: "1",
+    status: "open",
+    category: "tcg",
+    subCategory: "Pokémon",
+    have: { name: "Charizard Holo", detail: "Base Set · PSA 9" },
+    want: { name: "Blastoise Holo", detail: "Base Set · PSA 8+", openToOffers: false },
+    user: { initials: "SK", name: "Sarah K.", colorClass: "blue" },
+    postedAt: "2m ago",
+    zip: "90210",
+  },
+  {
+    id: "2",
+    status: "open",
+    category: "lego",
+    subCategory: "LEGO",
+    have: { name: "Millennium Falcon", detail: "#75192 · Sealed" },
+    want: { name: "", detail: "LEGO Star Wars preferred", openToOffers: true },
+    user: { initials: "MT", name: "Mike T.", colorClass: "green" },
+    postedAt: "18m ago",
+    zip: "10001",
+  },
+  {
+    id: "3",
+    status: "pending",
+    category: "sports",
+    subCategory: "Baseball",
+    have: { name: "Mike Trout RC", detail: "2011 Topps · BGS 9.5" },
+    want: { name: "Shohei Ohtani RC", detail: "2018 Topps · PSA 10", openToOffers: false },
+    user: { initials: "JL", name: "Jordan L.", colorClass: "amber" },
+    postedAt: "1h ago",
+    zip: "60601",
+  },
+  {
+    id: "4",
+    status: "open",
+    category: "tcg",
+    subCategory: "Yu-Gi-Oh",
+    have: { name: "Blue-Eyes White Dragon", detail: "1st Edition · PSA 8" },
+    want: { name: "Dark Magician", detail: "1st Edition · Any grade", openToOffers: false },
+    user: { initials: "AR", name: "Alex R.", colorClass: "purple" },
+    postedAt: "3h ago",
+    zip: "77001",
+  },
+  {
+    id: "5",
+    status: "open",
+    category: "lego",
+    subCategory: "LEGO",
+    have: { name: "Eiffel Tower", detail: "#10307 · Complete" },
+    want: { name: "Colosseum", detail: "#10276 · Sealed preferred", openToOffers: false },
+    user: { initials: "PW", name: "Parker W.", colorClass: "coral" },
+    postedAt: "5h ago",
+    zip: "30301",
+  },
+  {
+    id: "6",
+    status: "open",
+    category: "tcg",
+    subCategory: "MTG",
+    have: { name: "Black Lotus", detail: "Alpha · PSA 7" },
+    want: { name: "", detail: "Mox preferred or cash add", openToOffers: true },
+    user: { initials: "CM", name: "Chris M.", colorClass: "teal" },
+    postedAt: "Yesterday",
+    zip: "98101",
+  },
+  {
+    id: "7",
+    status: "open",
+    category: "sports",
+    subCategory: "Basketball",
+    have: { name: "LeBron James RC", detail: "2003 Topps Chrome · PSA 9" },
+    want: { name: "Kobe Bryant RC", detail: "1996 Topps Chrome · PSA 8+" },
+    user: { initials: "DW", name: "Dana W.", colorClass: "blue" },
+    postedAt: "2 days ago",
+    zip: "90210",
+  },
+  {
+    id: "8",
+    status: "open",
+    category: "tcg",
+    subCategory: "Lorcana",
+    have: { name: "Elsa - Spirit of Winter", detail: "Enchanted · Near Mint" },
+    want: { name: "", detail: "Any Enchanted Lorcana", openToOffers: true },
+    user: { initials: "BN", name: "Britt N.", colorClass: "purple" },
+    postedAt: "3 days ago",
+    zip: "85001",
+  },
+]
+```
+
+---
+
+## 2. Page Layout
+
+### Header
+- Title: "Trading board"
+- Subtitle: "Browse and post item trades with other collectors"
+- Top-right: "Post a trade" button (opens a Post Trade modal — see section 4)
+
+### Stats bar (3 metric cards in a row)
+- Active listings: 248
+- New today: 34
+- Completed trades: 91
+(hardcoded numbers for now)
+
+### Toolbar
+Row with:
+- Filter tabs: All | TCG | LEGO | Sports Cards | My Watchlist
+- Search input (filters cards by have/want item name as user types)
+- Sort dropdown: Newest first | Most recent activity | Near me
+- Distance dropdown (only visible when "Near me" sort is selected): Within 25 miles | 50 miles | 100 miles | Any distance
+
+### Trade card grid
+Responsive grid — 3 columns on desktop, 2 on tablet, 1 on mobile.
+
+---
+
+## 3. Trade Card Component
+
+Each card shows:
+
+**Top row:** category badge (colored by type) + status badge (Open = green, Pending = amber) + time posted
+
+**Trade items row:** two item boxes side by side with a → arrow between them
+
+- Left box (HAVE): label "HAVE", icon placeholder, item name, detail (set · grade)
+- Right box (WANT): dashed border style, label "WANT"
+  - If openToOffers is false: show item name + detail
+  - If openToOffers is true: show "Open to offers" in italic + detail as subtext
+
+**Footer row:** user avatar (colored circle with initials) + username on left, "Make offer" button on right
+- If status is "pending": show "Pending" text instead of the button, button is disabled/muted
+- "Make offer" button navigates to /messages (use wouter's useLocation or Link)
+
+Category badge colors:
+- tcg → blue tint
+- lego → green tint  
+- sports → amber tint
+
+Avatar colors map: blue, green, amber, purple, coral, teal — use bg and text CSS variables or subtle colored backgrounds consistent with the app theme.
+
+---
+
+## 4. Post a Trade Modal
+
+Clicking "Post a trade" opens a modal (React state, no backend):
+
+Fields:
+- Category: dropdown — TCG | LEGO | Sports Cards
+- Sub-category: text input (e.g. "Pokémon", "Star Wars")
+- Have — Item name: text input
+- Have — Condition/Grade: text input (e.g. PSA 9, Near Mint, Sealed)
+- Want — Open to offers: toggle checkbox
+- Want — Item name: text input (disabled/hidden if open to offers is checked)
+- Want — Condition/Grade: text input (disabled/hidden if open to offers is checked)
+- Your zip code: text input (5-digit)
+
+Submit button: "Post trade" — adds the new listing to the top of the local mock array using React state and closes the modal.
+
+Modal close button (×) in top-right corner.
+
+---
+
+## 5. Filtering & Sorting Logic (all client-side React state)
+
+- Active filter tab filters trades by category (all shows everything)
+- Search input filters by have.name or want.name (case-insensitive includes)
+- "My Watchlist" tab: show only trades where category is "tcg" (placeholder behavior)
+- Sort "Newest first": default order
+- Sort "Most recent activity": reverse order (mock)
+- Sort "Near me": use the zipcodes npm package to calculate distance between the logged-in user's zip (hardcode "90210" as the current user's zip for now) and each listing's zip. Sort ascending by distance. Apply the distance dropdown filter to hide listings beyond the selected radius. Show "~X miles away" below the username in the card footer when "Near me" is active.
+
+Install zipcodes package if not already present: npm install zipcodes
+
+---
+
+## 6. Sidebar
+
+In AppShell.tsx, add to the nav items:
+- Icon: ArrowLeftRight (lucide-react)
+- Label: "Trading board"
+- href: "/trading"
+
+---
+
+## 7. Routing
+
+In App.tsx add:
+<Route path="/trading" component={TradingBoard} />
+
+---
+
+## Style Notes
+- Match the existing dark theme (bg-background, bg-card, border variables)
+- Neon blue (--primary / blue accent) for the "Post a trade" button, "Make offer" buttons, and active filter tab
+- Have box: solid subtle background (bg-muted or bg-card)
+- Want box: dashed border, transparent background
+- Cards: rounded-xl border bg-card p-4
+- Stats bar metric cards: bg-muted/50 rounded-lg
+
+---
+
+## Important
+- Do NOT connect to Supabase or any database
+- Do NOT push to git — commit only
+- Reuse existing component patterns from the codebase (same card styles, button styles as Vault pages)
+- Check if zipcodes package is already in package.json before installing
