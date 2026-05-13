@@ -35,7 +35,7 @@ const NAV = [
   { to: "/vault", label: "The Vault", icon: Box },
   { to: "/scanner", label: "Scanner", icon: ScanLine },
   { to: "/grail", label: "My Grail List", icon: Star },
-  { to: "/portfolio", label: "Portfolio", icon: TrendingUp },
+  { to: "/portfolio", label: "My Analytics", icon: TrendingUp },
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
   { to: "/trades", label: "Trading board", icon: ArrowLeftRight },
   { to: "/my-trades", label: "My Trades", icon: GitCompare },
