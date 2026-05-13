@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'artifacts/api-server/**'
+      - 'artifacts/api-server/**
       - 'lib/**'
       - '.github/workflows/deploy-api-dev.yml'
   workflow_dispatch:
 
 env:
-  REGISTRY: crgrailbabedev.azurecr.io
+  REGISTRY: acrgrailbabedevdev.azurecr.io
   IMAGE_NAME: grailbabe-api
   CONTAINER_APP: ca-grailbabedev-api-dev
   RESOURCE_GROUP: rg-grailbabedev-compute-dev-eus2
@@ -30,7 +30,7 @@ jobs:
                                                                 az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Login to ACR
-        run: az acr login --name crgrailbabedev
+        run: az acr login --name acrgrailbabedevdev
 
       - name: Build and push Docker image
         run: |
