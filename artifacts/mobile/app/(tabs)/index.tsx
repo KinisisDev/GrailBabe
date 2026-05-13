@@ -70,7 +70,7 @@ export default function HomeDashboard() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <IridescentHeader title="GrailBabe" />
+      <IridescentHeader title="GrailBabe" logo />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

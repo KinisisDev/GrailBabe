@@ -1,19 +1,22 @@
 import React, { ReactNode } from "react";
-import { View, Text, StyleSheet, Platform, Pressable } from "react-native";
+import { View, Text, Image, StyleSheet, Platform, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { iridescentGradient } from "@/constants/colors";
+
+const LOGO = require("../assets/images/grailbabe-logo.png");
 
 interface IridescentHeaderProps {
   title: string;
   right?: ReactNode;
   left?: ReactNode;
+  logo?: boolean;
 }
 
-export function IridescentHeader({ title, right, left }: IridescentHeaderProps) {
+export function IridescentHeader({ title, right, left, logo }: IridescentHeaderProps) {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === "web" ? 67 : insets.top;
-  
+
   return (
     <LinearGradient
       colors={iridescentGradient}
@@ -25,7 +28,11 @@ export function IridescentHeader({ title, right, left }: IridescentHeaderProps) 
         <View style={styles.leftContainer}>
           {left}
         </View>
-        <Text style={styles.title}>{title}</Text>
+        {logo ? (
+          <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel={title} />
+        ) : (
+          <Text style={styles.title}>{title}</Text>
+        )}
         <View style={styles.rightContainer}>
           {right}
         </View>
@@ -68,5 +75,9 @@ const styles = StyleSheet.create({
     right: 16,
     height: "100%",
     justifyContent: "center",
+  },
+  logo: {
+    height: 32,
+    width: 140,
   },
 });
