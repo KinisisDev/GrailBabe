@@ -7,6 +7,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import {
   LayoutDashboard,
   Box,
+  Shield,
   Star,
   ArrowLeftRight,
   MessagesSquare,
@@ -19,6 +20,7 @@ import {
 const NAV = [
   { to: "/dashboard", label: "My Dashboard", icon: LayoutDashboard },
   { to: "/vault", label: "The Vault", icon: Box },
+  { to: "/security", label: "Security", icon: Shield },
   { to: "/grail", label: "My Grail List", icon: Star },
   { to: "/portfolio", label: "Portfolio", icon: TrendingUp },
   { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },

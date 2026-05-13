@@ -12,6 +12,9 @@ import VaultTcgPage from "@/pages/VaultTcg";
 import VaultTcgGamePage from "@/pages/VaultTcgGame";
 import VaultLegoPage from "@/pages/VaultLego";
 import VaultItemPage from "@/pages/VaultItem";
+import SecurityHubPage from "@/pages/SecurityHub";
+import SecurityRulesPage from "@/pages/SecurityRules";
+import SecurityLegalPage from "@/pages/SecurityLegal";
 import GrailPage from "@/pages/Grail";
 import TradesPage from "@/pages/Trades";
 import ForumPage from "@/pages/Forum";
@@ -34,6 +37,9 @@ function ProtectedRoutes() {
         <Route path="/vault/tcg/:game">{(params) => <VaultTcgGamePage game={params.game} />}</Route>
         <Route path="/vault/lego" component={VaultLegoPage} />
         <Route path="/vault/:id">{(params) => <VaultItemPage id={Number(params.id)} />}</Route>
+        <Route path="/security" component={SecurityHubPage} />
+        <Route path="/security/rules" component={SecurityRulesPage} />
+        <Route path="/security/legal" component={SecurityLegalPage} />
         <Route path="/grail" component={GrailPage} />
         <Route path="/trades" component={TradesPage} />
         <Route path="/forum" component={ForumPage} />

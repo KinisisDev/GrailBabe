@@ -1,0 +1,48 @@
+Add a Security section to the app with its own left-hand navigation item and two sub-pages, structured like the Vault (sub-nav tiles at the top of the page, not inline tabs).
+Add to the sidebar navigation (AppShell.tsx):
+Add "Security" as a nav item with a shield icon (Shield from lucide-react), linking to /security. Place it below "The Vault" in the nav list.
+Routing:
+
+/security — Security hub page (shows the two sub-nav tiles)
+/security/rules — Community Rules page
+/security/legal — Legal & Policies page
+
+Security hub page (/security):
+
+Hero section at the top: shield icon, heading "Security Center", subheading "GrailBabe is built for collectors, by collectors. We keep it safe."
+A neon blue alert banner: "Zero Tolerance — Fake cards, scams, and abuse result in permanent bans"
+Two clickable sub-nav tiles below the hero:
+
+Community Rules → /security/rules — icon: BookOpen, description: "How we treat each other and protect the community"
+Legal & Policies → /security/legal — icon: Scale, description: "Terms of service, privacy policy, and your rights"
+
+
+Keep the same tile card style used on the Vault hub page for consistency
+
+Community Rules page (/security/rules):
+Include the following sections, each as a clearly titled card:
+
+Respect & Conduct — No harassment, hate speech, or targeted abuse. Treat every collector with respect.
+Honest Listings — All items must be accurately described. Misrepresenting condition, authenticity, or completeness is a bannable offense.
+No Counterfeits — Listing, selling, or trading fake, proxy, or altered cards/sets is strictly prohibited and may result in legal action.
+Fair Trading — No price manipulation, shill bidding, or predatory offers targeting new collectors.
+Payment Safety — Only use GrailBabe's official payment system. Off-platform deals are not protected.
+Reporting — If you see something, say something. False reports made in bad faith are also a violation.
+
+Legal & Policies page (/security/legal):
+Include the following sections as clearly titled cards:
+
+Terms of Service — Summary card with a "View Full Terms" button (links to /legal/terms as a placeholder)
+Privacy Policy — Summary card with a "View Full Policy" button (links to /legal/privacy as a placeholder)
+Collectibles Disclaimer — Card stating that GrailBabe does not guarantee card values or grades; all valuations are estimates only
+IP & Copyright — Card noting GrailBabe is not affiliated with or endorsed by Pokémon Company, Wizards of the Coast, Konami, Disney, Lucasfilm, or other IP holders. All trademarks belong to their respective owners.
+
+Design:
+
+Use the existing dark theme, AppShell sidebar layout, and neon blue accent color
+Match the card/tile style used across the rest of the app
+No inline tabs — use the sub-nav tile approach like the Vault hub
+
+
+
+That gives you a clean, professional security section that's actually more useful than HolyGrailR's while being simpler.AskSonnet 4.6
