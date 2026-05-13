@@ -34,6 +34,7 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   Search,
   MessageSquare,
   Flame,
@@ -43,6 +44,17 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const TCG_GAMES: { value: string; label: string }[] = [
+  { value: "tcg:pokemon", label: "Pokemon" },
+  { value: "tcg:yugioh", label: "Yu-Gi-Oh" },
+  { value: "tcg:mtg", label: "Magic" },
+  { value: "tcg:lorcana", label: "Lorcana" },
+  { value: "tcg:swu", label: "Star Wars" },
+  { value: "tcg:riftbound", label: "Riftbound" },
+  { value: "tcg:digimon", label: "Digimon" },
+  { value: "tcg:onepiece", label: "One Piece" },
+];
 
 const CATEGORIES: { value: string; label: string; dot: string }[] = [
   { value: "all", label: "All Posts", dot: "bg-foreground/40" },
@@ -54,7 +66,10 @@ const CATEGORIES: { value: string; label: string; dot: string }[] = [
   { value: "general", label: "General", dot: "bg-muted-foreground" },
 ];
 
-const CATEGORY_OPTIONS = CATEGORIES.filter((c) => c.value !== "all");
+const CATEGORY_OPTIONS = [
+  ...CATEGORIES.filter((c) => c.value !== "all" && c.value !== "tcg"),
+  ...TCG_GAMES.map((g) => ({ ...g, dot: "bg-[#7c6ff0]" })),
+];
 
 const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
   tcg: { bg: "#eeedfe", color: "#3c3489" },
@@ -65,11 +80,21 @@ const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
   general: { bg: "var(--muted)", color: "var(--muted-foreground)" },
 };
 
+function isTcg(value: string) {
+  return value === "tcg" || value.startsWith("tcg:");
+}
+
 function categoryLabel(value: string) {
-  return (
-    CATEGORIES.find((c) => c.value === value)?.label ??
-    value.charAt(0).toUpperCase() + value.slice(1)
-  );
+  const direct = CATEGORIES.find((c) => c.value === value)?.label;
+  if (direct) return direct;
+  const game = TCG_GAMES.find((g) => g.value === value);
+  if (game) return `TCG · ${game.label}`;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function badgeFor(category: string) {
+  if (isTcg(category)) return BADGE_STYLES.tcg;
+  return BADGE_STYLES[category] ?? BADGE_STYLES.general;
 }
 
 function timeAgo(iso: string) {
@@ -102,13 +127,20 @@ export default function Community() {
   const { data: me } = useGetMe();
 
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [tcgExpanded, setTcgExpanded] = useState<boolean>(false);
+  // Auto-expand the TCG group whenever a TCG sub-game is active.
+  const tcgGroupOpen = tcgExpanded || activeCategory.startsWith("tcg:");
   const [sort, setSort] = useState<Sort>("hot");
   const [search, setSearch] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
 
+  // For "tcg" parent we don't filter server-side; we client-filter for any tcg* match
+  // so legacy posts saved as "tcg" + new game-specific posts ("tcg:pokemon", etc.) all show.
   const params = useMemo(() => {
     const out: { category?: string; sort?: Sort } = { sort };
-    if (activeCategory !== "all") out.category = activeCategory;
+    if (activeCategory !== "all" && activeCategory !== "tcg") {
+      out.category = activeCategory;
+    }
     return out;
   }, [activeCategory, sort]);
 
@@ -128,21 +160,29 @@ export default function Community() {
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
-    for (const c of CATEGORY_OPTIONS) map.set(c.value, 0);
+    for (const c of CATEGORIES) map.set(c.value, 0);
+    for (const g of TCG_GAMES) map.set(g.value, 0);
+    let tcgTotal = 0;
     for (const p of allPosts ?? []) {
       const k = p.category;
       map.set(k, (map.get(k) ?? 0) + 1);
+      if (isTcg(k)) tcgTotal += 1;
     }
+    map.set("tcg", tcgTotal);
     return map;
   }, [allPosts]);
 
   const totalCount = allPosts?.length ?? 0;
 
   const filtered = useMemo(() => {
+    let list = posts ?? [];
+    if (activeCategory === "tcg") {
+      list = list.filter((p) => isTcg(p.category));
+    }
     const q = search.trim().toLowerCase();
-    if (!q) return posts ?? [];
-    return (posts ?? []).filter((p) => p.title.toLowerCase().includes(q));
-  }, [posts, search]);
+    if (!q) return list;
+    return list.filter((p) => p.title.toLowerCase().includes(q));
+  }, [posts, search, activeCategory]);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
@@ -172,23 +212,85 @@ export default function Community() {
               const active = activeCategory === c.value;
               const count =
                 c.value === "all" ? totalCount : counts.get(c.value) ?? 0;
+              const isTcgParent = c.value === "tcg";
               return (
-                <button
-                  key={c.value}
-                  onClick={() => setActiveCategory(c.value)}
-                  data-testid={`category-${c.value}`}
-                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors ${
-                    active
-                      ? "bg-primary/10 text-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${c.dot}`} />
-                    {c.label}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{count}</span>
-                </button>
+                <div key={c.value}>
+                  <div
+                    className={`flex w-full items-center justify-between rounded-md text-sm transition-colors ${
+                      active
+                        ? "bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {isTcgParent && (
+                      <button
+                        type="button"
+                        onClick={() => setTcgExpanded((v) => !v)}
+                        aria-label={tcgGroupOpen ? "Collapse TCG games" : "Expand TCG games"}
+                        aria-expanded={tcgGroupOpen}
+                        aria-controls="tcg-subnav"
+                        data-testid="category-tcg-toggle"
+                        className="flex h-7 w-6 items-center justify-center rounded-l-md hover:text-foreground"
+                      >
+                        <ChevronRight
+                          className={`h-3 w-3 transition-transform ${
+                            tcgGroupOpen ? "rotate-90" : ""
+                          }`}
+                        />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory(c.value)}
+                      data-testid={`category-${c.value}`}
+                      className={`flex flex-1 items-center justify-between px-2 py-1.5 text-left ${
+                        isTcgParent ? "" : "rounded-md"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {!isTcgParent && (
+                          <span className={`h-2 w-2 rounded-full ${c.dot}`} />
+                        )}
+                        {isTcgParent && (
+                          <span className="h-2 w-2 rounded-full bg-[#7c6ff0]" />
+                        )}
+                        {c.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{count}</span>
+                    </button>
+                  </div>
+                  {isTcgParent && tcgGroupOpen && (
+                    <div
+                      id="tcg-subnav"
+                      className="mt-0.5 ml-4 space-y-0.5 border-l border-border/60 pl-2"
+                    >
+                      {TCG_GAMES.map((g) => {
+                        const subActive = activeCategory === g.value;
+                        const subCount = counts.get(g.value) ?? 0;
+                        return (
+                          <button
+                            key={g.value}
+                            onClick={() => setActiveCategory(g.value)}
+                            data-testid={`category-${g.value}`}
+                            className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-xs transition-colors ${
+                              subActive
+                                ? "bg-primary/10 text-foreground"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#7c6ff0]/70" />
+                              {g.label}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {subCount}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -335,7 +437,11 @@ export default function Community() {
         open={composeOpen}
         onOpenChange={setComposeOpen}
         defaultCategory={
-          activeCategory !== "all" ? activeCategory : "general"
+          activeCategory === "all" || activeCategory === "tcg"
+            ? activeCategory === "tcg"
+              ? "tcg:pokemon"
+              : "general"
+            : activeCategory
         }
         onCreated={() => {
           setComposeOpen(false);
@@ -357,7 +463,7 @@ function PostCard({
   onVote: (p: CommunityPostSummary, v: 1 | -1) => void;
   voting: boolean;
 }) {
-  const badge = BADGE_STYLES[post.category] ?? BADGE_STYLES.general;
+  const badge = badgeFor(post.category);
   const stop = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -509,7 +615,7 @@ function NewPostDialog({
               <SelectContent>
                 {CATEGORY_OPTIONS.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
-                    {c.label}
+                    {c.value.startsWith("tcg:") ? `TCG · ${c.label}` : c.label}
                   </SelectItem>
                 ))}
               </SelectContent>
