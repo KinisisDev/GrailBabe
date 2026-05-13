@@ -1,0 +1,163 @@
+Upgrade the existing Messages page from mock data to full Supabase integration. 
+The UI is already built — we just need to wire it up to a real backend.
+
+---
+
+## 1. Supabase Migration
+
+Create: supabase/migrations/[timestamp]_create_messages.sql
+
+```sql
+-- Conversations between two users
+create table conversations (
+  id uuid primary key default gen_random_uuid(),
+  participant_a uuid references auth.users(id) on delete cascade not null,
+  participant_b uuid references auth.users(id) on delete cascade not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(participant_a, participant_b)
+);
+
+-- Messages within a conversation
+create table messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid references conversations(id) on delete cascade not null,
+  sender_id uuid references auth.users(id) on delete cascade not null,
+  content text not null,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+-- Enable RLS
+alter table conversations enable row level security;
+alter table messages enable row level security;
+
+-- Conversation policies
+create policy "Users see their own conversations" on conversations
+  for select using (auth.uid() = participant_a or auth.uid() = participant_b);
+
+create policy "Users can start conversations" on conversations
+  for insert with check (auth.uid() = participant_a or auth.uid() = participant_b);
+
+create policy "Users can update their conversations" on conversations
+  for update using (auth.uid() = participant_a or auth.uid() = participant_b);
+
+-- Message policies
+create policy "Users see messages in their conversations" on messages
+  for select using (
+    conversation_id in (
+      select id from conversations
+      where participant_a = auth.uid() or participant_b = auth.uid()
+    )
+  );
+
+create policy "Users can send messages" on messages
+  for insert with check (sender_id = auth.uid());
+
+create policy "Users can mark messages as read" on messages
+  for update using (
+    conversation_id in (
+      select id from conversations
+      where participant_a = auth.uid() or participant_b = auth.uid()
+    )
+  );
+
+-- Function to auto-update conversation updated_at when a message is sent
+create or replace function update_conversation_timestamp()
+returns trigger as $$
+begin
+  update conversations set updated_at = now() where id = new.conversation_id;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_message_sent
+  after insert on messages
+  for each row execute procedure update_conversation_timestamp();
+
+-- Enable Realtime on messages table
+alter publication supabase_realtime add table messages;
+alter publication supabase_realtime add table conversations;
+```
+
+---
+
+## 2. Hooks — create artifacts/web/src/hooks/useMessages.ts
+
+```ts
+// Fetch all conversations for the current user, ordered by updated_at desc
+// Each conversation should include:
+//   - the other user's profile (display_name, initials from profiles table)
+//   - the last message content + timestamp
+//   - unread count (messages where read=false and sender_id != current user)
+export function useConversations()
+
+// Fetch all messages for a conversation, ordered by created_at asc
+// Subscribe to Supabase Realtime for live incoming messages
+// Auto-mark incoming messages as read when the conversation is open
+export function useMessages(conversationId: string | null)
+
+// Send a message — inserts into messages table
+// conversation_id, content are required
+export function useSendMessage()
+
+// Get or create a conversation between current user and another user
+// Returns existing conversation_id if one exists, creates new one if not
+export function useGetOrCreateConversation()
+
+// Total unread message count across all conversations for current user
+// Used for the sidebar badge
+export function useUnreadCount()
+```
+
+---
+
+## 3. Update artifacts/web/src/pages/Messages.tsx
+
+Replace all mock data constants with real hook calls. Keep the existing UI layout exactly as is — just swap the data source.
+
+Changes:
+- Import and use useConversations() instead of MOCK_CONVERSATIONS
+- Import and use useMessages(selectedConversationId) instead of MOCK_MESSAGES
+- Import and use useSendMessage() for the Send button / Enter key handler
+- Show a loading skeleton while conversations are fetching
+- Show empty state if no conversations: centered message icon + "No messages yet" + "Start a conversation from another user's profile or trading board"
+- When a conversation is selected, scroll the message thread to the bottom automatically
+- New messages from Realtime subscription append to the thread live without refresh
+- When opening a conversation, mark unread messages as read (call update on messages where read=false and sender_id != current user)
+
+---
+
+## 4. Update AppShell.tsx sidebar badge
+
+Replace the hardcoded "3" unread badge with the real useUnreadCount() hook value.
+Only show the badge if count > 0.
+
+---
+
+## 5. Wire up "Make offer" on Trading Board
+
+In TradingBoard.tsx, update the "Make offer" button behavior:
+- Import useGetOrCreateConversation
+- On click, call getOrCreateConversation(trade.user.id) to get a conversation_id
+- Then navigate to /messages?conversation=[id] 
+- In Messages.tsx, read the ?conversation query param on mount and auto-select that conversation if present
+
+---
+
+## 6. Style / UX notes
+- Sent messages: right-aligned, bg-primary text-primary-foreground rounded-2xl
+- Received messages: left-aligned, bg-card rounded-2xl
+- Unread badge on conversation list items: small blue filled circle with count
+- Timestamps: show time if today (e.g. "10:42 AM"), date if older (e.g. "May 9")
+- Loading state: show 3 skeleton conversation rows while fetching
+- Error state: show "Could not load messages" with a retry button
+
+---
+
+## 7. Important
+- Do NOT push to git — commit only
+- Reuse the existing Supabase client (check lib/supabase.ts — do not create new credentials)
+- The profiles table was already created in the community board migration — reuse it here for display names and initials. Do NOT recreate it.
+- Run the SQL migration manually via Supabase SQL Editor — do not auto-run
+- If useMessages hook already partially exists from a previous build, extend it rather than replacing it
