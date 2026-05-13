@@ -43,7 +43,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          label="Portfolio value"
+          label="Collection value"
           value={formatCurrency(p.totalValue)}
           accent
         />
