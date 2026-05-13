@@ -13,13 +13,14 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SplashGate } from "@/components/SplashGate";
 import { tokenCache } from "@/lib/tokenCache";
 import { configureApi } from "@/lib/api";
 
@@ -88,6 +89,8 @@ export default function RootLayout() {
     Fraunces_700Bold,
   });
 
+  const [splashDone, setSplashDone] = useState(false);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
@@ -96,23 +99,20 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  if (!PUBLISHABLE_KEY) {
-    return (
-      <SafeAreaProvider>
-        <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </QueryClientProvider>
-        </ErrorBoundary>
-      </SafeAreaProvider>
-    );
-  }
-
-  return (
+  const tree = !PUBLISHABLE_KEY ? (
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <GestureHandlerRootView>
+            <KeyboardProvider>
+              <RootLayoutNav />
+              {!splashDone && <SplashGate onEnter={() => setSplashDone(true)} />}
+            </KeyboardProvider>
+          </GestureHandlerRootView>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
+  ) : (
     <SafeAreaProvider>
       <ErrorBoundary>
         <ClerkProvider publishableKey={PUBLISHABLE_KEY} tokenCache={tokenCache}>
@@ -121,6 +121,7 @@ export default function RootLayout() {
               <GestureHandlerRootView>
                 <KeyboardProvider>
                   <RootLayoutNav />
+                  {!splashDone && <SplashGate onEnter={() => setSplashDone(true)} />}
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </QueryClientProvider>
@@ -129,4 +130,6 @@ export default function RootLayout() {
       </ErrorBoundary>
     </SafeAreaProvider>
   );
+
+  return tree;
 }
