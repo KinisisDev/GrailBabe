@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "My Dashboard", icon: LayoutDashboard },
   { to: "/vault", label: "Vault", icon: Box },
   { to: "/grail", label: "Grail List", icon: Star },
   { to: "/portfolio", label: "Portfolio", icon: TrendingUp },
