@@ -48,12 +48,13 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   content: {
-    height: 192,
+    height: 64,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
     position: "relative",
+    overflow: "visible",
   },
   title: {
     fontFamily: "Inter_700Bold",
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logo: {
-    height: 168,
-    width: 320,
+    height: 110,
+    width: 300,
   },
 });
