@@ -32,7 +32,7 @@ export default function ForumPage() {
     <div className="p-8 max-w-4xl mx-auto space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-3xl tracking-tight">Forum</h1>
+          <h1 className="font-serif text-3xl tracking-tight">Community</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Talk shop with fellow collectors.
           </p>
