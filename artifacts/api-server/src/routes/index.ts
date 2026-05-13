@@ -24,6 +24,7 @@ import communityRouter from "./community";
 import profilesRouter from "./profiles";
 import scannerRouter from "./scanner";
 import vaultImagesRouter from "./vaultImages";
+import vaultImportExportRouter from "./vaultImportExport";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(communityRouter);
 router.use(profilesRouter);
 router.use(scannerRouter);
 router.use(vaultImagesRouter);
+router.use(vaultImportExportRouter);
 
 export default router;

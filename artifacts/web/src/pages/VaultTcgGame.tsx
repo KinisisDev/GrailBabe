@@ -44,6 +44,10 @@ import {
   SortKey,
   sortItems,
 } from "@/lib/vaultCategory";
+import {
+  VaultSearchBar,
+  ImportExportButton,
+} from "@/components/vault/VaultImportExport";
 
 export default function VaultTcgGamePage({ game }: { game: string }) {
   const isValid = TCG_GAMES.some((g) => g.slug === game);
@@ -52,12 +56,25 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
   const [sort, setSort] = useState<SortKey>("recent");
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const { data, isLoading } = useListVaultItems();
+  const { data: me } = useGetMe();
+  const isPro = (me?.profile.tier ?? "free") !== "free";
 
   const filtered = useMemo(() => {
     const all = (data ?? []).filter((i) => isTcgGameCategory(i.category, slug));
-    return all.filter((i) => categoryItemType(i.category) === type);
-  }, [data, slug, type]);
+    const byType = all.filter((i) => categoryItemType(i.category) === type);
+    const q = search.trim().toLowerCase();
+    if (!q) return byType;
+    return byType.filter((i) => {
+      const notes = decodeNotes(i.notes);
+      return (
+        i.name.toLowerCase().includes(q) ||
+        (i.brand ?? "").toLowerCase().includes(q) ||
+        (notes.cardNumber ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [data, slug, type, search]);
 
   const sorted = useMemo(() => sortItems(filtered, sort), [filtered, sort]);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
@@ -95,18 +112,21 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
             {sorted.length} {sorted.length === 1 ? type : `${type}s`}
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="size-4 mr-1" /> Add {type === "single" ? "card" : "set"}
-            </Button>
-          </DialogTrigger>
-          <AddTcgDialog
-            game={slug}
-            type={type}
-            onClose={() => setOpen(false)}
-          />
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <ImportExportButton category="tcg" isPro={isPro} />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="size-4 mr-1" /> Add {type === "single" ? "card" : "set"}
+              </Button>
+            </DialogTrigger>
+            <AddTcgDialog
+              game={slug}
+              type={type}
+              onClose={() => setOpen(false)}
+            />
+          </Dialog>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -128,6 +148,7 @@ export default function VaultTcgGamePage({ game }: { game: string }) {
             </button>
           ))}
         </div>
+        <VaultSearchBar value={search} onChange={setSearch} tab={type} />
         <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
           <SelectTrigger className="w-52">
             <SelectValue />
