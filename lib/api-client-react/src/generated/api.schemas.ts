@@ -622,6 +622,163 @@ export interface CommunityVoteInput {
   value: CommunityVoteInputValue;
 }
 
+export interface ScreennameAvailability {
+  available: boolean;
+  valid: boolean;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface MyProfile {
+  id: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  screenname?: string | null;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  postalCode?: string | null;
+  country: string;
+  /** @nullable */
+  lat?: number | null;
+  /** @nullable */
+  lng?: number | null;
+  tier: string;
+  onboardingComplete: boolean;
+  /** @nullable */
+  screennameChangedAt?: string | null;
+  /** @nullable */
+  formerScreenname?: string | null;
+  /** @nullable */
+  formerScreennameChangedAt?: string | null;
+  createdAt: string;
+}
+
+export interface CreateProfileInput {
+  /**
+   * @minLength 3
+   * @maxLength 20
+   */
+  screenname: string;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @minLength 1 */
+  city: string;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  postalCode?: string | null;
+  /** @minLength 2 */
+  country: string;
+}
+
+export interface UpdateProfileInput {
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  postalCode?: string | null;
+  /** @nullable */
+  country?: string | null;
+}
+
+export interface ChangeScreennameInput {
+  /**
+   * @minLength 3
+   * @maxLength 20
+   */
+  screenname: string;
+}
+
+export interface ScreennameCooldownError {
+  error: string;
+  daysRemaining: number;
+}
+
+export interface PublicProfileFeaturedItem {
+  id: number;
+  name: string;
+  category: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  condition?: string | null;
+  /** @nullable */
+  currentValue?: string | null;
+}
+
+export interface PublicProfileGrailItem {
+  id: number;
+  name: string;
+  category: string;
+  /** @nullable */
+  targetPrice?: string | null;
+  acquired: boolean;
+}
+
+export interface PublicProfileRecentPost {
+  id: number;
+  title: string;
+  category: string;
+  score: number;
+  commentCount: number;
+  createdAt: string;
+}
+
+export interface PublicProfileTradeReview {
+  reviewer: string;
+  stars: number;
+  quote: string;
+  createdAt: string;
+}
+
+export interface PublicProfile {
+  id: string;
+  screenname: string;
+  displayName: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  postalCode?: string | null;
+  country: string;
+  memberSinceYear: number;
+  /** @nullable */
+  formerScreenname?: string | null;
+  vaultItemCount: number;
+  estimatedVaultValue: string;
+  tradesCompleted: number;
+  tradeRepScore: number;
+  communityPostCount: number;
+  categories: string[];
+  featuredVaultItems: PublicProfileFeaturedItem[];
+  grailList: PublicProfileGrailItem[];
+  recentPosts: PublicProfileRecentPost[];
+  recentTradeReviews: PublicProfileTradeReview[];
+}
+
 export type ListVaultItemsParams = {
 category?: string;
 condition?: string;
@@ -670,4 +827,8 @@ export const ListCommunityPostsSort = {
   new: 'new',
   top: 'top',
 } as const;
+
+export type CheckScreennameParams = {
+screenname: string;
+};
 

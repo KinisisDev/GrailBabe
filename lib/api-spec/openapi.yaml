@@ -20,6 +20,7 @@ tags:
   - name: prices
   - name: messages
   - name: community
+  - name: profiles
 paths:
   /healthz:
     get:
@@ -637,6 +638,94 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/UnreadCount" }
 
+  /profiles/check-screenname:
+    get:
+      operationId: checkScreenname
+      tags: [profiles]
+      parameters:
+        - { name: screenname, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScreennameAvailability" }
+
+  /profiles:
+    post:
+      operationId: createProfile
+      tags: [profiles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateProfileInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyProfile" }
+
+  /profiles/me:
+    get:
+      operationId: getMyProfile
+      tags: [profiles]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyProfile" }
+    patch:
+      operationId: updateProfile
+      tags: [profiles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateProfileInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyProfile" }
+
+  /profiles/me/screenname:
+    patch:
+      operationId: changeScreenname
+      tags: [profiles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeScreennameInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyProfile" }
+        "400":
+          description: Cooldown active
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScreennameCooldownError" }
+
+  /profiles/{screenname}:
+    get:
+      operationId: getProfile
+      tags: [profiles]
+      parameters:
+        - { name: screenname, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicProfile" }
+
 components:
   schemas:
     HealthStatus:
@@ -1137,3 +1226,162 @@ components:
       required: [value]
       properties:
         value: { type: integer, enum: [-1, 1] }
+
+    ScreennameAvailability:
+      type: object
+      required: [available, valid]
+      properties:
+        available: { type: boolean }
+        valid: { type: boolean }
+        reason: { type: ["string", "null"] }
+
+    MyProfile:
+      type: object
+      required: [id, displayName, tier, onboardingComplete, country, createdAt]
+      properties:
+        id: { type: string }
+        email: { type: ["string", "null"] }
+        screenname: { type: ["string", "null"] }
+        displayName: { type: string }
+        avatarUrl: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        region: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: string }
+        lat: { type: ["number", "null"] }
+        lng: { type: ["number", "null"] }
+        tier: { type: string }
+        onboardingComplete: { type: boolean }
+        screennameChangedAt: { type: ["string", "null"], format: date-time }
+        formerScreenname: { type: ["string", "null"] }
+        formerScreennameChangedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    CreateProfileInput:
+      type: object
+      required: [screenname, country, city]
+      properties:
+        screenname: { type: string, minLength: 3, maxLength: 20 }
+        displayName: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        city: { type: string, minLength: 1 }
+        region: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: string, minLength: 2 }
+
+    UpdateProfileInput:
+      type: object
+      properties:
+        displayName: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        avatarUrl: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        region: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: ["string", "null"] }
+
+    ChangeScreennameInput:
+      type: object
+      required: [screenname]
+      properties:
+        screenname: { type: string, minLength: 3, maxLength: 20 }
+
+    ScreennameCooldownError:
+      type: object
+      required: [error, daysRemaining]
+      properties:
+        error: { type: string }
+        daysRemaining: { type: integer }
+
+    PublicProfileFeaturedItem:
+      type: object
+      required: [id, name, category]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string }
+        imageUrl: { type: ["string", "null"] }
+        condition: { type: ["string", "null"] }
+        currentValue: { type: ["string", "null"] }
+
+    PublicProfileGrailItem:
+      type: object
+      required: [id, name, category, acquired]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string }
+        targetPrice: { type: ["string", "null"] }
+        acquired: { type: boolean }
+
+    PublicProfileRecentPost:
+      type: object
+      required: [id, title, category, score, commentCount, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        category: { type: string }
+        score: { type: integer }
+        commentCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    PublicProfileTradeReview:
+      type: object
+      required: [reviewer, stars, quote, createdAt]
+      properties:
+        reviewer: { type: string }
+        stars: { type: integer }
+        quote: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    PublicProfile:
+      type: object
+      required:
+        - id
+        - screenname
+        - displayName
+        - country
+        - memberSinceYear
+        - vaultItemCount
+        - estimatedVaultValue
+        - tradesCompleted
+        - tradeRepScore
+        - communityPostCount
+        - featuredVaultItems
+        - grailList
+        - recentPosts
+        - recentTradeReviews
+        - categories
+      properties:
+        id: { type: string }
+        screenname: { type: string }
+        displayName: { type: string }
+        avatarUrl: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        region: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: string }
+        memberSinceYear: { type: integer }
+        formerScreenname: { type: ["string", "null"] }
+        vaultItemCount: { type: integer }
+        estimatedVaultValue: { type: string }
+        tradesCompleted: { type: integer }
+        tradeRepScore: { type: number }
+        communityPostCount: { type: integer }
+        categories:
+          type: array
+          items: { type: string }
+        featuredVaultItems:
+          type: array
+          items: { $ref: "#/components/schemas/PublicProfileFeaturedItem" }
+        grailList:
+          type: array
+          items: { $ref: "#/components/schemas/PublicProfileGrailItem" }
+        recentPosts:
+          type: array
+          items: { $ref: "#/components/schemas/PublicProfileRecentPost" }
+        recentTradeReviews:
+          type: array
+          items: { $ref: "#/components/schemas/PublicProfileTradeReview" }

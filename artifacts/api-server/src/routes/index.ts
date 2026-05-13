@@ -21,6 +21,7 @@ import justtcgRouter from "./justtcg";
 import cardhedgerRouter from "./cardhedger";
 import messagesRouter from "./messages";
 import communityRouter from "./community";
+import profilesRouter from "./profiles";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(justtcgRouter);
 router.use(cardhedgerRouter);
 router.use(messagesRouter);
 router.use(communityRouter);
+router.use(profilesRouter);
 
 export default router;

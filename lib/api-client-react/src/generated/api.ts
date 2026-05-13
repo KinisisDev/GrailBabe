@@ -28,6 +28,8 @@ import type {
   ApiErrorResponse,
   BillingPlan,
   CategoryBreakdown,
+  ChangeScreennameInput,
+  CheckScreennameParams,
   CheckoutInput,
   CheckoutSession,
   CollectionItem,
@@ -41,6 +43,7 @@ import type {
   CommunityVoteInput,
   ConversationInput,
   ConversationSummary,
+  CreateProfileInput,
   DashboardSummary,
   DirectMessage,
   ForumPost,
@@ -57,15 +60,20 @@ import type {
   ListVaultItemsParams,
   MeResponse,
   MessageInput,
+  MyProfile,
   PortfolioSummary,
   PriceSnapshot,
   ProfileUpdate,
+  PublicProfile,
   ReactionInput,
   ReplyInput,
+  ScreennameAvailability,
+  ScreennameCooldownError,
   TimelinePoint,
   TradePost,
   TradePostInput,
   UnreadCount,
+  UpdateProfileInput,
   UserProfile
 } from './api.schemas';
 
@@ -3073,6 +3081,415 @@ export function useGetUnreadMessageCount<TData = Awaited<ReturnType<typeof getUn
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetUnreadMessageCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+export const getCheckScreennameUrl = (params: CheckScreennameParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/profiles/check-screenname?${stringifiedParams}` : `/api/profiles/check-screenname`
+}
+
+export const checkScreenname = async (params: CheckScreennameParams, options?: RequestInit): Promise<ScreennameAvailability> => {
+  
+  return customFetch<ScreennameAvailability>(getCheckScreennameUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getCheckScreennameQueryKey = (params?: CheckScreennameParams,) => {
+    return [
+    `/api/profiles/check-screenname`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+    
+export const getCheckScreennameQueryOptions = <TData = Awaited<ReturnType<typeof checkScreenname>>, TError = ErrorType<unknown>>(params: CheckScreennameParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkScreenname>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckScreennameQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkScreenname>>> = ({ signal }) => checkScreenname(params, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkScreenname>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CheckScreennameQueryResult = NonNullable<Awaited<ReturnType<typeof checkScreenname>>>
+export type CheckScreennameQueryError = ErrorType<unknown>
+
+
+
+export function useCheckScreenname<TData = Awaited<ReturnType<typeof checkScreenname>>, TError = ErrorType<unknown>>(
+ params: CheckScreennameParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkScreenname>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCheckScreennameQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+export const getCreateProfileUrl = () => {
+
+
+  
+
+  return `/api/profiles`
+}
+
+export const createProfile = async (createProfileInput: CreateProfileInput, options?: RequestInit): Promise<MyProfile> => {
+  
+  return customFetch<MyProfile>(getCreateProfileUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createProfileInput,)
+  }
+);}
+  
+
+
+
+export const getCreateProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProfile>>, TError,{data: BodyType<CreateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProfile>>, TError,{data: BodyType<CreateProfileInput>}, TContext> => {
+
+const mutationKey = ['createProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProfile>>, {data: BodyType<CreateProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProfile(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof createProfile>>>
+    export type CreateProfileMutationBody = BodyType<CreateProfileInput>
+    export type CreateProfileMutationError = ErrorType<unknown>
+
+    export const useCreateProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProfile>>, TError,{data: BodyType<CreateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProfile>>,
+        TError,
+        {data: BodyType<CreateProfileInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProfileMutationOptions(options));
+    }
+    
+export const getGetMyProfileUrl = () => {
+
+
+  
+
+  return `/api/profiles/me`
+}
+
+export const getMyProfile = async ( options?: RequestInit): Promise<MyProfile> => {
+  
+  return customFetch<MyProfile>(getGetMyProfileUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getGetMyProfileQueryKey = () => {
+    return [
+    `/api/profiles/me`
+    ] as const;
+    }
+
+    
+export const getGetMyProfileQueryOptions = <TData = Awaited<ReturnType<typeof getMyProfile>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyProfileQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProfile>>> = ({ signal }) => getMyProfile({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getMyProfile>>>
+export type GetMyProfileQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyProfile<TData = Awaited<ReturnType<typeof getMyProfile>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+export const getUpdateProfileUrl = () => {
+
+
+  
+
+  return `/api/profiles/me`
+}
+
+export const updateProfile = async (updateProfileInput: UpdateProfileInput, options?: RequestInit): Promise<MyProfile> => {
+  
+  return customFetch<MyProfile>(getUpdateProfileUrl(),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateProfileInput,)
+  }
+);}
+  
+
+
+
+export const getUpdateProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext> => {
+
+const mutationKey = ['updateProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfile>>, {data: BodyType<UpdateProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateProfile(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfile>>>
+    export type UpdateProfileMutationBody = BodyType<UpdateProfileInput>
+    export type UpdateProfileMutationError = ErrorType<unknown>
+
+    export const useUpdateProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProfile>>,
+        TError,
+        {data: BodyType<UpdateProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateProfileMutationOptions(options));
+    }
+    
+export const getChangeScreennameUrl = () => {
+
+
+  
+
+  return `/api/profiles/me/screenname`
+}
+
+export const changeScreenname = async (changeScreennameInput: ChangeScreennameInput, options?: RequestInit): Promise<MyProfile> => {
+  
+  return customFetch<MyProfile>(getChangeScreennameUrl(),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      changeScreennameInput,)
+  }
+);}
+  
+
+
+
+export const getChangeScreennameMutationOptions = <TError = ErrorType<ScreennameCooldownError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeScreenname>>, TError,{data: BodyType<ChangeScreennameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeScreenname>>, TError,{data: BodyType<ChangeScreennameInput>}, TContext> => {
+
+const mutationKey = ['changeScreenname'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeScreenname>>, {data: BodyType<ChangeScreennameInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changeScreenname(data,requestOptions)
+        }
+
+
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeScreennameMutationResult = NonNullable<Awaited<ReturnType<typeof changeScreenname>>>
+    export type ChangeScreennameMutationBody = BodyType<ChangeScreennameInput>
+    export type ChangeScreennameMutationError = ErrorType<ScreennameCooldownError>
+
+    export const useChangeScreenname = <TError = ErrorType<ScreennameCooldownError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeScreenname>>, TError,{data: BodyType<ChangeScreennameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changeScreenname>>,
+        TError,
+        {data: BodyType<ChangeScreennameInput>},
+        TContext
+      > => {
+      return useMutation(getChangeScreennameMutationOptions(options));
+    }
+    
+export const getGetProfileUrl = (screenname: string,) => {
+
+
+  
+
+  return `/api/profiles/${screenname}`
+}
+
+export const getProfile = async (screenname: string, options?: RequestInit): Promise<PublicProfile> => {
+  
+  return customFetch<PublicProfile>(getGetProfileUrl(screenname),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
+
+
+
+export const getGetProfileQueryKey = (screenname: string,) => {
+    return [
+    `/api/profiles/${screenname}`
+    ] as const;
+    }
+
+    
+export const getGetProfileQueryOptions = <TData = Awaited<ReturnType<typeof getProfile>>, TError = ErrorType<unknown>>(screenname: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProfileQueryKey(screenname);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfile>>> = ({ signal }) => getProfile(screenname, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(screenname), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getProfile>>>
+export type GetProfileQueryError = ErrorType<unknown>
+
+
+
+export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = ErrorType<unknown>>(
+ screenname: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+  
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProfileQueryOptions(screenname,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

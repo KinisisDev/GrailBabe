@@ -6,6 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/queryClient";
 import AppShell from "@/components/AppShell";
+import OnboardingGuard from "@/components/OnboardingGuard";
+import OnboardingPage from "@/pages/Onboarding";
+import ProfilePage from "@/pages/Profile";
 import DashboardPage from "@/pages/Dashboard";
 import VaultHubPage from "@/pages/VaultHub";
 import VaultTcgPage from "@/pages/VaultTcg";
@@ -32,32 +35,36 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function ProtectedRoutes() {
   return (
-    <AppShell>
-      <Switch>
-        <Route path="/dashboard" component={DashboardPage} />
-        <Route path="/vault" component={VaultHubPage} />
-        <Route path="/vault/tcg" component={VaultTcgPage} />
-        <Route path="/vault/tcg/:game">{(params) => <VaultTcgGamePage game={params.game} />}</Route>
-        <Route path="/vault/lego" component={VaultLegoPage} />
-        <Route path="/vault/:id">{(params) => <VaultItemPage id={Number(params.id)} />}</Route>
-        <Route path="/messages" component={MessagesPage} />
-        <Route path="/security" component={SecurityHubPage} />
-        <Route path="/security/rules" component={SecurityRulesPage} />
-        <Route path="/security/legal" component={SecurityLegalPage} />
-        <Route path="/grail" component={GrailPage} />
-        <Route path="/trades" component={TradesPage} />
-        <Route path="/forum" component={ForumPage} />
-        <Route path="/forum/:id">{(params) => <ForumPostPage id={Number(params.id)} />}</Route>
-        <Route path="/community" component={CommunityPage} />
-        <Route path="/community/:postId">{(params) => <CommunityPostPage id={Number(params.postId)} />}</Route>
-        <Route path="/portfolio" component={PortfolioPage} />
-        <Route path="/insights" component={InsightsPage} />
-        <Route path="/billing" component={BillingPage} />
-        <Route path="/settings" component={SettingsPage} />
-        <Route path="/"><Redirect to="/dashboard" /></Route>
-        <Route component={NotFound} />
-      </Switch>
-    </AppShell>
+    <OnboardingGuard>
+      <AppShell>
+        <Switch>
+          <Route path="/dashboard" component={DashboardPage} />
+          <Route path="/profile" component={ProfilePage} />
+          <Route path="/profile/:screenname" component={ProfilePage} />
+          <Route path="/vault" component={VaultHubPage} />
+          <Route path="/vault/tcg" component={VaultTcgPage} />
+          <Route path="/vault/tcg/:game">{(params) => <VaultTcgGamePage game={params.game} />}</Route>
+          <Route path="/vault/lego" component={VaultLegoPage} />
+          <Route path="/vault/:id">{(params) => <VaultItemPage id={Number(params.id)} />}</Route>
+          <Route path="/messages" component={MessagesPage} />
+          <Route path="/security" component={SecurityHubPage} />
+          <Route path="/security/rules" component={SecurityRulesPage} />
+          <Route path="/security/legal" component={SecurityLegalPage} />
+          <Route path="/grail" component={GrailPage} />
+          <Route path="/trades" component={TradesPage} />
+          <Route path="/forum" component={ForumPage} />
+          <Route path="/forum/:id">{(params) => <ForumPostPage id={Number(params.id)} />}</Route>
+          <Route path="/community" component={CommunityPage} />
+          <Route path="/community/:postId">{(params) => <CommunityPostPage id={Number(params.postId)} />}</Route>
+          <Route path="/portfolio" component={PortfolioPage} />
+          <Route path="/insights" component={InsightsPage} />
+          <Route path="/billing" component={BillingPage} />
+          <Route path="/settings" component={SettingsPage} />
+          <Route path="/"><Redirect to="/dashboard" /></Route>
+          <Route component={NotFound} />
+        </Switch>
+      </AppShell>
+    </OnboardingGuard>
   );
 }
 
@@ -68,7 +75,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={basePath}>
-          <ProtectedRoutes />
+          <Switch>
+            <Route path="/onboarding" component={OnboardingPage} />
+            <Route><ProtectedRoutes /></Route>
+          </Switch>
           <Toaster />
         </WouterRouter>
       </TooltipProvider>

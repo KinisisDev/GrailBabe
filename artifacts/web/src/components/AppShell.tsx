@@ -20,12 +20,14 @@ import {
   Sparkles,
   CreditCard,
   Settings as SettingsIcon,
+  UserCircle,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
 
 const NAV = [
   { to: "/dashboard", label: "My Dashboard", icon: LayoutDashboard },
+  { to: "/profile", label: "My Profile", icon: UserCircle },
   { to: "/vault", label: "The Vault", icon: Box },
   { to: "/grail", label: "My Grail List", icon: Star },
   { to: "/portfolio", label: "Portfolio", icon: TrendingUp },

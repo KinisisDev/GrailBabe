@@ -1,0 +1,280 @@
+Build the onboarding flow, public profile page, and settings 
+page for GrailBabe. Use the existing Drizzle + OpenAPI + 
+generated hooks pattern. 
+
+NOTE: Clerk is NOT active yet. Do NOT import or reference 
+any Clerk hooks or APIs. Use the existing auth system 
+already in the app (whatever session/user pattern is 
+currently used for messages and community). Leave a 
+// TODO: swap for Clerk publicMetadata when Clerk is activated
+comment wherever Clerk will eventually plug in.
+
+---
+
+## 1. Drizzle Schema
+
+Add/update the profiles table:
+
+```ts
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  screenname: text("screenname").unique().notNull(),
+  displayName: text("display_name"),
+  bio: text("bio"),
+  city: text("city"),
+  region: text("region"),
+  postalCode: text("postal_code"),
+  country: text("country").default("US"),
+  lat: real("lat"),
+  lng: real("lng"),
+  onboardingComplete: boolean("onboarding_complete").default(false),
+  screennameChangedAt: timestamp("screenname_changed_at").defaultNow(),
+  formerScreenname: text("former_screenname"),
+  formerScreennameChangedAt: timestamp("former_screenname_changed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+Run the Drizzle migration after updating the schema.
+
+---
+
+## 2. API Endpoints
+
+**GET /api/profiles/check-screenname?screenname=xyz**
+Returns { available: true/false }
+Real-time availability check during onboarding.
+
+**POST /api/profiles**
+Create profile on onboarding (auth required).
+Body: { screenname, displayName, city, region, postalCode, country }
+- Validate screenname: 3–20 chars, alphanumeric + underscores only, unique
+- Geocode city+region+country via OpenStreetMap Nominatim (free, no API key):
+  fetch(`https://nominatim.openstreetmap.org/search?city=CITY&country=COUNTRY&format=json`)
+  Store first result's lat/lng
+- Set onboardingComplete = true on the profile row
+- // TODO: also call Clerk API to set publicMetadata.onboardingComplete = true when Clerk is activated
+
+**GET /api/profiles/me**
+Current user's own full profile (auth required).
+
+**GET /api/profiles/:screenname**
+Public profile by screenname.
+Returns: screenname, displayName, bio, city, region, postalCode, country,
+memberSinceYear (year from profile.createdAt),
+formerScreenname (only if formerScreennameChangedAt within last 30 days),
+vaultItemCount, estimatedVaultValue, tradesCompleted,
+tradeRepScore, communityPostCount,
+featuredVaultItems (up to 3), recentPosts (up to 5),
+grailList (public items only), recentTradeReviews (up to 3)
+
+**PATCH /api/profiles/me**
+Update profile fields (auth required).
+Body: any fields except screenname.
+Re-geocode if location fields change.
+
+**PATCH /api/profiles/me/screenname**
+Change screenname (auth required).
+Body: { screenname }
+- If screennameChangedAt < 120 days ago → return 400 with daysRemaining
+- Store old screenname → formerScreenname, set formerScreennameChangedAt = now
+- Update screenname + screennameChangedAt = now
+
+---
+
+## 3. Generated Hooks
+
+```ts
+useGetProfile(screenname: string)
+useGetMyProfile()
+useCreateProfile()
+useUpdateProfile()
+useChangeScreenname()
+useCheckScreenname(screenname: string)
+```
+
+---
+
+## 4. Onboarding Guard
+
+Create artifacts/web/src/components/OnboardingGuard.tsx
+
+Use the same auth pattern already used in Messages and Community 
+to get the current user. Check if their profile row has 
+onboardingComplete = true. If not, redirect to /onboarding.
+
+```tsx
+// TODO: when Clerk is activated, also check 
+// user.publicMetadata.onboardingComplete here
+
+function OnboardingGuard({ children }) {
+  const { data: profile, isLoading } = useGetMyProfile()
+  const [, setLocation] = useLocation()
+
+  if (isLoading) return <LoadingSpinner />
+  if (profile && !profile.onboardingComplete) {
+    setLocation("/onboarding")
+    return null
+  }
+  return children
+}
+```
+
+Wrap the main app layout (AppShell) with OnboardingGuard in App.tsx.
+The /onboarding route must sit OUTSIDE the guard.
+
+---
+
+## 5. Onboarding Page
+
+Create artifacts/web/src/pages/Onboarding.tsx
+Route: /onboarding (outside OnboardingGuard)
+
+If current user already has onboardingComplete = true, 
+redirect to /dashboard immediately.
+
+Layout: full page, centered card, no sidebar, GrailBabe logo at top.
+
+**Step 1 — Screenname:**
+- Heading: "Choose your screenname"
+- Subtext: "How other collectors know you. Changeable once every 120 days."
+- Input with @ prefix inline
+- Real-time availability: debounce 400ms → useCheckScreenname
+  - Typing: neutral
+  - Available: green checkmark + "Available"
+  - Taken: red X + "Already taken"
+- Validation message if invalid characters or length
+- "Continue →" enabled only when valid + available
+
+**Step 2 — Location:**
+- Heading: "Where are you based?"
+- Subtext: "Helps find local trades. Your street address is never shown publicly."
+- Country dropdown (required) — full list, US default
+- City text input (required)
+- State/Province/Region input — label changes by country:
+  US/AU → "State", CA → "Province", GB → "County", others → "Region"
+- Postal code input (optional) — label changes by country:
+  US → "ZIP code", GB/AU → "Postcode", CA → "Postal code", others → "Postal code"
+- "Finish setup" button → calls useCreateProfile → on success redirect to /dashboard
+
+Progress bar at top: Step 1 of 2 → Step 2 of 2
+
+---
+
+## 6. Public Profile Page
+
+Create artifacts/web/src/pages/Profile.tsx
+Routes: /profile and /profile/:screenname
+
+/profile with no param → load current user's own profile via useGetMyProfile
+/profile/:screenname → load that user's profile via useGetProfile(screenname)
+
+**Header card:**
+- Large avatar circle (initials from displayName)
+- Display name + @screenname
+- If formerScreenname exists and within 30 days: small muted italic "formerly @oldname"
+- Location: "City, Region PostalCode" for US, "City, Region, Country" for non-US
+- Bio
+- Meta row: "Member since [year]" · categories collected
+- Action buttons on OTHER user's profile: Message → /messages?conversation=[userId], 
+  View Trades → /trading?user=[screenname]
+- On OWN profile: "Edit profile" button → /settings
+
+**Stats row (5 auto-calculated stats):**
+Items in vault · Est. value · Trades completed · Trade rep (stars) · Community posts
+
+**Two-column content:**
+
+Left (main):
+- Featured vault items (3 items) — card with image placeholder, name, grade
+  "See full vault →" link
+- Recent community posts (5) — vote score, category badge, title, reply count, time ago
+  "See all posts →" link
+
+Right (sidebar):
+- Grail list (5 items) — name, detail, Hunting/Found badge, "See all →"
+- Trade reputation — star rating, total trades, last 3 reviews with 
+  reviewer name, stars, short quote
+
+---
+
+## 7. Settings Page
+
+Create/update artifacts/web/src/pages/Settings.tsx
+Wire all sections to useGetMyProfile + useUpdateProfile (replace any mock state).
+
+**Section 1 — Profile (new, at top):**
+- Display name: text input
+- Bio: textarea, max 200 chars with live char count
+- Screenname: read-only input
+  - If locked (< 120 days): muted text below "Available to change in X days"
+  - If available (>= 120 days): "Change screenname" expandable inline section
+    - New screenname input with real-time availability check
+    - Warning text: "You won't be able to change this again for 120 days"
+    - "Confirm change" button → calls useChangeScreenname
+
+**Section 2 — Location (new):**
+- Country dropdown
+- City input
+- State/Province/Region input (label changes per country)
+- Postal/ZIP code input (optional, label changes per country)
+
+**Section 3 — Email Notifications:**
+- Notification email input (private, never shown on profile)
+- Notification frequency dropdown
+- Toggles: watchlist alerts, price drop, price rise, new listings, trade updates
+
+**Section 4 — Display Preferences:**
+- Currency dropdown
+- Toggles: show portfolio value, show ROI, compact card view
+
+**Section 5 — Account (read-only):**
+- Email from current auth session (never displayed on public profile)
+- Member since (auto from profile.createdAt, show full date here)
+- Plan badge
+
+"Save changes" button wired to useUpdateProfile.
+
+---
+
+## 8. Sidebar Nav
+
+In AppShell.tsx add between Dashboard and The Vault:
+- Icon: UserCircle (lucide-react)
+- Label: "My Profile"
+- href: "/profile"
+
+---
+
+## 9. Routing in App.tsx
+
+```tsx
+// Outside OnboardingGuard
+<Route path="/onboarding" component={Onboarding} />
+
+// Wrap AppShell (and all routes inside it) with OnboardingGuard
+// New profile routes inside the guard:
+<Route path="/profile" component={Profile} />
+<Route path="/profile/:screenname" component={Profile} />
+<Route path="/settings" component={Settings} />
+```
+
+---
+
+## Style Notes
+- Onboarding: full-page dark bg, centered card max-w-md, no sidebar
+- Step progress: simple "1 of 2" text or two dots at top of card
+- Availability indicator: inline after input, green/red, 13px
+- "Formerly @handle": text-xs italic text-muted-foreground under screenname
+- Location fields: single column on mobile, 2-col grid on desktop
+- Locked screenname field: opacity-60, cursor-not-allowed
+
+---
+
+## Important
+- NO Clerk imports anywhere — use existing auth pattern from Messages/Community
+- Leave // TODO: Clerk comments wherever metadata will plug in later
+- Email is NEVER shown on the public profile — Settings only
+- Do NOT use Supabase client directly — Drizzle + API + hooks only
+- Nominatim geocoding is free with no API key needed
+- Do NOT push to git — commit only

@@ -868,3 +868,172 @@ export const GetUnreadMessageCountResponse = zod.object({
 })
 
 
+export const CheckScreennameQueryParams = zod.object({
+  "screenname": zod.coerce.string()
+})
+
+export const CheckScreennameResponse = zod.object({
+  "available": zod.boolean(),
+  "valid": zod.boolean(),
+  "reason": zod.string().nullish()
+})
+
+
+export const createProfileBodyScreennameMin = 3;
+export const createProfileBodyScreennameMax = 20;
+
+
+export const createProfileBodyCountryMin = 2;
+
+
+
+export const CreateProfileBody = zod.object({
+  "screenname": zod.string().min(createProfileBodyScreennameMin).max(createProfileBodyScreennameMax),
+  "displayName": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "city": zod.string().min(1),
+  "region": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "country": zod.string().min(createProfileBodyCountryMin)
+})
+
+
+export const GetMyProfileResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "screenname": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "country": zod.string(),
+  "lat": zod.number().nullish(),
+  "lng": zod.number().nullish(),
+  "tier": zod.string(),
+  "onboardingComplete": zod.boolean(),
+  "screennameChangedAt": zod.coerce.date().nullish(),
+  "formerScreenname": zod.string().nullish(),
+  "formerScreennameChangedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateProfileBody = zod.object({
+  "displayName": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "country": zod.string().nullish()
+})
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "screenname": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "country": zod.string(),
+  "lat": zod.number().nullish(),
+  "lng": zod.number().nullish(),
+  "tier": zod.string(),
+  "onboardingComplete": zod.boolean(),
+  "screennameChangedAt": zod.coerce.date().nullish(),
+  "formerScreenname": zod.string().nullish(),
+  "formerScreennameChangedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const changeScreennameBodyScreennameMin = 3;
+export const changeScreennameBodyScreennameMax = 20;
+
+
+
+export const ChangeScreennameBody = zod.object({
+  "screenname": zod.string().min(changeScreennameBodyScreennameMin).max(changeScreennameBodyScreennameMax)
+})
+
+export const ChangeScreennameResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "screenname": zod.string().nullish(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "country": zod.string(),
+  "lat": zod.number().nullish(),
+  "lng": zod.number().nullish(),
+  "tier": zod.string(),
+  "onboardingComplete": zod.boolean(),
+  "screennameChangedAt": zod.coerce.date().nullish(),
+  "formerScreenname": zod.string().nullish(),
+  "formerScreennameChangedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const GetProfileParams = zod.object({
+  "screenname": zod.coerce.string()
+})
+
+export const GetProfileResponse = zod.object({
+  "id": zod.string(),
+  "screenname": zod.string(),
+  "displayName": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "region": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "country": zod.string(),
+  "memberSinceYear": zod.number(),
+  "formerScreenname": zod.string().nullish(),
+  "vaultItemCount": zod.number(),
+  "estimatedVaultValue": zod.string(),
+  "tradesCompleted": zod.number(),
+  "tradeRepScore": zod.number(),
+  "communityPostCount": zod.number(),
+  "categories": zod.array(zod.string()),
+  "featuredVaultItems": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "condition": zod.string().nullish(),
+  "currentValue": zod.string().nullish()
+})),
+  "grailList": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "targetPrice": zod.string().nullish(),
+  "acquired": zod.boolean()
+})),
+  "recentPosts": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "score": zod.number(),
+  "commentCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "recentTradeReviews": zod.array(zod.object({
+  "reviewer": zod.string(),
+  "stars": zod.number(),
+  "quote": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
