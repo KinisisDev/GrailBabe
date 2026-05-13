@@ -88,7 +88,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <img
                 src="/grailbabe-logo.png"
                 alt="GrailBabe"
-                className="block mx-auto h-auto w-auto max-h-36 max-w-full object-contain"
+                className="pointer-events-none block mx-auto h-auto w-auto max-h-36 max-w-full object-contain"
               />
             </Link>
           </div>
