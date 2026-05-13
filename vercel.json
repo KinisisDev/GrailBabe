@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd apps/web && npm run build",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@grailbabe-clerk-publishable-key",
+    "CLERK_SECRET_KEY":                  "@grailbabe-clerk-secret-key",
+    "NEXT_PUBLIC_SUPABASE_URL":          "@grailbabe-supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY":     "@grailbabe-supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY":         "@grailbabe-supabase-service-role-key",
+    "NEXT_PUBLIC_API_SERVER_URL":        "@grailbabe-api-server-url"
+  }
+}

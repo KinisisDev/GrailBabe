@@ -1,0 +1,6 @@
+# Vercel builds apps/web only — ignore everything else at the root
+apps/mobile
+packages
+supabase
+node_modules
+.turbo
