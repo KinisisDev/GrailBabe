@@ -188,7 +188,7 @@ h1.font-serif.tracking-tight {
           background-clip: text;
   -webkit-text-fill-color: transparent;
           color: transparent;
-  animation: iridescent-shift 9s ease-in-out infinite;
+  animation: iridescent-shift 3.5s ease-in-out infinite;
   /* keep child icons (lucide) rendered in their own color, not the gradient */
 }
 h1.font-serif.tracking-tight > svg,
