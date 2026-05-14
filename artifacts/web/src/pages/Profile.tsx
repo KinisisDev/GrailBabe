@@ -1,9 +1,12 @@
 import { Link, useParams } from "wouter";
+import { useUser, SignInButton } from "@clerk/react";
 import {
   useGetMyProfile,
   useGetProfile,
+  useGetMe,
   getGetMyProfileQueryKey,
   getGetProfileQueryKey,
+  getGetMeQueryKey,
 } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +20,45 @@ import {
   Box,
   Sparkles,
   MessagesSquare,
+  Crown,
+  Gem,
+  LogIn,
+  CreditCard,
 } from "lucide-react";
+
+type TierKey = "scout" | "seeker" | "master";
+
+function tierFromMe(
+  tier: string | undefined,
+  interval: string | null | undefined,
+): TierKey {
+  if (tier !== "premium") return "scout";
+  return interval === "year" ? "master" : "seeker";
+}
+
+const TIER_META: Record<
+  TierKey,
+  { label: string; icon: typeof Crown; className: string }
+> = {
+  scout: {
+    label: "Grail Scout",
+    icon: Sparkles,
+    className:
+      "bg-muted/60 text-muted-foreground border-border",
+  },
+  seeker: {
+    label: "Grail Seeker",
+    icon: Gem,
+    className:
+      "bg-primary/15 text-primary border-primary/40",
+  },
+  master: {
+    label: "Grail Master",
+    icon: Crown,
+    className:
+      "bg-amber-500/15 text-amber-400 border-amber-500/40",
+  },
+};
 
 function initials(name: string) {
   return name
@@ -57,39 +98,97 @@ function timeAgo(d: string) {
 export default function Profile() {
   const params = useParams<{ screenname?: string }>();
   const screenname = params.screenname;
+  const { isLoaded: clerkLoaded, isSignedIn } = useUser();
 
-  const { data: me } = useGetMyProfile({
+  const { data: me, isLoading: meLoading } = useGetMyProfile({
     query: {
       queryKey: getGetMyProfileQueryKey(),
       staleTime: 30_000,
       retry: false,
+      enabled: Boolean(isSignedIn),
+    },
+  });
+
+  const { data: meSub } = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      staleTime: 30_000,
+      retry: false,
+      enabled: Boolean(isSignedIn),
     },
   });
 
   const isOwn = !screenname || screenname === me?.screenname;
   const lookupName = screenname ?? me?.screenname ?? "";
 
-  const { data: profile, isLoading, isError } = useGetProfile(lookupName, {
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError,
+  } = useGetProfile(lookupName, {
     query: {
       queryKey: getGetProfileQueryKey(lookupName),
-      enabled: Boolean(lookupName),
+      enabled: Boolean(lookupName) && Boolean(isSignedIn),
       retry: false,
     },
   });
 
-  if (!lookupName && me && !me.screenname) {
+  // Signed-out: show CTA instead of spinning forever on 401s.
+  if (clerkLoaded && !isSignedIn) {
     return (
       <div className="p-4 md:p-8 max-w-3xl mx-auto">
         <Card>
-          <CardContent className="p-6">
-            Finish onboarding to set up your profile.
+          <CardContent className="p-8 text-center space-y-4">
+            <div
+              className="size-14 rounded-full mx-auto grid place-items-center"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--neon-blue), var(--neon-green))",
+              }}
+            >
+              <LogIn className="size-6 text-black" />
+            </div>
+            <h1 className="font-serif text-2xl">Your profile lives here</h1>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Sign in to see your vault stats, grail list, trade reputation,
+              and Grail Scout / Seeker / Master tier.
+            </p>
+            <SignInButton mode="modal">
+              <Button data-testid="button-signin-profile">
+                Sign in to view profile
+              </Button>
+            </SignInButton>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (isLoading) {
+  // Signed-in but no screenname yet → onboarding.
+  if (isSignedIn && !lookupName && me && !me.screenname) {
+    return (
+      <div className="p-4 md:p-8 max-w-3xl mx-auto">
+        <Card>
+          <CardContent className="p-6 space-y-3">
+            <h1 className="font-serif text-xl">Finish setting up</h1>
+            <p className="text-sm text-muted-foreground">
+              Pick a screenname and a few details to set up your profile.
+            </p>
+            <Link href="/onboarding">
+              <Button size="sm">Continue onboarding</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Initial spinner only while we're actually loading something.
+  if (
+    (!clerkLoaded || meLoading || profileLoading) &&
+    !profile &&
+    !isError
+  ) {
     return (
       <div className="p-12 grid place-items-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -113,6 +212,11 @@ export default function Profile() {
   }
 
   const loc = formatLocation(profile);
+  const tierKey: TierKey = isOwn
+    ? tierFromMe(meSub?.profile.tier, meSub?.subscription.interval)
+    : "scout";
+  const tierMeta = TIER_META[tierKey];
+  const TierIcon = tierMeta.icon;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 pb-16">
@@ -153,6 +257,18 @@ export default function Profile() {
                   formerly @{profile.formerScreenname}
                 </div>
               )}
+              {isOwn && (
+                <div className="mt-2">
+                  <Badge
+                    variant="outline"
+                    className={`gap-1.5 ${tierMeta.className}`}
+                    data-testid="badge-tier"
+                  >
+                    <TierIcon className="size-3" />
+                    {tierMeta.label}
+                  </Badge>
+                </div>
+              )}
               {loc && (
                 <div className="text-sm text-muted-foreground mt-2">{loc}</div>
               )}
@@ -172,12 +288,26 @@ export default function Profile() {
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
                 {isOwn ? (
-                  <Link href="/settings">
-                    <Button size="sm" data-testid="button-edit-profile">
-                      <Pencil className="size-3.5 mr-1.5" />
-                      Edit profile
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href="/settings">
+                      <Button size="sm" data-testid="button-edit-profile">
+                        <Pencil className="size-3.5 mr-1.5" />
+                        Edit profile
+                      </Button>
+                    </Link>
+                    <Link href="/billing">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        data-testid="button-manage-subscription"
+                      >
+                        <CreditCard className="size-3.5 mr-1.5" />
+                        {tierKey === "scout"
+                          ? "Upgrade plan"
+                          : "Manage subscription"}
+                      </Button>
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link href={`/messages?conversation=${profile.id}`}>

@@ -14,10 +14,47 @@ export function useIsSignedIn(): { isSignedIn: boolean; isLoaded: boolean } {
   }
 }
 
-// Sign-in prompts are disabled in test mode so QA can browse every screen
-// without authenticating. Re-enable by restoring the previous JSX from git.
-export function SignInPrompt(_: { message?: string }) {
-  return null;
+export function SignInPrompt({
+  message = "Sign in to unlock this experience.",
+}: {
+  message?: string;
+}) {
+  const colors = useColors();
+  const router = useRouter();
+  return (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      <View
+        style={[
+          styles.iconWrap,
+          { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 },
+        ]}
+      >
+        <Feather name="lock" size={18} color={colors.neonGreen} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.title, { color: colors.foreground }]}>
+          You're browsing as a guest
+        </Text>
+        <Text style={[styles.body, { color: colors.mutedForeground }]}>
+          {message}
+        </Text>
+      </View>
+      <Pressable
+        onPress={() => router.push("/sign-in")}
+        style={({ pressed }) => [
+          styles.btn,
+          { backgroundColor: colors.neonGreen, opacity: pressed ? 0.85 : 1 },
+        ]}
+      >
+        <Text style={[styles.btnText, { color: "#0a0a0f" }]}>Sign in</Text>
+      </Pressable>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -38,7 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: { fontFamily: "Inter_600SemiBold", fontSize: 14, marginBottom: 2 },
-  body: { fontFamily: "Inter_400Regular", fontSize: 12, flex: 1 },
+  body: { fontFamily: "Inter_400Regular", fontSize: 12 },
   btn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
   btnText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
 });
