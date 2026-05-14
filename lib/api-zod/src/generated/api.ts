@@ -849,7 +849,7 @@ export const AiSearchResponse = zod.object({
 export const ListBillingPlansResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "tier": zod.enum(['free', 'premium']),
+  "tier": zod.enum(['free', 'seeker', 'master']),
   "priceCents": zod.number(),
   "interval": zod.enum(['month', 'year', 'none']),
   "features": zod.array(zod.string())

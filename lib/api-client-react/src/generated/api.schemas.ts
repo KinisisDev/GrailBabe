@@ -733,7 +733,8 @@ export type BillingPlanTier = typeof BillingPlanTier[keyof typeof BillingPlanTie
 
 export const BillingPlanTier = {
   free: 'free',
-  premium: 'premium',
+  seeker: 'seeker',
+  master: 'master',
 } as const;
 
 export type BillingPlanInterval = typeof BillingPlanInterval[keyof typeof BillingPlanInterval];

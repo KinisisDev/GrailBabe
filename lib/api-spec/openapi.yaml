@@ -1519,7 +1519,7 @@ components:
       properties:
         id: { type: string }
         name: { type: string }
-        tier: { type: string, enum: [free, premium] }
+        tier: { type: string, enum: [free, seeker, master] }
         priceCents: { type: integer }
         interval: { type: string, enum: [month, year, none] }
         features:

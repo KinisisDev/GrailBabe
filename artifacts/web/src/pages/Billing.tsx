@@ -119,16 +119,25 @@ export default function BillingPage() {
     }
   }, []);
 
-  // Map the configured Stripe premium price to the Seeker tier.
-  // Master tier doesn't have a Stripe product yet — show "Coming soon".
-  const stripePremium: Record<Interval, BillingPlan | undefined> = useMemo(
+  // Map configured Stripe prices to each paid tier by interval.
+  const stripePlans: Record<"seeker" | "master", Record<Interval, BillingPlan | undefined>> = useMemo(
     () => ({
-      month: (plans ?? []).find(
-        (p) => p.tier === "premium" && p.interval === "month",
-      ),
-      year: (plans ?? []).find(
-        (p) => p.tier === "premium" && p.interval === "year",
-      ),
+      seeker: {
+        month: (plans ?? []).find(
+          (p) => p.tier === "seeker" && p.interval === "month",
+        ),
+        year: (plans ?? []).find(
+          (p) => p.tier === "seeker" && p.interval === "year",
+        ),
+      },
+      master: {
+        month: (plans ?? []).find(
+          (p) => p.tier === "master" && p.interval === "month",
+        ),
+        year: (plans ?? []).find(
+          (p) => p.tier === "master" && p.interval === "year",
+        ),
+      },
     }),
     [plans],
   );
@@ -257,7 +266,13 @@ export default function BillingPage() {
               tier={tier}
               interval={interval}
               isPremium={isPremium}
-              stripePlan={tier.key === "seeker" ? stripePremium[interval] : undefined}
+              stripePlan={
+                tier.key === "seeker"
+                  ? stripePlans.seeker[interval]
+                  : tier.key === "master"
+                    ? stripePlans.master[interval]
+                    : undefined
+              }
               checkoutPending={checkout.isPending}
               onStartCheckout={startCheckout}
               onOpenPortal={openPortal}
@@ -293,14 +308,13 @@ function TierCard({
 }) {
   const Icon = tier.icon;
   const isFree = tier.key === "scout";
-  const isSeeker = tier.key === "seeker";
-  const isMaster = tier.key === "master";
+  const isPaid = tier.key === "seeker" || tier.key === "master";
   // Prefer Stripe's actual price when wired so the displayed amount always
   // matches what the user will be charged at checkout. Fall back to the
   // marketing price from the tier spec if Stripe hasn't been configured yet.
   const marketingPrice = interval === "month" ? tier.monthly : tier.yearly;
   const stripePrice =
-    isSeeker && stripePlan ? stripePlan.priceCents / 100 : null;
+    isPaid && stripePlan ? stripePlan.priceCents / 100 : null;
   const price = stripePrice ?? marketingPrice;
   const savings =
     tier.monthly && tier.yearly && interval === "year"
@@ -387,7 +401,7 @@ function TierCard({
         <ul className="mt-6 space-y-2.5 flex-1">
           {tier.features.map((feature, idx) => {
             const isPlusHeader =
-              isMaster && idx === 0 && feature.endsWith("plus:");
+              tier.key === "master" && idx === 0 && feature.endsWith("plus:");
             if (isPlusHeader) {
               return (
                 <li
@@ -425,16 +439,6 @@ function TierCard({
             >
               {isPremium ? "Included" : "Current plan"}
             </Button>
-          ) : isMaster ? (
-            // Master tier — no Stripe product wired yet, always disabled.
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled
-              data-testid={`cta-${tier.key}`}
-            >
-              Coming soon
-            </Button>
           ) : isPremium ? (
             <Button
               variant="outline"
@@ -444,7 +448,7 @@ function TierCard({
             >
               Manage in portal
             </Button>
-          ) : isSeeker && stripePlan ? (
+          ) : stripePlan ? (
             <Button
               className="w-full"
               onClick={() => onStartCheckout(stripePlan.id)}
