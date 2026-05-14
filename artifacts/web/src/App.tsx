@@ -8,6 +8,8 @@ import { queryClient } from "@/lib/queryClient";
 import AppShell from "@/components/AppShell";
 import OnboardingGuard from "@/components/OnboardingGuard";
 import OnboardingPage from "@/pages/Onboarding";
+import SignInPage from "@/pages/SignIn";
+import SignUpPage from "@/pages/SignUp";
 import ProfilePage from "@/pages/Profile";
 import DashboardPage from "@/pages/Dashboard";
 import VaultHubPage from "@/pages/VaultHub";
@@ -79,6 +81,10 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={basePath}>
           <Switch>
+            <Route path="/sign-in" component={SignInPage} />
+            <Route path="/sign-in/:rest*" component={SignInPage} />
+            <Route path="/sign-up" component={SignUpPage} />
+            <Route path="/sign-up/:rest*" component={SignUpPage} />
             <Route path="/onboarding" component={OnboardingPage} />
             <Route><ProtectedRoutes /></Route>
           </Switch>
