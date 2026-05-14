@@ -1,0 +1,121 @@
+In the Legal Notices section of the site (under the security/legal tab), build out four full legal document sections. The page already shows a header "Legal Notices" with subtitle "Platform terms, privacy, and authenticity disclaimers." Keep that header and add the following four sections below it, each displayed as a styled card matching the existing Authenticity Tools Disclaimer card design (dark background, gold/amber heading, gray "LAST UPDATED" subheading, body text).
+
+---
+
+SECTION 1 — Terms of Service
+LAST UPDATED: MAY 2026
+
+Acceptance of Terms
+By accessing or using the Grailbabe platform, you agree to be bound by these Terms of Service. If you do not agree, you may not use the Platform. These Terms apply to all users, including visitors, registered users, and contributors.
+
+Eligibility
+You must be at least 13 years of age to use Grailbabe. If you are under 18, you must have parental or guardian consent.
+
+Account Registration
+To access certain features, you must create an account. You agree to: provide accurate and complete information during registration, maintain the security of your credentials, notify us immediately of any unauthorized use, and accept responsibility for all activity under your account.
+
+Platform Use
+Grailbabe grants you a limited, non-exclusive license to access and use the Platform for personal, non-commercial purposes. You may not use the Platform for unlawful purposes, reproduce or exploit content without authorization, attempt to hack or interfere with Platform systems, use bots or scrapers, or impersonate another user.
+
+User Content
+You retain ownership of content you submit. By posting, you grant Grailbabe a non-exclusive, worldwide, royalty-free license to use and display that content in connection with the Platform.
+
+Trading and Transactions
+Grailbabe facilitates connections between collectors but is not a party to any trade or transaction. We make no warranties regarding item descriptions, valuations, or user conduct. Users engage in trades entirely at their own risk.
+
+Subscription and Billing
+Paid tiers (Grail Seeker and Grail Master) are billed monthly or annually and auto-renew unless cancelled at least 24 hours before renewal. All fees are non-refundable except as required by law.
+
+Termination
+We reserve the right to suspend or terminate your account for conduct that violates these Terms or is harmful to other users or the Platform.
+
+Disclaimer of Warranties
+The Platform is provided "as is" and "as available" without warranties of any kind. We do not warrant that the Platform will be uninterrupted or error-free.
+
+Limitation of Liability
+To the maximum extent permitted by law, Grailbabe and its affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform.
+
+Governing Law
+These Terms are governed by the laws of the State of Delaware, United States. Disputes shall be resolved through binding arbitration under the rules of the American Arbitration Association.
+
+Contact: support@grailbabe.com
+
+---
+
+SECTION 2 — Privacy Policy
+LAST UPDATED: MAY 2026
+
+Overview
+Grailbabe is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and share your information. By using Grailbabe, you consent to the practices described here.
+
+Information We Collect
+- Account information: username, email address, and encrypted password
+- Profile information: display name, avatar, bio, and collection preferences
+- Collection data: items you scan, add, or track
+- Usage data: pages visited, features used, session duration
+- Device information: IP address, browser type, OS, device identifiers
+- Communications: messages sent through the platform and support correspondence
+
+How We Use Your Information
+We use your data to provide and improve the Platform, personalize your experience, process transactions, send service communications, detect fraud and abuse, comply with legal obligations, and conduct analytics.
+
+Information Sharing
+We do not sell your personal information. We may share data with service providers (hosting, analytics, payments), other users to the extent your profile is public, law enforcement when required by law, and successor entities in a merger or acquisition.
+
+Data Retention
+We retain data as long as your account is active. Upon account deletion, personal data is deleted or anonymized within 30 days, except where retention is legally required.
+
+Your Rights
+You may have the right to access, correct, or delete your personal data, opt out of marketing, and request data portability. Contact support@grailbabe.com to exercise these rights.
+
+Security
+We use industry-standard measures including TLS encryption and encrypted password storage. No method of transmission is 100% secure.
+
+Children's Privacy
+The Platform is not directed to children under 13. We do not knowingly collect data from children under 13.
+
+Contact: support@grailbabe.com
+
+---
+
+SECTION 3 — Authenticity Tools Disclaimer
+LAST UPDATED: MAY 2026
+
+The authenticity tools provided within this application, including but not limited to image scanning, AI-based analysis, valuation insights, and educational guides, are offered solely for informational and assistive purposes.
+
+While we strive to provide accurate and helpful insights, we make no representations or warranties regarding the accuracy, completeness, reliability, or authenticity of any results, analyses, or recommendations generated by these tools.
+
+These tools do not constitute professional authentication, appraisal, or certification services. Users are solely responsible for independently verifying the authenticity, condition, and value of any item prior to engaging in any purchase, sale, or trade.
+
+By using these tools and the platform, you acknowledge and agree that all decisions are made at your own risk. The platform, its owners, affiliates, and partners shall not be held liable for any losses, damages, disputes, or claims arising from reliance on these tools or related outputs.
+
+Results should not be treated as equivalent to third-party grading or certification from PSA, BGS, or SGC. Seek qualified professional evaluation before making significant financial decisions based on collectible valuations.
+
+Third-Party Trademarks: This platform is not affiliated with, endorsed by, or sponsored by The Pokémon Company, Nintendo, Game Freak, Creatures Inc., MLB, NFL, NBA, NHL, Lego Group, or any other brand whose collectibles may appear on the platform. All trademarks belong to their respective owners.
+
+Contact: support@grailbabe.com
+
+---
+
+SECTION 4 — Cookie Policy
+LAST UPDATED: MAY 2026
+
+What Are Cookies
+Cookies are small text files placed on your device. Grailbabe uses cookies and similar tracking technologies to operate and improve the Platform.
+
+Types of Cookies We Use
+- Strictly necessary: Required for the Platform to function (session auth, security tokens). Cannot be opted out of.
+- Functional: Remember your preferences such as display settings and last-viewed collections.
+- Analytics: Help us understand how users interact with the Platform to improve the product.
+- Marketing: Deliver relevant promotional content within the Platform (only if opted in).
+
+Third-Party Cookies
+Some cookies are placed by third parties including Clerk (authentication), analytics providers, and payment processors. These parties have their own cookie policies.
+
+Managing Cookies
+You can control or delete cookies through your browser settings. Disabling certain cookies may affect Platform functionality including staying logged in.
+
+Cookie Consent
+On first visit, you will see a cookie consent banner. You may accept all, reject non-essential, or customize preferences. Settings can be updated anytime in Platform preferences.
+
+Contact: support@grailbabe.com
