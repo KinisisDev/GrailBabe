@@ -473,7 +473,7 @@ export default function SettingsPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            You won't be able to change this again for 90 days.
+                            You won't be able to change this again for 120 days.
                           </p>
                           <div className="flex items-center gap-2">
                             <Button
