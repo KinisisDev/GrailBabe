@@ -32,6 +32,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "54641ca1-bfeb-4f3a-abb8-6b75a2535e9d"
+      }
+    },
+    "owner": "kinisislabs"
   }
 }
