@@ -12,11 +12,26 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useSignIn, useSignUp } from "@clerk/clerk-expo";
-import { Feather } from "@expo/vector-icons";
+import { useSignIn, useSignUp, useOAuth } from "@clerk/clerk-expo";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import { Feather, FontAwesome } from "@expo/vector-icons";
 
 import { useColors } from "@/hooks/useColors";
 import { IridescentHeader } from "@/components/IridescentHeader";
+
+WebBrowser.maybeCompleteAuthSession();
+
+function useWarmUpBrowser() {
+  React.useEffect(() => {
+    if (Platform.OS !== "web") {
+      void WebBrowser.warmUpAsync();
+      return () => {
+        if (Platform.OS !== "web") void WebBrowser.coolDownAsync();
+      };
+    }
+  }, []);
+}
 
 type Mode = "signIn" | "signUp" | "verify";
 
@@ -26,6 +41,9 @@ export default function SignInScreen() {
   const router = useRouter();
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
+  useWarmUpBrowser();
+  const googleOAuth = useOAuth({ strategy: "oauth_google" });
+  const appleOAuth = useOAuth({ strategy: "oauth_apple" });
 
   const [mode, setMode] = useState<Mode>("signIn");
   const [email, setEmail] = useState("");
@@ -38,6 +56,30 @@ export default function SignInScreen() {
     if (router.canGoBack()) router.back();
     else router.replace("/");
   }, [router]);
+
+  const onOAuth = useCallback(
+    async (flow: typeof googleOAuth) => {
+      setBusy(true);
+      setErr(null);
+      try {
+        const { createdSessionId, setActive } = await flow.startOAuthFlow({
+          redirectUrl: Linking.createURL("/"),
+        });
+        if (createdSessionId && setActive) {
+          await setActive({ session: createdSessionId });
+          close();
+        }
+      } catch (e) {
+        const msg =
+          (e as { errors?: { message: string }[] })?.errors?.[0]?.message ??
+          (e instanceof Error ? e.message : "Sign in failed");
+        setErr(msg);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [close],
+  );
 
   const onSignIn = useCallback(async () => {
     if (!signInLoaded || !signIn) return;
@@ -128,6 +170,64 @@ export default function SignInScreen() {
                 ? "Create an account to sync your collection."
                 : "Sign in to your collector account."}
           </Text>
+
+          {mode !== "verify" && (
+            <View style={styles.oauthBlock}>
+              <Pressable
+                onPress={() => onOAuth(googleOAuth)}
+                disabled={busy}
+                style={({ pressed }) => [
+                  styles.oauthBtn,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    opacity: pressed || busy ? 0.85 : 1,
+                  },
+                ]}
+              >
+                <FontAwesome name="google" size={16} color={colors.foreground} />
+                <Text style={[styles.oauthText, { color: colors.foreground }]}>
+                  Continue with Google
+                </Text>
+              </Pressable>
+              {Platform.OS === "ios" && (
+                <Pressable
+                  onPress={() => onOAuth(appleOAuth)}
+                  disabled={busy}
+                  style={({ pressed }) => [
+                    styles.oauthBtn,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      opacity: pressed || busy ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <FontAwesome
+                    name="apple"
+                    size={18}
+                    color={colors.foreground}
+                  />
+                  <Text style={[styles.oauthText, { color: colors.foreground }]}>
+                    Continue with Apple
+                  </Text>
+                </Pressable>
+              )}
+              <View style={styles.divider}>
+                <View
+                  style={[styles.dividerLine, { backgroundColor: colors.border }]}
+                />
+                <Text
+                  style={[styles.dividerText, { color: colors.mutedForeground }]}
+                >
+                  or
+                </Text>
+                <View
+                  style={[styles.dividerLine, { backgroundColor: colors.border }]}
+                />
+              </View>
+            </View>
+          )}
 
           {mode !== "verify" && (
             <>
@@ -236,4 +336,29 @@ const styles = StyleSheet.create({
   primaryBtnText: { fontFamily: "Inter_700Bold", fontSize: 15 },
   toggleBtn: { paddingVertical: 16, alignItems: "center" },
   toggleText: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  oauthBlock: { gap: 10, marginTop: 4 },
+  oauthBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  oauthText: { fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
+  dividerText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+  },
 });

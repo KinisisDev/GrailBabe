@@ -1,5 +1,14 @@
-import React from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import Svg, {
+  Defs,
+  LinearGradient,
+  Stop,
+  Path,
+  Line as SvgLine,
+  Circle,
+  Rect,
+} from "react-native-svg";
 import {
   useGetPortfolioSummary,
   useGetPortfolioByCategory,
@@ -8,7 +17,7 @@ import {
 
 import { useColors } from "@/hooks/useColors";
 import { PageShell } from "@/components/PageShell";
-import { useIsSignedIn, SignInPrompt } from "@/components/AuthGate";
+import { useIsSignedIn } from "@/components/AuthGate";
 import { qopt } from "@/lib/api";
 import { formatCurrency, formatPercent, formatCompactCurrency } from "@/lib/format";
 
@@ -106,23 +115,127 @@ export default function PortfolioScreen() {
       </View>
 
       <Text style={[styles.section, { color: colors.foreground }]}>Value over time</Text>
-      <View style={[styles.timeline, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ alignItems: "flex-end", height: 120, paddingHorizontal: 12 }}>
-          {tlPoints.map((p, i) => {
-            const range = tlMax - tlMin || 1;
-            const h = ((p.value - tlMin) / range) * 100 + 4;
-            return (
-              <View key={i} style={[styles.tlBar, { height: h, backgroundColor: colors.neonGreen }]} />
-            );
-          })}
-          {tlPoints.length === 0 && (
-            <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 12, padding: 16 }}>
-              Not enough history yet.
-            </Text>
-          )}
-        </ScrollView>
+      <View
+        style={[
+          styles.timeline,
+          { borderColor: colors.border, backgroundColor: colors.card },
+        ]}
+      >
+        <TimelineChart points={tlPoints} min={tlMin} max={tlMax} />
       </View>
     </PageShell>
+  );
+}
+
+function TimelineChart({
+  points,
+  min,
+  max,
+}: {
+  points: Array<{ date: string; value: number }>;
+  min: number;
+  max: number;
+}) {
+  const colors = useColors();
+  const [w, setW] = useState(0);
+  const H = 160;
+  const PAD_X = 14;
+  const PAD_Y = 18;
+
+  if (points.length === 0) {
+    return (
+      <View style={{ height: H, alignItems: "center", justifyContent: "center" }}>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            fontFamily: "Inter_400Regular",
+            fontSize: 12,
+          }}
+        >
+          Not enough history yet.
+        </Text>
+      </View>
+    );
+  }
+
+  const range = max - min || 1;
+  const innerW = Math.max(0, w - PAD_X * 2);
+  const innerH = H - PAD_Y * 2;
+
+  const xy = points.map((p, i) => {
+    const x =
+      points.length === 1
+        ? PAD_X + innerW / 2
+        : PAD_X + (i / (points.length - 1)) * innerW;
+    const y = PAD_Y + (1 - (p.value - min) / range) * innerH;
+    return { x, y, value: p.value };
+  });
+
+  const linePath = xy
+    .map((pt, i) => `${i === 0 ? "M" : "L"} ${pt.x} ${pt.y}`)
+    .join(" ");
+  const areaPath =
+    xy.length > 0
+      ? `${linePath} L ${xy[xy.length - 1].x} ${PAD_Y + innerH} L ${xy[0].x} ${PAD_Y + innerH} Z`
+      : "";
+
+  const last = xy[xy.length - 1];
+
+  return (
+    <View
+      style={{ height: H }}
+      onLayout={(e) => setW(e.nativeEvent.layout.width)}
+    >
+      {w > 0 && (
+        <Svg width={w} height={H}>
+          <Defs>
+            <LinearGradient id="tlFill" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={colors.neonGreen} stopOpacity={0.35} />
+              <Stop offset="1" stopColor={colors.neonGreen} stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+            <SvgLine
+              key={f}
+              x1={PAD_X}
+              x2={w - PAD_X}
+              y1={PAD_Y + innerH * f}
+              y2={PAD_Y + innerH * f}
+              stroke={colors.border}
+              strokeWidth={StyleSheet.hairlineWidth}
+            />
+          ))}
+          {areaPath !== "" && <Path d={areaPath} fill="url(#tlFill)" />}
+          <Path
+            d={linePath}
+            stroke={colors.neonGreen}
+            strokeWidth={2}
+            fill="none"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+          {last && (
+            <>
+              <Circle
+                cx={last.x}
+                cy={last.y}
+                r={6}
+                fill={colors.neonGreen}
+                fillOpacity={0.18}
+              />
+              <Circle cx={last.x} cy={last.y} r={3} fill={colors.neonGreen} />
+            </>
+          )}
+          <Rect
+            x={0}
+            y={0}
+            width={w}
+            height={H}
+            fill="transparent"
+          />
+        </Svg>
+      )}
+    </View>
   );
 }
 
@@ -157,11 +270,8 @@ const styles = StyleSheet.create({
   catSub: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 4 },
   timeline: {
     margin: 16,
-    height: 140,
     borderRadius: 14,
     borderWidth: 1,
     overflow: "hidden",
-    justifyContent: "flex-end",
   },
-  tlBar: { width: 8, marginRight: 4, borderRadius: 2 },
 });
