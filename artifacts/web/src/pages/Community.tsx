@@ -42,6 +42,7 @@ import {
   TrendingUp,
   Pin,
   Users,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -318,15 +319,27 @@ export default function Community() {
 
       {/* Main */}
       <main className="min-w-0 flex-1 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Community</h1>
-          <Button
-            onClick={() => setComposeOpen(true)}
-            data-testid="button-new-post"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New post
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/security/rules">
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="link-community-guidelines"
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Community Guidelines
+              </Button>
+            </Link>
+            <Button
+              onClick={() => setComposeOpen(true)}
+              data-testid="button-new-post"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New post
+            </Button>
+          </div>
         </div>
 
         {/* Compose bar */}

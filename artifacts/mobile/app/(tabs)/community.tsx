@@ -62,6 +62,28 @@ export default function CommunityScreen() {
           paddingBottom: Platform.OS === "web" ? 100 : insets.bottom + 100,
         }}
       >
+        <Pressable
+          onPress={() => router.push("/security/rules")}
+          style={({ pressed }) => [
+            styles.guidelinesLink,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Feather name="shield" size={16} color={colors.neonBlue} />
+          <Text style={[styles.guidelinesText, { color: colors.foreground }]}>
+            Community Guidelines
+          </Text>
+          <Feather
+            name="chevron-right"
+            size={16}
+            color={colors.mutedForeground}
+            style={{ marginLeft: "auto" }}
+          />
+        </Pressable>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -171,4 +193,16 @@ const styles = StyleSheet.create({
   stat: { flexDirection: "row", alignItems: "center", gap: 4 },
   statText: { fontFamily: "Inter_600SemiBold", fontSize: 12 },
   empty: { fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center", padding: 40 },
+  guidelinesLink: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  guidelinesText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
 });
