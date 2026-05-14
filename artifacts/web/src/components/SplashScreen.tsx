@@ -84,7 +84,6 @@ export function SplashScreen({ onSignUp, onSignIn }: SplashScreenProps) {
                 SIGN IN
               </button>
             </div>
-            <span style={s.tapHint}>welcome to grailbabe</span>
           </div>
         )}
       </div>
@@ -177,9 +176,9 @@ const s: Record<string, React.CSSProperties> = {
     justifyContent: "center",
   },
   signUpBtn: {
-    minWidth: "140px",
+    width: "150px",
     minHeight: "48px",
-    padding: "14px 32px",
+    padding: "14px 0",
     fontSize: "clamp(0.8rem, 2.6vw, 1rem)",
     fontWeight: 700,
     letterSpacing: "0.25em",
@@ -196,9 +195,9 @@ const s: Record<string, React.CSSProperties> = {
     userSelect: "none",
   },
   signInBtn: {
-    minWidth: "140px",
+    width: "150px",
     minHeight: "48px",
-    padding: "14px 32px",
+    padding: "14px 0",
     fontSize: "clamp(0.8rem, 2.6vw, 1rem)",
     fontWeight: 700,
     letterSpacing: "0.25em",
