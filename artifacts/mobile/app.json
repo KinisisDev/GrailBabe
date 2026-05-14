@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "GrailBabe",
-    "slug": "mobile",
+    "slug": "grailbabe",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -35,7 +35,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "54641ca1-bfeb-4f3a-abb8-6b75a2535e9d"
+        "projectId": "e7cd411d-8a5e-45b3-8094-d1104f64ae81"
       }
     },
     "owner": "kinisislabs"
