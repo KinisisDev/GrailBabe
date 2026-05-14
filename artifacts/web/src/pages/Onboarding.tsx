@@ -202,7 +202,7 @@ export default function Onboarding() {
                     Choose your screenname
                   </h1>
                   <p className="text-sm text-muted-foreground mt-1">
-                    How other collectors know you. Changeable once every 120
+                    How other collectors know you. Changeable once every 90
                     days.
                   </p>
                 </div>

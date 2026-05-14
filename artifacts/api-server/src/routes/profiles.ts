@@ -21,7 +21,7 @@ import { requireAuth } from "../lib/auth";
 const router: IRouter = Router();
 
 const SCREENNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
-const COOLDOWN_MS = 120 * 24 * 60 * 60 * 1000;
+const COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000;
 const FORMER_NAME_VISIBLE_MS = 30 * 24 * 60 * 60 * 1000;
 
 function validateScreenname(s: string): string | null {
