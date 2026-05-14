@@ -71,6 +71,7 @@ router.get("/conversations", requireAuth, async (req, res) => {
       const otherId = c.participantA === userId ? c.participantB : c.participantA;
       const u = userMap.get(otherId) ?? {
         id: otherId,
+        screenname: null,
         displayName: "Collector",
         avatarUrl: null,
       };
@@ -128,6 +129,7 @@ router.post("/conversations", requireAuth, async (req, res) => {
   const userMap = await fetchPublicUsers([body.otherUserId]);
   const u = userMap.get(body.otherUserId) ?? {
     id: body.otherUserId,
+    screenname: null,
     displayName: "Collector",
     avatarUrl: null,
   };

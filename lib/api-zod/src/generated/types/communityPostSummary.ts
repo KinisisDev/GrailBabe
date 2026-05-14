@@ -10,6 +10,8 @@ import type { CommunityPostSummaryUserVote } from './communityPostSummaryUserVot
 export interface CommunityPostSummary {
   id: number;
   authorId: string;
+  /** @nullable */
+  authorScreenname: string | null;
   authorName: string;
   /** @nullable */
   authorAvatar?: string | null;

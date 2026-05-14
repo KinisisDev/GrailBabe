@@ -24,7 +24,11 @@ const router: IRouter = Router();
 
 function serialize(
   row: typeof tradePostsTable.$inferSelect,
-  user: { displayName: string; avatarUrl: string | null },
+  user: {
+    screenname?: string | null;
+    displayName: string;
+    avatarUrl: string | null;
+  },
 ) {
   return {
     id: row.id,
@@ -174,6 +178,7 @@ router.get("/trades", requireAuth, async (req, res) => {
         serialize(
           r,
           userMap.get(r.userId) ?? {
+            screenname: null,
             displayName: "Collector",
             avatarUrl: null,
           },
@@ -289,7 +294,7 @@ router.post("/trades", requireAuth, async (req, res) => {
     .json(
       serialize(
         row,
-        userMap.get(userId) ?? { displayName: "Collector", avatarUrl: null },
+        userMap.get(userId) ?? { screenname: null, displayName: "Collector", avatarUrl: null },
       ),
     );
 });
@@ -308,6 +313,7 @@ router.get("/trades/:id", requireAuth, async (req, res) => {
       serialize(
         row,
         userMap.get(row.userId) ?? {
+          screenname: null,
           displayName: "Collector",
           avatarUrl: null,
         },

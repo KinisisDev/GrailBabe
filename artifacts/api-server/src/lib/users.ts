@@ -9,6 +9,7 @@ const clerkClient = createClerkClient({
 
 export interface PublicUser {
   id: string;
+  screenname: string | null;
   displayName: string;
   avatarUrl: string | null;
 }
@@ -32,6 +33,7 @@ export async function fetchPublicUsers(
     if (p) {
       map.set(id, {
         id,
+        screenname: p.screenname,
         displayName: p.displayName,
         avatarUrl: p.avatarUrl,
       });
@@ -50,9 +52,19 @@ export async function fetchPublicUsers(
             u.username ||
             u.primaryEmailAddress?.emailAddress?.split("@")[0] ||
             "Collector";
-          map.set(id, { id, displayName, avatarUrl: u.imageUrl ?? null });
+          map.set(id, {
+            id,
+            screenname: null,
+            displayName,
+            avatarUrl: u.imageUrl ?? null,
+          });
         } catch {
-          map.set(id, { id, displayName: "Collector", avatarUrl: null });
+          map.set(id, {
+            id,
+            screenname: null,
+            displayName: "Collector",
+            avatarUrl: null,
+          });
         }
       }),
     );

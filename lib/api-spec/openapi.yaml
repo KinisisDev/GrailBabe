@@ -1540,9 +1540,10 @@ components:
 
     PublicUser:
       type: object
-      required: [id, displayName, avatarUrl]
+      required: [id, screenname, displayName, avatarUrl]
       properties:
         id: { type: string }
+        screenname: { type: ["string", "null"] }
         displayName: { type: string }
         avatarUrl: { type: ["string", "null"] }
 
@@ -1590,10 +1591,11 @@ components:
 
     CommunityPostSummary:
       type: object
-      required: [id, authorId, authorName, category, title, body, isPinned, score, userVote, commentCount, createdAt]
+      required: [id, authorId, authorScreenname, authorName, category, title, body, isPinned, score, userVote, commentCount, createdAt]
       properties:
         id: { type: integer }
         authorId: { type: string }
+        authorScreenname: { type: ["string", "null"] }
         authorName: { type: string }
         authorAvatar: { type: ["string", "null"] }
         category: { type: string }
@@ -1615,11 +1617,12 @@ components:
 
     CommunityComment:
       type: object
-      required: [id, postId, authorId, authorName, body, createdAt]
+      required: [id, postId, authorId, authorScreenname, authorName, body, createdAt]
       properties:
         id: { type: integer }
         postId: { type: integer }
         authorId: { type: string }
+        authorScreenname: { type: ["string", "null"] }
         authorName: { type: string }
         authorAvatar: { type: ["string", "null"] }
         body: { type: string }

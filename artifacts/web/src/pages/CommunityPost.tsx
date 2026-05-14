@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { UserCardDialog } from "@/components/UserCardDialog";
 import {
   ArrowLeft,
   ChevronUp,
@@ -67,6 +68,10 @@ function initials(name: string) {
 export default function CommunityPost({ id }: { id: number }) {
   const queryClient = useQueryClient();
   const [reply, setReply] = useState("");
+  const [cardScreenname, setCardScreenname] = useState<string | null>(null);
+  const openCard = (s: string | null) => {
+    if (s) setCardScreenname(s);
+  };
 
   const {
     data: post,
@@ -137,6 +142,7 @@ export default function CommunityPost({ id }: { id: number }) {
           post={post}
           onVote={(v) => voteMut.mutate({ id, data: { value: v } })}
           voting={voteMut.isPending}
+          onAuthorClick={openCard}
         />
       )}
 
@@ -166,19 +172,32 @@ export default function CommunityPost({ id }: { id: number }) {
               (comments ?? []).map((c) => (
                 <Card key={c.id} data-testid={`comment-${c.id}`}>
                   <CardContent className="flex gap-3 p-4">
-                    <Avatar className="h-8 w-8">
-                      {c.authorAvatar ? (
-                        <AvatarImage src={c.authorAvatar} />
-                      ) : null}
-                      <AvatarFallback className="bg-primary/15 text-[10px]">
-                        {initials(c.authorName)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <button
+                      type="button"
+                      onClick={() => openCard(c.authorScreenname)}
+                      disabled={!c.authorScreenname}
+                      className="shrink-0 rounded-full disabled:cursor-default"
+                    >
+                      <Avatar className="h-8 w-8">
+                        {c.authorAvatar ? (
+                          <AvatarImage src={c.authorAvatar} />
+                        ) : null}
+                        <AvatarFallback className="bg-primary/15 text-[10px]">
+                          {initials(c.authorName)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">
+                        <button
+                          type="button"
+                          onClick={() => openCard(c.authorScreenname)}
+                          disabled={!c.authorScreenname}
+                          className="font-medium text-foreground hover:underline disabled:cursor-default disabled:no-underline"
+                          data-testid={`comment-author-${c.id}`}
+                        >
                           {c.authorName}
-                        </span>
+                        </button>
                         <span>·</span>
                         <span>{timeAgo(c.createdAt)}</span>
                       </div>
@@ -216,6 +235,12 @@ export default function CommunityPost({ id }: { id: number }) {
           </Card>
         </>
       )}
+
+      <UserCardDialog
+        screenname={cardScreenname}
+        open={!!cardScreenname}
+        onOpenChange={(v) => !v && setCardScreenname(null)}
+      />
     </div>
   );
 }
@@ -224,10 +249,12 @@ function PostHeader({
   post,
   onVote,
   voting,
+  onAuthorClick,
 }: {
   post: CommunityPostSummary;
   onVote: (v: 1 | -1) => void;
   voting: boolean;
+  onAuthorClick: (screenname: string | null) => void;
 }) {
   const badge = BADGE_STYLES[post.category] ?? BADGE_STYLES.general;
   return (
@@ -294,7 +321,13 @@ function PostHeader({
             {post.body}
           </p>
           <div className="flex items-center gap-3 pt-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onAuthorClick(post.authorScreenname)}
+              disabled={!post.authorScreenname}
+              className="flex items-center gap-1.5 rounded-sm hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
+              data-testid="post-author"
+            >
               <Avatar className="h-5 w-5">
                 {post.authorAvatar ? (
                   <AvatarImage src={post.authorAvatar} />
@@ -304,7 +337,7 @@ function PostHeader({
                 </AvatarFallback>
               </Avatar>
               {post.authorName}
-            </span>
+            </button>
             <span>{timeAgo(post.createdAt)}</span>
           </div>
         </div>

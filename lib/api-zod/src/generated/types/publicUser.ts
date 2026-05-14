@@ -8,6 +8,8 @@
 
 export interface PublicUser {
   id: string;
+  /** @nullable */
+  screenname: string | null;
   displayName: string;
   /** @nullable */
   avatarUrl: string | null;

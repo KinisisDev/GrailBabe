@@ -126,6 +126,7 @@ router.get("/dashboard", requireAuth, async (req, res) => {
       })),
       hotTrades: hotTradesRaw.map((t) => {
         const u = userMap.get(t.userId) ?? {
+          screenname: null,
           displayName: "Collector",
           avatarUrl: null,
         };

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { UserCardDialog } from "@/components/UserCardDialog";
 import {
   Dialog,
   DialogContent,
@@ -134,6 +135,7 @@ export default function Community() {
   const [sort, setSort] = useState<Sort>("hot");
   const [search, setSearch] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
+  const [cardScreenname, setCardScreenname] = useState<string | null>(null);
 
   // For "tcg" parent we don't filter server-side; we client-filter for any tcg* match
   // so legacy posts saved as "tcg" + new game-specific posts ("tcg:pokemon", etc.) all show.
@@ -440,11 +442,18 @@ export default function Community() {
                 onOpen={() => setLocation(`/community/${post.id}`)}
                 onVote={handleVote}
                 voting={voteMut.isPending}
+                onAuthorClick={(s) => s && setCardScreenname(s)}
               />
             ))}
           </div>
         )}
       </main>
+
+      <UserCardDialog
+        screenname={cardScreenname}
+        open={!!cardScreenname}
+        onOpenChange={(v) => !v && setCardScreenname(null)}
+      />
 
       <NewPostDialog
         open={composeOpen}
@@ -470,11 +479,13 @@ function PostCard({
   onOpen,
   onVote,
   voting,
+  onAuthorClick,
 }: {
   post: CommunityPostSummary;
   onOpen: () => void;
   onVote: (p: CommunityPostSummary, v: 1 | -1) => void;
   voting: boolean;
+  onAuthorClick: (screenname: string | null) => void;
 }) {
   const badge = badgeFor(post.category);
   const stop = (e: React.MouseEvent) => {
@@ -553,7 +564,16 @@ function PostCard({
             {post.body}
           </p>
           <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                stop(e);
+                onAuthorClick(post.authorScreenname);
+              }}
+              disabled={!post.authorScreenname}
+              className="flex items-center gap-1.5 rounded-sm hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
+              data-testid={`author-${post.id}`}
+            >
               <Avatar className="h-5 w-5">
                 {post.authorAvatar ? (
                   <AvatarImage src={post.authorAvatar} />
@@ -563,7 +583,7 @@ function PostCard({
                 </AvatarFallback>
               </Avatar>
               {post.authorName}
-            </span>
+            </button>
             <span className="flex items-center gap-1">
               <MessageSquare className="h-3 w-3" />
               {post.commentCount}

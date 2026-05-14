@@ -321,21 +321,43 @@ router.get("/profiles/:screenname", requireAuth, async (req, res) => {
 
   const isOwner = p.id === callerId;
 
-  // Public visibility rule: a profile is visible to other users only if
-  // that user has *opted in* by listing on the public trade board (i.e. has
-  // at least one trade post). Otherwise non-owners get 404 — same response
-  // as a missing profile, so existence isn't leaked.
+  const formerVisible =
+    p.formerScreenname &&
+    p.formerScreennameChangedAt &&
+    Date.now() - p.formerScreennameChangedAt.getTime() <
+      FORMER_NAME_VISIBLE_MS;
+
+  // Non-owner card: when one user clicks another user's screenname, the only
+  // info exposed is their public identity (screenname / display name / avatar)
+  // and rough location (city / region / country). Everything else is blanked
+  // out so the response shape stays stable for the generated client.
   if (!isOwner) {
-    const [tp] = await db
-      .select({ id: tradePostsTable.id })
-      .from(tradePostsTable)
-      .where(eq(tradePostsTable.userId, p.id))
-      .limit(1);
-    if (!tp) return res.status(404).json({ error: "Profile not found" });
+    return res.json({
+      id: p.id,
+      screenname: p.screenname,
+      displayName: p.displayName,
+      avatarUrl: p.avatarUrl,
+      bio: null,
+      city: p.city,
+      region: p.region,
+      postalCode: null,
+      country: p.country ?? "US",
+      memberSinceYear: p.createdAt.getUTCFullYear(),
+      formerScreenname: formerVisible ? p.formerScreenname : null,
+      vaultItemCount: 0,
+      estimatedVaultValue: "0",
+      tradesCompleted: 0,
+      tradeRepScore: 0,
+      communityPostCount: 0,
+      categories: [],
+      featuredVaultItems: [],
+      grailList: [],
+      recentPosts: [],
+      recentTradeReviews: [],
+    });
   }
 
-  // Trade reputation aggregates — visible to anyone who can see the
-  // profile (owner, or non-owner via the trade-board opt-in above).
+  // Trade reputation aggregates (owner-only view from here on).
   const [tradeAgg] = await db
     .select({
       avg: sql<string>`coalesce(avg(${tradeReviewsTable.rating}), 0)::text`,
@@ -377,75 +399,51 @@ router.get("/profiles/:screenname", requireAuth, async (req, res) => {
       : [];
   const reviewerMap = new Map(reviewerProfiles.map((rp) => [rp.id, rp]));
 
-  const formerVisible =
-    p.formerScreenname &&
-    p.formerScreennameChangedAt &&
-    Date.now() - p.formerScreennameChangedAt.getTime() <
-      FORMER_NAME_VISIBLE_MS;
+  // Owner branch: full self-view.
+  const [vaultAgg] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      total: sql<string>`coalesce(sum(${collectionItemsTable.currentValue}), 0)::text`,
+      categories: sql<string[]>`array_agg(distinct ${collectionItemsTable.category})`,
+    })
+    .from(collectionItemsTable)
+    .where(eq(collectionItemsTable.userId, p.id));
 
-  // Owner-only fields: vault aggregates / featured vault / grail list / forum
-  // post counts. Non-owners on the trade board only see identity + trade rep.
-  let vaultAgg:
-    | { count: number; total: string; categories: string[] | null }
-    | undefined;
-  let featuredVaultRows: typeof collectionItemsTable.$inferSelect[] = [];
-  let grailRows: typeof grailItemsTable.$inferSelect[] = [];
-  let postsAgg: { count: number }[] = [];
-  let recentPosts: Array<{
-    id: number;
-    title: string;
-    category: string | null;
-    createdAt: Date;
-    score: number;
-    commentCount: number;
-  }> = [];
+  const featuredVaultRows = await db
+    .select()
+    .from(collectionItemsTable)
+    .where(eq(collectionItemsTable.userId, p.id))
+    .orderBy(
+      desc(collectionItemsTable.favorite),
+      desc(collectionItemsTable.createdAt),
+    )
+    .limit(3);
 
-  if (isOwner) {
-    [vaultAgg] = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-        total: sql<string>`coalesce(sum(${collectionItemsTable.currentValue}), 0)::text`,
-        categories: sql<string[]>`array_agg(distinct ${collectionItemsTable.category})`,
-      })
-      .from(collectionItemsTable)
-      .where(eq(collectionItemsTable.userId, p.id));
+  const grailRows = await db
+    .select()
+    .from(grailItemsTable)
+    .where(eq(grailItemsTable.userId, p.id))
+    .orderBy(desc(grailItemsTable.createdAt))
+    .limit(5);
 
-    featuredVaultRows = await db
-      .select()
-      .from(collectionItemsTable)
-      .where(eq(collectionItemsTable.userId, p.id))
-      .orderBy(
-        desc(collectionItemsTable.favorite),
-        desc(collectionItemsTable.createdAt),
-      )
-      .limit(3);
+  const postsAgg = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(forumPostsTable)
+    .where(eq(forumPostsTable.userId, p.id));
 
-    grailRows = await db
-      .select()
-      .from(grailItemsTable)
-      .where(eq(grailItemsTable.userId, p.id))
-      .orderBy(desc(grailItemsTable.createdAt))
-      .limit(5);
-
-    postsAgg = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(forumPostsTable)
-      .where(eq(forumPostsTable.userId, p.id));
-
-    recentPosts = await db
-      .select({
-        id: forumPostsTable.id,
-        title: forumPostsTable.title,
-        category: forumPostsTable.category,
-        createdAt: forumPostsTable.createdAt,
-        score: sql<number>`coalesce((select sum(${forumVotesTable.value}) from ${forumVotesTable} where ${forumVotesTable.postId} = ${forumPostsTable.id}), 0)::int`,
-        commentCount: sql<number>`coalesce((select count(*) from ${forumRepliesTable} where ${forumRepliesTable.postId} = ${forumPostsTable.id}), 0)::int`,
-      })
-      .from(forumPostsTable)
-      .where(eq(forumPostsTable.userId, p.id))
-      .orderBy(desc(forumPostsTable.createdAt))
-      .limit(5);
-  }
+  const recentPosts = await db
+    .select({
+      id: forumPostsTable.id,
+      title: forumPostsTable.title,
+      category: forumPostsTable.category,
+      createdAt: forumPostsTable.createdAt,
+      score: sql<number>`coalesce((select sum(${forumVotesTable.value}) from ${forumVotesTable} where ${forumVotesTable.postId} = ${forumPostsTable.id}), 0)::int`,
+      commentCount: sql<number>`coalesce((select count(*) from ${forumRepliesTable} where ${forumRepliesTable.postId} = ${forumPostsTable.id}), 0)::int`,
+    })
+    .from(forumPostsTable)
+    .where(eq(forumPostsTable.userId, p.id))
+    .orderBy(desc(forumPostsTable.createdAt))
+    .limit(5);
 
   const categories = (vaultAgg?.categories ?? [])
     .filter((c): c is string => Boolean(c))
@@ -456,50 +454,42 @@ router.get("/profiles/:screenname", requireAuth, async (req, res) => {
     screenname: p.screenname,
     displayName: p.displayName,
     avatarUrl: p.avatarUrl,
-    // Bio + region/city/postal are owner-only; non-owners get nulls so the
-    // response shape stays stable for the generated client.
-    bio: isOwner ? p.bio : null,
-    city: isOwner ? p.city : null,
-    region: isOwner ? p.region : null,
-    postalCode: isOwner ? p.postalCode : null,
+    bio: p.bio,
+    city: p.city,
+    region: p.region,
+    postalCode: p.postalCode,
     country: p.country ?? "US",
     memberSinceYear: p.createdAt.getUTCFullYear(),
     formerScreenname: formerVisible ? p.formerScreenname : null,
-    vaultItemCount: isOwner ? Number(vaultAgg?.count ?? 0) : 0,
-    estimatedVaultValue: isOwner ? String(vaultAgg?.total ?? "0") : "0",
+    vaultItemCount: Number(vaultAgg?.count ?? 0),
+    estimatedVaultValue: String(vaultAgg?.total ?? "0"),
     tradesCompleted: Number(tradesCompletedAgg?.count ?? 0),
     tradeRepScore: Number(tradeAgg?.avg ?? 0),
-    communityPostCount: isOwner ? Number(postsAgg[0]?.count ?? 0) : 0,
-    categories: isOwner ? categories : [],
-    featuredVaultItems: isOwner
-      ? featuredVaultRows.map((r) => ({
-          id: r.id,
-          name: r.name,
-          category: r.category,
-          imageUrl: r.photos?.[0] ?? null,
-          condition: r.condition,
-          currentValue: r.currentValue,
-        }))
-      : [],
-    grailList: isOwner
-      ? grailRows.map((g) => ({
-          id: g.id,
-          name: g.name,
-          category: g.category,
-          targetPrice: g.targetPrice,
-          acquired: g.acquired,
-        }))
-      : [],
-    recentPosts: isOwner
-      ? recentPosts.map((r) => ({
-          id: r.id,
-          title: r.title,
-          category: r.category ?? "general",
-          score: Number(r.score),
-          commentCount: Number(r.commentCount),
-          createdAt: r.createdAt.toISOString(),
-        }))
-      : [],
+    communityPostCount: Number(postsAgg[0]?.count ?? 0),
+    categories,
+    featuredVaultItems: featuredVaultRows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      imageUrl: r.photos?.[0] ?? null,
+      condition: r.condition,
+      currentValue: r.currentValue,
+    })),
+    grailList: grailRows.map((g) => ({
+      id: g.id,
+      name: g.name,
+      category: g.category,
+      targetPrice: g.targetPrice,
+      acquired: g.acquired,
+    })),
+    recentPosts: recentPosts.map((r) => ({
+      id: r.id,
+      title: r.title,
+      category: r.category ?? "general",
+      score: Number(r.score),
+      commentCount: Number(r.commentCount),
+      createdAt: r.createdAt.toISOString(),
+    })),
     recentTradeReviews: recentReviewRows.map((r) => {
       const reviewer = reviewerMap.get(r.reviewerId);
       return {

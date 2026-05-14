@@ -10,6 +10,8 @@ export interface CommunityComment {
   id: number;
   postId: number;
   authorId: string;
+  /** @nullable */
+  authorScreenname: string | null;
   authorName: string;
   /** @nullable */
   authorAvatar?: string | null;

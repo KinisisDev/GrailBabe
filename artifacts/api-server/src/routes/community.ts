@@ -74,11 +74,17 @@ async function postSummaries(postIds: number[], currentUserId: string) {
 function shapePost(
   row: typeof forumPostsTable.$inferSelect,
   meta: { score: number; commentCount: number; userVote: number },
-  user: { id: string; displayName: string; avatarUrl: string | null },
+  user: {
+    id: string;
+    screenname: string | null;
+    displayName: string;
+    avatarUrl: string | null;
+  },
 ) {
   return {
     id: row.id,
     authorId: row.userId,
+    authorScreenname: user.screenname,
     authorName: user.displayName,
     authorAvatar: user.avatarUrl,
     category: row.category ?? "general",
@@ -103,12 +109,9 @@ router.get("/community/posts", requireAuth, async (req, res) => {
   const sort: "hot" | "new" | "top" =
     rawSort === "new" || rawSort === "top" ? rawSort : "hot";
 
-  // Privacy: community posts are author-private. Each user only sees their
-  // own posts. The only data exposed to other users is the public trade board.
-  const ownerFilter = eq(forumPostsTable.userId, userId);
   const where = category
-    ? and(ownerFilter, eq(forumPostsTable.category, category))
-    : ownerFilter;
+    ? eq(forumPostsTable.category, category)
+    : undefined;
 
   // Sort by score in SQL (pinned first) so we don't drop high-score
   // older posts when limiting. Score is a correlated subquery on votes.
@@ -140,6 +143,7 @@ router.get("/community/posts", requireAuth, async (req, res) => {
   const summaries = rows.map((r) => {
     const u = userMap.get(r.userId) ?? {
       id: r.userId,
+      screenname: null,
       displayName: "Collector",
       avatarUrl: null,
     };
@@ -172,6 +176,7 @@ router.post("/community/posts", requireAuth, async (req, res) => {
   const userMap = await fetchPublicUsers([userId]);
   const u = userMap.get(userId) ?? {
     id: userId,
+    screenname: null,
     displayName: "Collector",
     avatarUrl: null,
   };
@@ -195,13 +200,13 @@ router.get("/community/posts/:id", requireAuth, async (req, res) => {
     .from(forumPostsTable)
     .where(eq(forumPostsTable.id, id))
     .limit(1);
-  if (!row || row.userId !== userId)
-    return res.status(404).json({ error: "Not found" });
+  if (!row) return res.status(404).json({ error: "Not found" });
 
   const meta = await postSummaries([id], userId);
   const userMap = await fetchPublicUsers([row.userId]);
   const u = userMap.get(row.userId) ?? {
     id: row.userId,
+    screenname: null,
     displayName: "Collector",
     avatarUrl: null,
   };
@@ -209,17 +214,8 @@ router.get("/community/posts/:id", requireAuth, async (req, res) => {
 });
 
 router.get("/community/posts/:id/comments", requireAuth, async (req, res) => {
-  const userId = req.userId!;
   const id = parseId(req.params.id);
   if (id == null) return res.status(400).json({ error: "Bad id" });
-
-  const [post] = await db
-    .select({ userId: forumPostsTable.userId })
-    .from(forumPostsTable)
-    .where(eq(forumPostsTable.id, id))
-    .limit(1);
-  if (!post || post.userId !== userId)
-    return res.status(404).json({ error: "Not found" });
 
   const rows = await db
     .select()
@@ -232,6 +228,7 @@ router.get("/community/posts/:id/comments", requireAuth, async (req, res) => {
     rows.map((r) => {
       const u = userMap.get(r.userId) ?? {
         id: r.userId,
+        screenname: null,
         displayName: "Collector",
         avatarUrl: null,
       };
@@ -239,6 +236,7 @@ router.get("/community/posts/:id/comments", requireAuth, async (req, res) => {
         id: r.id,
         postId: r.postId,
         authorId: r.userId,
+        authorScreenname: u.screenname,
         authorName: u.displayName,
         authorAvatar: u.avatarUrl,
         body: r.body,
@@ -254,12 +252,11 @@ router.post("/community/posts/:id/comments", requireAuth, async (req, res) => {
   if (id == null) return res.status(400).json({ error: "Bad id" });
 
   const [post] = await db
-    .select({ id: forumPostsTable.id, userId: forumPostsTable.userId })
+    .select({ id: forumPostsTable.id })
     .from(forumPostsTable)
     .where(eq(forumPostsTable.id, id))
     .limit(1);
-  if (!post || post.userId !== userId)
-    return res.status(404).json({ error: "Post not found" });
+  if (!post) return res.status(404).json({ error: "Post not found" });
 
   const body = CreateCommunityCommentBody.parse(req.body);
   const [row] = await db
@@ -270,6 +267,7 @@ router.post("/community/posts/:id/comments", requireAuth, async (req, res) => {
   const userMap = await fetchPublicUsers([userId]);
   const u = userMap.get(userId) ?? {
     id: userId,
+    screenname: null,
     displayName: "Collector",
     avatarUrl: null,
   };
@@ -278,6 +276,7 @@ router.post("/community/posts/:id/comments", requireAuth, async (req, res) => {
     id: row.id,
     postId: row.postId,
     authorId: row.userId,
+    authorScreenname: u.screenname,
     authorName: u.displayName,
     authorAvatar: u.avatarUrl,
     body: row.body,
@@ -295,8 +294,7 @@ router.post("/community/posts/:id/vote", requireAuth, async (req, res) => {
     .from(forumPostsTable)
     .where(eq(forumPostsTable.id, id))
     .limit(1);
-  if (!post || post.userId !== userId)
-    return res.status(404).json({ error: "Not found" });
+  if (!post) return res.status(404).json({ error: "Not found" });
 
   const body = VoteCommunityPostBody.parse(req.body);
 
@@ -349,6 +347,7 @@ router.post("/community/posts/:id/vote", requireAuth, async (req, res) => {
   const userMap = await fetchPublicUsers([post.userId]);
   const u = userMap.get(post.userId) ?? {
     id: post.userId,
+    screenname: null,
     displayName: "Collector",
     avatarUrl: null,
   };

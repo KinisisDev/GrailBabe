@@ -81,6 +81,7 @@ router.get("/posts", requireAuth, async (req, res) => {
       rows.map((r) => {
         const m = meta.get(r.id)!;
         const u = userMap.get(r.userId) ?? {
+          screenname: null,
           displayName: "Collector",
           avatarUrl: null,
         };

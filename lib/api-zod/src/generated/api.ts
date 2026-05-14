@@ -878,6 +878,7 @@ export const ListConversationsResponseItem = zod.object({
   "id": zod.number(),
   "otherUser": zod.object({
   "id": zod.string(),
+  "screenname": zod.string().nullable(),
   "displayName": zod.string(),
   "avatarUrl": zod.string().nullable()
 }),
@@ -909,6 +910,7 @@ export const GetOrCreateConversationResponse = zod.object({
   "id": zod.number(),
   "otherUser": zod.object({
   "id": zod.string(),
+  "screenname": zod.string().nullable(),
   "displayName": zod.string(),
   "avatarUrl": zod.string().nullable()
 }),
@@ -966,6 +968,7 @@ export const ListCommunityPostsQueryParams = zod.object({
 export const ListCommunityPostsResponseItem = zod.object({
   "id": zod.number(),
   "authorId": zod.string(),
+  "authorScreenname": zod.string().nullable(),
   "authorName": zod.string(),
   "authorAvatar": zod.string().nullish(),
   "category": zod.string(),
@@ -1000,6 +1003,7 @@ export const GetCommunityPostParams = zod.object({
 export const GetCommunityPostResponse = zod.object({
   "id": zod.number(),
   "authorId": zod.string(),
+  "authorScreenname": zod.string().nullable(),
   "authorName": zod.string(),
   "authorAvatar": zod.string().nullish(),
   "category": zod.string(),
@@ -1021,6 +1025,7 @@ export const ListCommunityCommentsResponseItem = zod.object({
   "id": zod.number(),
   "postId": zod.number(),
   "authorId": zod.string(),
+  "authorScreenname": zod.string().nullable(),
   "authorName": zod.string(),
   "authorAvatar": zod.string().nullish(),
   "body": zod.string(),
@@ -1052,6 +1057,7 @@ export const VoteCommunityPostBody = zod.object({
 export const VoteCommunityPostResponse = zod.object({
   "id": zod.number(),
   "authorId": zod.string(),
+  "authorScreenname": zod.string().nullable(),
   "authorName": zod.string(),
   "authorAvatar": zod.string().nullish(),
   "category": zod.string(),

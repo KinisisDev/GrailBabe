@@ -765,6 +765,8 @@ export interface CheckoutSession {
 
 export interface PublicUser {
   id: string;
+  /** @nullable */
+  screenname: string | null;
   displayName: string;
   /** @nullable */
   avatarUrl: string | null;
@@ -816,6 +818,8 @@ export const CommunityPostSummaryUserVote = {
 export interface CommunityPostSummary {
   id: number;
   authorId: string;
+  /** @nullable */
+  authorScreenname: string | null;
   authorName: string;
   /** @nullable */
   authorAvatar?: string | null;
@@ -845,6 +849,8 @@ export interface CommunityComment {
   id: number;
   postId: number;
   authorId: string;
+  /** @nullable */
+  authorScreenname: string | null;
   authorName: string;
   /** @nullable */
   authorAvatar?: string | null;
