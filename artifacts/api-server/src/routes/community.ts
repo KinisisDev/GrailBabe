@@ -103,9 +103,12 @@ router.get("/community/posts", requireAuth, async (req, res) => {
   const sort: "hot" | "new" | "top" =
     rawSort === "new" || rawSort === "top" ? rawSort : "hot";
 
+  // Privacy: community posts are author-private. Each user only sees their
+  // own posts. The only data exposed to other users is the public trade board.
+  const ownerFilter = eq(forumPostsTable.userId, userId);
   const where = category
-    ? eq(forumPostsTable.category, category)
-    : undefined;
+    ? and(ownerFilter, eq(forumPostsTable.category, category))
+    : ownerFilter;
 
   // Sort by score in SQL (pinned first) so we don't drop high-score
   // older posts when limiting. Score is a correlated subquery on votes.
@@ -192,7 +195,8 @@ router.get("/community/posts/:id", requireAuth, async (req, res) => {
     .from(forumPostsTable)
     .where(eq(forumPostsTable.id, id))
     .limit(1);
-  if (!row) return res.status(404).json({ error: "Not found" });
+  if (!row || row.userId !== userId)
+    return res.status(404).json({ error: "Not found" });
 
   const meta = await postSummaries([id], userId);
   const userMap = await fetchPublicUsers([row.userId]);
@@ -205,8 +209,17 @@ router.get("/community/posts/:id", requireAuth, async (req, res) => {
 });
 
 router.get("/community/posts/:id/comments", requireAuth, async (req, res) => {
+  const userId = req.userId!;
   const id = parseId(req.params.id);
   if (id == null) return res.status(400).json({ error: "Bad id" });
+
+  const [post] = await db
+    .select({ userId: forumPostsTable.userId })
+    .from(forumPostsTable)
+    .where(eq(forumPostsTable.id, id))
+    .limit(1);
+  if (!post || post.userId !== userId)
+    return res.status(404).json({ error: "Not found" });
 
   const rows = await db
     .select()
@@ -241,11 +254,12 @@ router.post("/community/posts/:id/comments", requireAuth, async (req, res) => {
   if (id == null) return res.status(400).json({ error: "Bad id" });
 
   const [post] = await db
-    .select({ id: forumPostsTable.id })
+    .select({ id: forumPostsTable.id, userId: forumPostsTable.userId })
     .from(forumPostsTable)
     .where(eq(forumPostsTable.id, id))
     .limit(1);
-  if (!post) return res.status(404).json({ error: "Post not found" });
+  if (!post || post.userId !== userId)
+    return res.status(404).json({ error: "Post not found" });
 
   const body = CreateCommunityCommentBody.parse(req.body);
   const [row] = await db
@@ -281,7 +295,8 @@ router.post("/community/posts/:id/vote", requireAuth, async (req, res) => {
     .from(forumPostsTable)
     .where(eq(forumPostsTable.id, id))
     .limit(1);
-  if (!post) return res.status(404).json({ error: "Not found" });
+  if (!post || post.userId !== userId)
+    return res.status(404).json({ error: "Not found" });
 
   const body = VoteCommunityPostBody.parse(req.body);
 
