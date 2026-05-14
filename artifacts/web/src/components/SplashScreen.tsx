@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 
 interface SplashScreenProps {
-  onEnter: () => void;
+  onSignUp: () => void;
+  onSignIn: () => void;
 }
 
-export function SplashScreen({ onEnter }: SplashScreenProps) {
+export function SplashScreen({ onSignUp, onSignIn }: SplashScreenProps) {
   const [showButton, setShowButton] = useState(false);
   const [exiting, setExiting] = useState(false);
 
@@ -13,10 +14,15 @@ export function SplashScreen({ onEnter }: SplashScreenProps) {
     return () => clearTimeout(t);
   }, []);
 
-  const handleEnter = useCallback(() => {
+  const handleSignUp = useCallback(() => {
     setExiting(true);
-    setTimeout(onEnter, 700);
-  }, [onEnter]);
+    setTimeout(onSignUp, 700);
+  }, [onSignUp]);
+
+  const handleSignIn = useCallback(() => {
+    setExiting(true);
+    setTimeout(onSignIn, 700);
+  }, [onSignIn]);
 
   return (
     <>
@@ -56,17 +62,29 @@ export function SplashScreen({ onEnter }: SplashScreenProps) {
         <img src="/grailbabe-logo.png" alt="GrailBabe" style={s.logo} />
         {showButton && (
           <div style={s.enterWrap}>
-            <button
-              onClick={handleEnter}
-              style={s.enterBtn}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleEnter();
-              }}
-            >
-              ENTER
-            </button>
-            <span style={s.tapHint}>tap to begin</span>
+            <div style={s.btnRow}>
+              <button
+                onClick={handleSignUp}
+                style={s.signUpBtn}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleSignUp();
+                }}
+              >
+                SIGN UP
+              </button>
+              <button
+                onClick={handleSignIn}
+                style={s.signInBtn}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleSignIn();
+                }}
+              >
+                SIGN IN
+              </button>
+            </div>
+            <span style={s.tapHint}>welcome to grailbabe</span>
           </div>
         )}
       </div>
@@ -81,7 +99,7 @@ const panel2Bg =
 const panel3Bg =
   "linear-gradient(180deg, #140606 0%, rgba(255,50,30,0.18) 50%, #140606 100%)";
 
-const globalStyles = `body,html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}@keyframes neonFlicker{0%{opacity:0;filter:drop-shadow(0 0 0px rgba(255,255,255,0))}4%{opacity:0.9;filter:drop-shadow(0 0 40px rgba(255,255,255,0.9))}7%{opacity:0.1;filter:drop-shadow(0 0 4px rgba(255,255,255,0.1))}12%{opacity:1;filter:drop-shadow(0 0 50px rgba(255,255,255,1))}17%{opacity:0.5;filter:drop-shadow(0 0 10px rgba(255,255,255,0.4))}24%{opacity:1;filter:drop-shadow(0 0 40px rgba(255,255,255,0.8))}32%{opacity:0.8;filter:drop-shadow(0 0 20px rgba(255,255,255,0.5))}42%{opacity:1;filter:drop-shadow(0 0 30px rgba(255,255,255,0.7))}100%{opacity:1;filter:drop-shadow(0 0 18px rgba(255,255,255,0.3))}}@keyframes imageReveal{to{opacity:1}}@keyframes curtainLift{0%{transform:translateY(0%)}100%{transform:translateY(-101%)}}@keyframes splashEnterFade{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes buttonPulse{0%,100%{box-shadow:0 0 12px rgba(0,255,136,0.5),0 0 24px rgba(0,255,136,0.2)}50%{box-shadow:0 0 24px rgba(0,255,136,0.9),0 0 50px rgba(0,255,136,0.4)}}@keyframes splashExit{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04)}}`;
+const globalStyles = `body,html{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}@keyframes neonFlicker{0%{opacity:0;filter:drop-shadow(0 0 0px rgba(255,255,255,0))}4%{opacity:0.9;filter:drop-shadow(0 0 40px rgba(255,255,255,0.9))}7%{opacity:0.1;filter:drop-shadow(0 0 4px rgba(255,255,255,0.1))}12%{opacity:1;filter:drop-shadow(0 0 50px rgba(255,255,255,1))}17%{opacity:0.5;filter:drop-shadow(0 0 10px rgba(255,255,255,0.4))}24%{opacity:1;filter:drop-shadow(0 0 40px rgba(255,255,255,0.8))}32%{opacity:0.8;filter:drop-shadow(0 0 20px rgba(255,255,255,0.5))}42%{opacity:1;filter:drop-shadow(0 0 30px rgba(255,255,255,0.7))}100%{opacity:1;filter:drop-shadow(0 0 18px rgba(255,255,255,0.3))}}@keyframes imageReveal{to{opacity:1}}@keyframes curtainLift{0%{transform:translateY(0%)}100%{transform:translateY(-101%)}}@keyframes splashEnterFade{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes greenPulse{0%,100%{box-shadow:0 0 12px rgba(0,255,136,0.55),0 0 24px rgba(0,255,136,0.25)}50%{box-shadow:0 0 24px rgba(0,255,136,0.95),0 0 50px rgba(0,255,136,0.45)}}@keyframes bluePulse{0%,100%{box-shadow:0 0 12px rgba(0,180,255,0.55),0 0 24px rgba(0,180,255,0.25)}50%{box-shadow:0 0 24px rgba(0,180,255,0.95),0 0 50px rgba(0,180,255,0.45)}}@keyframes splashExit{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04)}}`;
 
 const s: Record<string, React.CSSProperties> = {
   container: {
@@ -150,11 +168,19 @@ const s: Record<string, React.CSSProperties> = {
     animation: "splashEnterFade 0.6s ease forwards",
     touchAction: "manipulation",
   },
-  enterBtn: {
-    minWidth: "160px",
+  btnRow: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  signUpBtn: {
+    minWidth: "140px",
     minHeight: "48px",
-    padding: "14px 52px",
-    fontSize: "clamp(0.85rem, 3vw, 1.05rem)",
+    padding: "14px 32px",
+    fontSize: "clamp(0.8rem, 2.6vw, 1rem)",
     fontWeight: 700,
     letterSpacing: "0.25em",
     textTransform: "uppercase",
@@ -164,7 +190,27 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: "3px",
     cursor: "pointer",
     fontFamily: "inherit",
-    animation: "buttonPulse 2s ease-in-out infinite",
+    textShadow: "0 0 8px rgba(0,255,136,0.65)",
+    animation: "greenPulse 2s ease-in-out infinite",
+    WebkitTouchCallout: "none",
+    userSelect: "none",
+  },
+  signInBtn: {
+    minWidth: "140px",
+    minHeight: "48px",
+    padding: "14px 32px",
+    fontSize: "clamp(0.8rem, 2.6vw, 1rem)",
+    fontWeight: 700,
+    letterSpacing: "0.25em",
+    textTransform: "uppercase",
+    background: "transparent",
+    color: "#00b4ff",
+    border: "2px solid #00b4ff",
+    borderRadius: "3px",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    textShadow: "0 0 8px rgba(0,180,255,0.65)",
+    animation: "bluePulse 2s ease-in-out infinite",
     WebkitTouchCallout: "none",
     userSelect: "none",
   },

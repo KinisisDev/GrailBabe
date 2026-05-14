@@ -75,7 +75,25 @@ function ProtectedRoutes() {
 
 function App() {
   const [splashDone, setSplashDone] = useState(false);
-  if (!splashDone) return <SplashScreen onEnter={() => setSplashDone(true)} />;
+  const [splashIntent, setSplashIntent] = useState<"sign-up" | "sign-in" | null>(
+    null,
+  );
+
+  if (!splashDone) {
+    return (
+      <SplashScreen
+        onSignUp={() => {
+          setSplashIntent("sign-up");
+          setSplashDone(true);
+        }}
+        onSignIn={() => {
+          setSplashIntent("sign-in");
+          setSplashDone(true);
+        }}
+      />
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -86,6 +104,12 @@ function App() {
             <Route path="/sign-up" component={SignUpPage} />
             <Route path="/sign-up/:rest*" component={SignUpPage} />
             <Route path="/onboarding" component={OnboardingPage} />
+            {splashIntent === "sign-up" && (
+              <Route path="/"><Redirect to="/sign-up" /></Route>
+            )}
+            {splashIntent === "sign-in" && (
+              <Route path="/"><Redirect to="/sign-in" /></Route>
+            )}
             <Route><ProtectedRoutes /></Route>
           </Switch>
           <Toaster />
