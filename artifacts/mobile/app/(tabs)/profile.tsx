@@ -10,6 +10,7 @@ import { useGetMe } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { IridescentHeader } from "@/components/IridescentHeader";
 import { useIsSignedIn } from "@/components/AuthGate";
+import { TrademarkFooter } from "@/components/TrademarkFooter";
 import { qopt } from "@/lib/api";
 
 const MENU: Array<{
@@ -135,6 +136,7 @@ export default function ProfileScreen() {
         {!isLoaded && (
           <ActivityIndicator color={colors.neonBlue} style={{ marginTop: 16 }} />
         )}
+        <TrademarkFooter />
       </ScrollView>
     </View>
   );

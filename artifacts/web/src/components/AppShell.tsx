@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { TrademarkFooter } from "@/components/TrademarkFooter";
 import {
   useGetMe,
   useGetUnreadMessageCount,
@@ -263,8 +264,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             <UserButton />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          {children}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
+          <div className="flex-1">{children}</div>
+          <TrademarkFooter />
         </main>
       </div>
     </div>

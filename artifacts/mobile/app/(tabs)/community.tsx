@@ -17,6 +17,7 @@ import { useColors } from "@/hooks/useColors";
 import { DUMMY_POSTS } from "@/constants/demoData";
 import { IridescentHeader } from "@/components/IridescentHeader";
 import { useIsSignedIn } from "@/components/AuthGate";
+import { TrademarkFooter } from "@/components/TrademarkFooter";
 import { formatRelativeDate } from "@/lib/format";
 
 const CATEGORIES = ["all", "tcg", "lego", "sports", "general"] as const;
@@ -164,6 +165,7 @@ export default function CommunityScreen() {
             </Text>
           )}
         </View>
+        <TrademarkFooter />
       </ScrollView>
     </View>
   );

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { IridescentHeader } from "@/components/IridescentHeader";
+import { TrademarkFooter } from "@/components/TrademarkFooter";
 import { useColors } from "@/hooks/useColors";
 
 interface PageShellProps {
@@ -57,6 +58,7 @@ export function PageShell({
           }
         >
           {children}
+          <TrademarkFooter />
         </ScrollView>
       ) : (
         <View style={{ flex: 1, paddingBottom: pad }}>{children}</View>

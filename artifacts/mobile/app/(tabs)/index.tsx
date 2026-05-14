@@ -12,6 +12,7 @@ import { ActivityRow } from "@/components/ActivityRow";
 import { IridescentHeader } from "@/components/IridescentHeader";
 import { SectionTitle } from "@/components/SectionTitle";
 import { useIsSignedIn, SignInPrompt } from "@/components/AuthGate";
+import { TrademarkFooter } from "@/components/TrademarkFooter";
 import { qopt } from "@/lib/api";
 import { formatCurrency, formatCompactCurrency, formatPercent } from "@/lib/format";
 
@@ -159,6 +160,7 @@ export default function HomeDashboard() {
             </Text>
           )}
         </View>
+        <TrademarkFooter />
       </ScrollView>
     </View>
   );

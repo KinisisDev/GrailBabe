@@ -18,6 +18,7 @@ import { useColors } from "@/hooks/useColors";
 import { DUMMY_VAULT_ITEMS } from "@/constants/demoData";
 import { IridescentHeader } from "@/components/IridescentHeader";
 import { useIsSignedIn } from "@/components/AuthGate";
+import { TrademarkFooter } from "@/components/TrademarkFooter";
 import { qopt } from "@/lib/api";
 import { formatCurrency, conditionLabel } from "@/lib/format";
 
@@ -179,6 +180,7 @@ export default function VaultScreen() {
             </View>
           )}
         </View>
+        <TrademarkFooter />
       </ScrollView>
     </View>
   );
