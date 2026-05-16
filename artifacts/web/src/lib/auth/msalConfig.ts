@@ -34,6 +34,7 @@ const msalConfig: Configuration = {
     cacheLocation: "localStorage",
   },
   system: {
+    allowRedirectInIframe: true,
     loggerOptions: {
       logLevel: LogLevel.Warning,
       piiLoggingEnabled: false,
