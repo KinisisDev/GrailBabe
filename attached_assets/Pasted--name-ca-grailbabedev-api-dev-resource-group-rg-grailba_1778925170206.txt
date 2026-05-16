@@ -1,0 +1,213 @@
+--name ca-grailbabedev-api-dev \
+  --resource-group rg-grailbabedev-compute-dev-eus2 \
+  --set-env-vars \
+    NODE_ENV=production \
+    PORT=80 \
+    DATABASE_URL=secretref:database-url \
+    SESSION_SECRET=secretref:session-secret \
+    UPSTASH_REDIS_REST_URL=secretref:upstash-redis-rest-url \
+    UPSTASH_REDIS_REST_TOKEN=secretref:upstash-redis-rest-token
+{
+  "id": "/subscriptions/82cbe50b-71ed-4a12-9796-7533a46ce649/resourceGroups/rg-grailbabedev-compute-dev-eus2/providers/Microsoft.App/containerapps/ca-grailbabedev-api-dev",
+  "identity": {
+    "principalId": "d6bdfef8-b5e4-4a17-bb13-e17c9a181cb4",
+    "tenantId": "0cd996b2-486d-4cb4-a256-43c14db68570",
+    "type": "SystemAssigned"
+  },
+  "location": "East US 2",
+  "name": "ca-grailbabedev-api-dev",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": "Ignore",
+        "corsPolicy": null,
+        "customDomains": null,
+        "exposedPort": 0,
+        "external": true,
+        "fqdn": "ca-grailbabedev-api-dev.purpleforest-604d7eb4.eastus2.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": {
+          "affinity": "none"
+        },
+        "targetPort": 80,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": 100,
+      "registries": [
+        {
+          "identity": "system",
+          "passwordSecretRef": "",
+          "server": "acrgrailbabedevdev.azurecr.io",
+          "username": ""
+        }
+      ],
+      "runtime": null,
+      "secrets": [
+        {
+          "name": "acrgrailbabedevdevazurecrio-c585acb9-882f-4886-87f4-e4335ddad620"
+        },
+        {
+          "name": "inngest-event-key"
+        },
+        {
+          "name": "inngest-signing-key"
+        },
+        {
+          "name": "database-url"
+        },
+        {
+          "name": "session-secret"
+        },
+        {
+          "name": "upstash-redis-rest-url"
+        },
+        {
+          "name": "upstash-redis-rest-token"
+        }
+      ],
+      "service": null
+    },
+    "customDomainVerificationId": "D9B1D84242B2F05C2CDA3C5539C7C744992B34FEE48C6F18EF301EA76A760747",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/82cbe50b-71ed-4a12-9796-7533a46ce649/resourceGroups/rg-grailbabedev-compute-dev-eus2/providers/Microsoft.App/managedEnvironments/cae-grailbabedev-dev-eus2",
+    "eventStreamEndpoint": "https://eastus2.azurecontainerapps.dev/subscriptions/82cbe50b-71ed-4a12-9796-7533a46ce649/resourceGroups/rg-grailbabedev-compute-dev-eus2/containerApps/ca-grailbabedev-api-dev/eventstream",
+    "latestReadyRevisionName": "ca-grailbabedev-api-dev--0000004",
+    "latestRevisionFqdn": "ca-grailbabedev-api-dev--0000018.purpleforest-604d7eb4.eastus2.azurecontainerapps.io",
+    "latestRevisionName": "ca-grailbabedev-api-dev--0000018",
+    "managedEnvironmentId": "/subscriptions/82cbe50b-71ed-4a12-9796-7533a46ce649/resourceGroups/rg-grailbabedev-compute-dev-eus2/providers/Microsoft.App/managedEnvironments/cae-grailbabedev-dev-eus2",
+    "outboundIpAddresses": [
+      "20.1.214.216"
+    ],
+    "provisioningState": "InProgress",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "INNGEST_SIGNING_KEY",
+              "secretRef": "inngest-signing-key"
+            },
+            {
+              "name": "INNGEST_EVENT_KEY",
+              "secretRef": "inngest-event-key"
+            },
+            {
+              "name": "ENTRA_TENANT_ID"
+            },
+            {
+              "name": "ENTRA_CLIENT_ID"
+            },
+            {
+              "name": "ENTRA_TENANT_SUBDOMAIN"
+            },
+            {
+              "name": "NODE_ENV"
+            },
+            {
+              "name": "PORT"
+            },
+            {
+              "name": "DATABASE_URL",
+              "secretRef": "database-url"
+            },
+            {
+              "name": "SESSION_SECRET",
+              "secretRef": "session-secret"
+            },
+            {
+              "name": "UPSTASH_REDIS_REST_URL",
+              "secretRef": "upstash-redis-rest-url"
+            },
+            {
+              "name": "UPSTASH_REDIS_REST_TOKEN",
+              "secretRef": "upstash-redis-rest-token"
+            }
+          ],
+          "image": "acrgrailbabedevdev.azurecr.io/grailbabe-api:f3aad292a5d15354e4c51bab9d337448cbacf4dd",
+          "name": "api",
+          "probes": [
+            {
+              "failureThreshold": 3,
+              "periodSeconds": 10,
+              "successThreshold": 1,
+              "tcpSocket": {
+                "port": 80
+              },
+              "timeoutSeconds": 5,
+              "type": "Liveness"
+            },
+            {
+              "failureThreshold": 48,
+              "periodSeconds": 5,
+              "successThreshold": 1,
+              "tcpSocket": {
+                "port": 80
+              },
+              "timeoutSeconds": 5,
+              "type": "Readiness"
+            },
+            {
+              "failureThreshold": 240,
+              "initialDelaySeconds": 1,
+              "periodSeconds": 1,
+              "successThreshold": 1,
+              "tcpSocket": {
+                "port": 80
+              },
+              "timeoutSeconds": 3,
+              "type": "Startup"
+            }
+          ],
+          "resources": {
+            "cpu": 0.5,
+            "ephemeralStorage": "2Gi",
+            "memory": "1Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 10,
+        "minReplicas": 0,
+        "pollingInterval": 30,
+        "rules": [
+          {
+            "http": {
+              "metadata": {
+                "concurrentRequests": ""
+              }
+            },
+            "name": "http-scaler"
+          }
+        ]
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": []
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "rg-grailbabedev-compute-dev-eus2",
+  "systemData": {
+    "createdAt": "2026-05-11T22:09:05.4708147",
+    "createdBy": "azurega@kinisislabs.com",
+    "createdByType": "User",
+    "lastModifiedAt": "2026-05-16T09:31:57.73969",
+    "lastModifiedBy": "azurega@kinisislabs.com",
+    "lastModifiedByType": "User"
+  },
+  "type": "Microsoft.App/containerApps"
