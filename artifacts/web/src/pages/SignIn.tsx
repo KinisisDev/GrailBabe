@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useMsal } from "@azure/msal-react";
 import { Loader2 } from "lucide-react";
@@ -9,6 +9,7 @@ export default function SignInPage() {
   const { instance, inProgress } = useMsal();
   const { isSignedIn, isLoaded } = useAuth();
   const [, navigate] = useLocation();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -17,9 +18,32 @@ export default function SignInPage() {
       return;
     }
     if (inProgress === "none") {
-      void instance.loginRedirect({ scopes: ENTRA_LOGIN_SCOPES });
+      instance
+        .loginRedirect({ scopes: ENTRA_LOGIN_SCOPES })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          // eslint-disable-next-line no-console
+          console.error("[auth] loginRedirect failed", err);
+          setError(msg);
+        });
     }
   }, [isLoaded, isSignedIn, inProgress, instance, navigate]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background px-4 py-12">
+        <div className="max-w-md text-center space-y-3">
+          <p className="text-sm font-medium text-destructive">Sign in failed</p>
+          <pre className="text-xs text-left whitespace-pre-wrap bg-muted p-3 rounded border border-border">
+            {error}
+          </pre>
+          <p className="text-xs text-muted-foreground">
+            Open the browser console for full details, then send a screenshot.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen grid place-items-center bg-background px-4 py-12">
