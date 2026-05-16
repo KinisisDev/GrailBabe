@@ -1,0 +1,80 @@
+Worker initialized
+api/me:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/dashboard:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/dashboard:1  Failed to load resource: the server responded with a status of 500 ()
+api/me:1  Failed to load resource: the server responded with a status of 500 ()
+api/profiles/me:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/me:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/profiles/me:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/profiles/check-screenname?screenname=Ryan:1  Failed to load resource: the server responded with a status of 500 ()
+api/profiles/check-screenname?screenname=Ryan0613:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+api/messages/unread-count:1  Failed to load resource: the server responded with a status of 500 ()
+api/trades/mine?status=all:1  Failed to load resource: the server responded with a status of 500 ()
+
+index-BjAPG1XB.js:9  GET https://grailbabedev.com/api/messages/unread-count 500 (Internal Server Error)
+ze @ index-BjAPG1XB.js:9
+await in ze
+Ooe @ index-BjAPG1XB.js:9
+queryFn @ index-BjAPG1XB.js:9
+a @ index-BjAPG1XB.js:9
+w @ index-BjAPG1XB.js:9
+start @ index-BjAPG1XB.js:9
+fetch @ index-BjAPG1XB.js:9
+#d @ index-BjAPG1XB.js:9
+(anonymous) @ index-BjAPG1XB.js:9
+index-BjAPG1XB.js:9  GET https://grailbabedev.com/api/messages/unread-count 500 (Internal Server Error)
+ze @ index-BjAPG1XB.js:9
+await in ze
+Ooe @ index-BjAPG1XB.js:9
+queryFn @ index-BjAPG1XB.js:9
+a @ index-BjAPG1XB.js:9
+w @ index-BjAPG1XB.js:9
+(anonymous) @ index-BjAPG1XB.js:9
+Promise.then
+(anonymous) @ index-BjAPG1XB.js:9
+Promise.catch
+w @ index-BjAPG1XB.js:9
+start @ index-BjAPG1XB.js:9
+fetch @ index-BjAPG1XB.js:9
+#d @ index-BjAPG1XB.js:9
+(anonymous) @ index-BjAPG1XB.js:9

@@ -168,7 +168,11 @@ export default function SettingsPage() {
     debouncedNew.length > 0 &&
     SCREENNAME_RE.test(debouncedNew) &&
     debouncedNew.toLowerCase() !== (me?.screenname ?? "").toLowerCase();
-  const { data: avail, isFetching: checking } = useCheckScreenname(
+  const {
+    data: avail,
+    isFetching: checking,
+    isError: checkErrored,
+  } = useCheckScreenname(
     { screenname: debouncedNew },
     {
       query: {
@@ -196,8 +200,16 @@ export default function SettingsPage() {
     if (avail?.available) return { kind: "valid", msg: "Available" };
     if (avail && !avail.available)
       return { kind: "invalid", msg: avail.reason ?? "Already taken" };
+    // Availability check failed (network / server error). Allow submit so the
+    // server can give the real verdict instead of the UI silently locking the
+    // confirm button.
+    if (checkErrored)
+      return {
+        kind: "valid",
+        msg: "Couldn't verify availability — server will confirm",
+      };
     return { kind: "neutral", msg: null };
-  }, [newScreenname, debouncedNew, avail, checking, me?.screenname]);
+  }, [newScreenname, debouncedNew, avail, checking, checkErrored, me?.screenname]);
 
   const profileDirty =
     !!me &&
