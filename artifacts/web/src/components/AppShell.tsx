@@ -1,7 +1,17 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { UserButton } from "@clerk/react";
+import { useAuth } from "@/lib/auth/useAuth";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LogOut, User as UserIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -52,6 +62,7 @@ const SIDEBAR_KEY = "gb_sidebar_collapsed";
 export default function AppShell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const isMobile = useIsMobile();
+  const { user, signOut, signIn, isSignedIn } = useAuth();
   const { data: me } = useGetMe();
   const tier = me?.profile.tier ?? "free";
   const { data: unread } = useGetUnreadMessageCount({
@@ -261,7 +272,67 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 {me.profile.vaultCount} items · {me.profile.grailCount} grails
               </span>
             )}
-            <UserButton />
+            {isSignedIn && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    data-testid="button-account-menu"
+                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-black/30"
+                  >
+                    <Avatar className="size-8">
+                      <AvatarFallback className="bg-black/30 text-black text-xs font-semibold">
+                        {(user.displayName ?? "C")
+                          .split(/\s+/)
+                          .map((s) => s[0])
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase() || "C"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium truncate">
+                        {user.displayName}
+                      </span>
+                      {user.email && (
+                        <span className="text-xs text-muted-foreground truncate">
+                          {user.email}
+                        </span>
+                      )}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href="/profile">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <UserIcon className="size-4 mr-2" />
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => void signOut()}
+                  >
+                    <LogOut className="size-4 mr-2" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void signIn()}
+                data-testid="button-signin-shell"
+              >
+                Sign in
+              </Button>
+            )}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">

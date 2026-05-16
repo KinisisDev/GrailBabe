@@ -371,8 +371,9 @@ export default function SecurityLegalPage() {
 
           <Block heading="Third-Party Cookies">
             <p>
-              Some cookies are placed by third parties including Clerk
-              (authentication), analytics providers, and payment processors.
+              Some cookies and tokens are placed by third parties including
+              Microsoft Entra External ID (authentication), analytics
+              providers, and payment processors.
               These parties have their own cookie policies.
             </p>
           </Block>

@@ -1,13 +1,6 @@
-import { getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 import { db, userProfilesTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
-import { createClerkClient } from "@clerk/express";
-
-const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY ?? "",
-  publishableKey: process.env.CLERK_PUBLISHABLE_KEY ?? "",
-});
 
 const SCREENNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 
@@ -42,22 +35,32 @@ export const requireAuth: RequestHandler = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const auth = getAuth(req);
-  const userId = auth?.userId;
+  const userId = req.userId;
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  req.userId = userId;
   try {
-    await ensureUserProfile(userId);
+    await ensureUserProfile(userId, {
+      email: req.userEmail,
+      displayName: req.userName,
+    });
   } catch (err) {
     req.log?.error({ err }, "Failed to ensure user profile");
   }
   next();
 };
 
-export async function ensureUserProfile(userId: string) {
+export interface EnsureUserProfileOpts {
+  email?: string | null;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+}
+
+export async function ensureUserProfile(
+  userId: string,
+  opts: EnsureUserProfileOpts = {},
+) {
   const [existing] = await db
     .select()
     .from(userProfilesTable)
@@ -65,24 +68,12 @@ export async function ensureUserProfile(userId: string) {
     .limit(1);
   if (existing) return existing;
 
-  let email: string | null = null;
-  let displayName = "Collector";
-  let avatarUrl: string | null = null;
-  let screennameSeed = "collector";
-  try {
-    const user = await clerkClient.users.getUser(userId);
-    email = user.primaryEmailAddress?.emailAddress ?? null;
-    displayName =
-      [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-      user.username ||
-      email?.split("@")[0] ||
-      "Collector";
-    avatarUrl = user.imageUrl ?? null;
-    screennameSeed =
-      user.username || email?.split("@")[0] || displayName || "collector";
-  } catch {
-    // ignore — profile created with defaults
-  }
+  const email = opts.email ?? null;
+  const displayName =
+    opts.displayName?.trim() || email?.split("@")[0] || "Collector";
+  const avatarUrl = opts.avatarUrl ?? null;
+  const screennameSeed =
+    opts.displayName?.trim() || email?.split("@")[0] || "collector";
 
   const screenname = await generateUniqueScreenname(screennameSeed);
 
@@ -97,7 +88,7 @@ export async function ensureUserProfile(userId: string) {
       tier: "free",
       screenname,
       screennameChangedAt: now,
-      onboardingComplete: true,
+      onboardingComplete: false,
     })
     .onConflictDoNothing()
     .returning();

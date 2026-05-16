@@ -2,7 +2,7 @@
  * Seed dev data for the dashboard + analytics pages.
  *
  * Usage:
- *   USER_ID=<clerkUserId> pnpm --filter @workspace/api-server run seed:dev
+ *   USER_ID=<entraUserId> pnpm --filter @workspace/api-server run seed:dev
  *   pnpm --filter @workspace/api-server run seed:dev          # seeds all existing profiles
  *   pnpm --filter @workspace/api-server run seed:dev --reset  # wipes seeded rows first
  *
@@ -398,7 +398,7 @@ async function main() {
       console.log(
         "\n⚠ No user profiles found in the database.\n" +
           "  Sign in to GrailBabe at least once to create a profile, then re-run\n" +
-          "  with `USER_ID=<your-clerk-id>` or just re-run this script.\n",
+          "  with `USER_ID=<your-entra-oid>` or just re-run this script.\n",
       );
       process.exit(0);
     }

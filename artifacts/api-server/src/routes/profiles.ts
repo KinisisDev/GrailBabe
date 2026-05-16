@@ -150,8 +150,9 @@ router.post("/profiles", requireAuth, async (req, res) => {
 
   const coords = await geocode(body.city, body.region, body.country);
 
-  // TODO: when Clerk publicMetadata is wired, also call
-  // clerkClient.users.updateUserMetadata(userId, { publicMetadata: { onboardingComplete: true } })
+  // Onboarding-complete state lives in the user_profiles row; Entra has no
+  // equivalent of Clerk's publicMetadata, and we don't need one — clients
+  // read it from /profiles/me.
   let updated;
   try {
     [updated] = await db

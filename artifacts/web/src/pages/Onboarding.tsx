@@ -147,8 +147,9 @@ export default function Onboarding() {
       {
         onSuccess: () => {
           toast.success("Welcome to GrailBabe!");
-          // TODO: when Clerk is wired, refresh the Clerk session so
-          // publicMetadata.onboardingComplete propagates client-side.
+          // Onboarding-complete state is read from /profiles/me on next render;
+          // no client-side session refresh is needed (Entra tokens carry no
+          // app-specific metadata).
           setLocation("/dashboard");
         },
         onError: (err: unknown) => {

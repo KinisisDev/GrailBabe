@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@/lib/auth/entraAuthContext";
 import { useCheckScreenname } from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";

@@ -1,11 +1,5 @@
-import { createClerkClient } from "@clerk/express";
 import { db, userProfilesTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
-
-const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY ?? "",
-  publishableKey: process.env.CLERK_PUBLISHABLE_KEY ?? "",
-});
 
 export interface PublicUser {
   id: string;
@@ -14,6 +8,13 @@ export interface PublicUser {
   avatarUrl: string | null;
 }
 
+/**
+ * Returns a map of userId -> PublicUser for the given ids. Backed entirely by
+ * the local user_profiles table — there is no remote identity-provider lookup.
+ * Profiles are created lazily by `requireAuth` -> `ensureUserProfile` on the
+ * user's first authenticated request, so any id present in another table that
+ * is not yet in user_profiles falls back to a placeholder Collector entry.
+ */
 export async function fetchPublicUsers(
   ids: string[],
 ): Promise<Map<string, PublicUser>> {
@@ -26,7 +27,6 @@ export async function fetchPublicUsers(
     .from(userProfilesTable)
     .where(inArray(userProfilesTable.id, unique));
   const profileMap = new Map(profiles.map((p) => [p.id, p]));
-  const missing: string[] = [];
 
   for (const id of unique) {
     const p = profileMap.get(id);
@@ -38,36 +38,13 @@ export async function fetchPublicUsers(
         avatarUrl: p.avatarUrl,
       });
     } else {
-      missing.push(id);
+      map.set(id, {
+        id,
+        screenname: null,
+        displayName: "Collector",
+        avatarUrl: null,
+      });
     }
-  }
-
-  if (missing.length > 0) {
-    await Promise.all(
-      missing.map(async (id) => {
-        try {
-          const u = await clerkClient.users.getUser(id);
-          const displayName =
-            [u.firstName, u.lastName].filter(Boolean).join(" ") ||
-            u.username ||
-            u.primaryEmailAddress?.emailAddress?.split("@")[0] ||
-            "Collector";
-          map.set(id, {
-            id,
-            screenname: null,
-            displayName,
-            avatarUrl: u.imageUrl ?? null,
-          });
-        } catch {
-          map.set(id, {
-            id,
-            screenname: null,
-            displayName: "Collector",
-            avatarUrl: null,
-          });
-        }
-      }),
-    );
   }
 
   return map;

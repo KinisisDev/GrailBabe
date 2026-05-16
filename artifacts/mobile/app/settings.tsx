@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@/lib/auth/entraAuthContext";
 import { Feather } from "@expo/vector-icons";
 import { useGetMyProfile } from "@workspace/api-client-react";
 

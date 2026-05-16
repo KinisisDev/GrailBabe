@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Platform, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@/lib/auth/entraAuthContext";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useGetMe } from "@workspace/api-client-react";

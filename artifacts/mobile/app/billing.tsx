@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@/lib/auth/entraAuthContext";
 import * as WebBrowser from "expo-web-browser";
 import { Feather } from "@expo/vector-icons";
 import {

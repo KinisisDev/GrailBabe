@@ -1,5 +1,5 @@
 import { Link, useParams } from "wouter";
-import { useUser, SignInButton } from "@clerk/react";
+import { useAuth } from "@/lib/auth/useAuth";
 import {
   useGetMyProfile,
   useGetProfile,
@@ -98,7 +98,7 @@ function timeAgo(d: string) {
 export default function Profile() {
   const params = useParams<{ screenname?: string }>();
   const screenname = params.screenname;
-  const { isLoaded: clerkLoaded, isSignedIn } = useUser();
+  const { isLoaded: authLoaded, isSignedIn, signIn } = useAuth();
 
   const { data: me, isLoading: meLoading } = useGetMyProfile({
     query: {
@@ -134,7 +134,7 @@ export default function Profile() {
   });
 
   // Signed-out: show CTA instead of spinning forever on 401s.
-  if (clerkLoaded && !isSignedIn) {
+  if (authLoaded && !isSignedIn) {
     return (
       <div className="p-4 md:p-8 max-w-3xl mx-auto">
         <Card>
@@ -153,11 +153,12 @@ export default function Profile() {
               Sign in to see your vault stats, grail list, trade reputation,
               and Grail Scout / Seeker / Master tier.
             </p>
-            <SignInButton mode="modal">
-              <Button data-testid="button-signin-profile">
-                Sign in to view profile
-              </Button>
-            </SignInButton>
+            <Button
+              data-testid="button-signin-profile"
+              onClick={() => void signIn()}
+            >
+              Sign in to view profile
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -185,7 +186,7 @@ export default function Profile() {
 
   // Initial spinner only while we're actually loading something.
   if (
-    (!clerkLoaded || meLoading || profileLoading) &&
+    (!authLoaded || meLoading || profileLoading) &&
     !profile &&
     !isError
   ) {

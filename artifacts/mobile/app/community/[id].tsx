@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@/lib/auth/entraAuthContext";
 import { Feather } from "@expo/vector-icons";
 import {
   useGetCommunityPost,

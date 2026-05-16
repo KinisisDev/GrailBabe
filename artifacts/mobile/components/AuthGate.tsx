@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@/lib/auth/entraAuthContext";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 

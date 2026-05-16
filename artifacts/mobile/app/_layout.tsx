@@ -17,11 +17,10 @@ import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SplashGate } from "@/components/SplashGate";
-import { tokenCache } from "@/lib/tokenCache";
+import { AuthProvider, useAuth } from "@/lib/auth/entraAuthContext";
 import { configureApi } from "@/lib/api";
 
 SplashScreen.preventAutoHideAsync();
@@ -35,8 +34,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 function ApiBridge({ children }: { children: React.ReactNode }) {
   const { getToken, isLoaded } = useAuth();
@@ -99,23 +96,10 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  const tree = !PUBLISHABLE_KEY ? (
+  return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-              {!splashDone && <SplashGate onEnter={() => setSplashDone(true)} />}
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
-  ) : (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <ClerkProvider publishableKey={PUBLISHABLE_KEY} tokenCache={tokenCache}>
+        <AuthProvider>
           <ApiBridge>
             <QueryClientProvider client={queryClient}>
               <GestureHandlerRootView>
@@ -126,10 +110,8 @@ export default function RootLayout() {
               </GestureHandlerRootView>
             </QueryClientProvider>
           </ApiBridge>
-        </ClerkProvider>
+        </AuthProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );
-
-  return tree;
 }
