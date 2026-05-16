@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useIsAuthenticated } from "@azure/msal-react";
 import { SplashScreen } from "./components/SplashScreen";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -74,12 +75,16 @@ function ProtectedRoutes() {
 }
 
 function App() {
+  const isAuthenticated = useIsAuthenticated();
   const [splashDone, setSplashDone] = useState(false);
   const [splashIntent, setSplashIntent] = useState<"sign-up" | "sign-in" | null>(
     null,
   );
 
-  if (!splashDone) {
+  // Once a user is signed in, the splash screen has no purpose — bypass it on
+  // every subsequent render so MSAL redirects from Entra (which land back on
+  // "/") don't trap them in splash → sign-in → dashboard → splash loops.
+  if (!splashDone && !isAuthenticated) {
     return (
       <SplashScreen
         onSignUp={() => {
