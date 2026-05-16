@@ -64,14 +64,27 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
   const { user, signOut, signIn, isSignedIn } = useAuth();
   const { data: me } = useGetMe();
-  const tier = me?.profile.tier ?? "free";
+  // Defensive reads: in degraded states (API serving HTML fallback, schema
+  // drift, partial responses) `me` can be a string or be missing nested
+  // fields. Optional chaining alone doesn't protect against `me.profile`
+  // being undefined, so we validate shape before reading.
+  const meProfile =
+    me && typeof me === "object" && "profile" in me ? me.profile : null;
+  const tier = meProfile?.tier ?? "free";
+  const vaultCount = meProfile?.vaultCount ?? 0;
+  const grailCount = meProfile?.grailCount ?? 0;
+
   const { data: unread } = useGetUnreadMessageCount({
     query: {
       queryKey: getGetUnreadMessageCountQueryKey(),
       refetchInterval: 15000,
     },
   });
-  const unreadCount = unread?.count ?? 0;
+  const unreadCount =
+    unread && typeof unread === "object" && typeof unread.count === "number"
+      ? unread.count
+      : 0;
+
   const { data: myTradesAll } = useListMyTrades(
     { status: "all" },
     {
@@ -81,9 +94,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
       },
     },
   );
-  const pendingTradeCount = (myTradesAll ?? []).filter(
-    (t) => t.status === "pending" && !t.myConfirmed,
-  ).length;
+  const pendingTradeCount = Array.isArray(myTradesAll)
+    ? myTradesAll.filter(
+        (t) => t.status === "pending" && !t.myConfirmed,
+      ).length
+    : 0;
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -267,9 +282,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {me && (
+            {meProfile && (
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                {me.profile.vaultCount} items · {me.profile.grailCount} grails
+                {vaultCount} items · {grailCount} grails
               </span>
             )}
             {isSignedIn && user ? (
