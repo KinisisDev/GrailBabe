@@ -77,7 +77,6 @@ export async function ensureUserProfile(
 
   const screenname = await generateUniqueScreenname(screennameSeed);
 
-  const now = new Date();
   const [created] = await db
     .insert(userProfilesTable)
     .values({
@@ -87,7 +86,10 @@ export async function ensureUserProfile(
       avatarUrl,
       tier: "free",
       screenname,
-      screennameChangedAt: now,
+      // Leave screennameChangedAt null so the 120-day cooldown does not lock
+      // the auto-generated name. The cooldown starts the first time the user
+      // explicitly changes their screenname.
+      screennameChangedAt: null,
       onboardingComplete: false,
     })
     .onConflictDoNothing()
