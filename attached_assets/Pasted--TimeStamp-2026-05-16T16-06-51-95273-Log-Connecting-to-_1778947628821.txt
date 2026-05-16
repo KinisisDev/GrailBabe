@@ -1,0 +1,19 @@
+{"TimeStamp": "2026-05-16T16:06:51.95273", "Log": "Connecting to the container 'api'..."}
+{"TimeStamp": "2026-05-16T16:06:51.97665", "Log": "Successfully Connected to container: 'api' [Revision: 'ca-grailbabedev-api-dev--debug1', Replica: 'ca-grailbabedev-api-dev--debug1-5dfbccdcdd-j8krq']"}
+{"TimeStamp": "2026-05-16T16:06:38.3905166+00:00", "Log": "2026-05-16T16:06:38.390516602Z node:internal/modules/esm/resolve:873"}
+{"TimeStamp": "2026-05-16T16:06:38.390793+00:00", "Log": "throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);"}
+{"TimeStamp": "2026-05-16T16:06:38.3908007+00:00", "Log": "^"}
+{"TimeStamp": "2026-05-16T16:06:38.3908032+00:00", "Log": ""}
+{"TimeStamp": "2026-05-16T16:06:38.3908058+00:00", "Log": "[ERR_MODULE_NOT_FOUND]: Cannot find package '@opentelemetry/api' imported from /app/dist/index.mjs"}
+{"TimeStamp": "2026-05-16T16:06:38.390809+00:00", "Log": "at packageResolve (node:internal/modules/esm/resolve:873:9)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908113+00:00", "Log": "at moduleResolve (node:internal/modules/esm/resolve:946:18)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908144+00:00", "Log": "at defaultResolve (node:internal/modules/esm/resolve:1188:11)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908177+00:00", "Log": "at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908208+00:00", "Log": "at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908237+00:00", "Log": "at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908271+00:00", "Log": "at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)"}
+{"TimeStamp": "2026-05-16T16:06:38.3908303+00:00", "Log": "at ModuleJob._link (node:internal/modules/esm/module_job:168:49) {"}
+{"TimeStamp": "2026-05-16T16:06:38.3908452+00:00", "Log": "code: 'ERR_MODULE_NOT_FOUND'"}
+{"TimeStamp": "2026-05-16T16:06:38.3908474+00:00", "Log": "2026-05-16T16:06:38.390847374Z }"}
+{"TimeStamp": "2026-05-16T16:06:38.3908493+00:00", "Log": ""}
+{"TimeStamp": "2026-05-16T16:06:38.3908513+00:00", "Log": "v20.20.2"}
