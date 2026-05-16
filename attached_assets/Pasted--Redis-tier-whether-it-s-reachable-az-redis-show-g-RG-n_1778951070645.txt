@@ -1,0 +1,59 @@
+# Redis tier & whether it's reachable
+az redis show -g $RG -n redis-grailbabedev-dev \
+  --query "{sku:sku.name, capacity:sku.capacity, host:hostName, state:provisioningState}" -o table
+
+# Service Bus tier
+az servicebus namespace show -g $RG -n sb-grailbabedev-dev \
+  --query "{sku:sku.name, tier:sku.tier, status:status}" -o table
+
+# Service Bus queues/topics — empty = definitely unused
+az servicebus queue list -g $RG --namespace-name sb-grailbabedev-dev --query "[].name" -o tsv
+az servicebus topic list -g $RG --namespace-name sb-grailbabedev-dev --query "[].name" -o tsv
+
+# The three svc container apps — image + last revision
+for app in ca-grailbabedev-svc1-dev ca-grailbabedev-svc2-dev ca-grailbabedev-svc3-dev; do
+  echo "=== $app ==="
+  az containerapp show -g $RG -n $app \
+    --query "{image:properties.template.containers[0].image, replicas:properties.template.scale, status:properties.runningStatus}" -o json
+done
+Sku    Capacity    Host                                            State
+-----  ----------  ----------------------------------------------  ---------
+Basic  0           redis-grailbabedev-dev.redis.cache.windows.net  Succeeded
+Sku       Tier      Status
+--------  --------  --------
+Standard  Standard  Active
+=== ca-grailbabedev-svc1-dev ===
+{
+  "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+  "replicas": {
+    "cooldownPeriod": 300,
+    "maxReplicas": 10,
+    "minReplicas": null,
+    "pollingInterval": 30,
+    "rules": null
+  },
+  "status": "Running"
+}
+=== ca-grailbabedev-svc2-dev ===
+{
+  "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+  "replicas": {
+    "cooldownPeriod": 300,
+    "maxReplicas": 10,
+    "minReplicas": null,
+    "pollingInterval": 30,
+    "rules": null
+  },
+  "status": "Running"
+}
+=== ca-grailbabedev-svc3-dev ===
+{
+  "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+  "replicas": {
+    "cooldownPeriod": 300,
+    "maxReplicas": 10,
+    "minReplicas": null,
+    "pollingInterval": 30,
+    "rules": null
+  },
+  "status": "Running"
