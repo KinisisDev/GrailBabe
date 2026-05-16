@@ -474,48 +474,6 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/ActivityEvent" }
 
-  /ai/insights:
-    post:
-      operationId: getAiInsights
-      tags: [ai]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/AiInsightsInput" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/AiInsightsResult" }
-        "402":
-          description: Premium required
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ApiErrorResponse" }
-
-  /ai/search:
-    post:
-      operationId: aiSearch
-      tags: [ai]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/AiSearchInput" }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/AiSearchResult" }
-        "402":
-          description: Premium required
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ApiErrorResponse" }
-
   /billing/plans:
     get:
       operationId: listBillingPlans
@@ -1473,45 +1431,6 @@ components:
         message: { type: string }
         itemId: { type: ["integer", "null"] }
         createdAt: { type: string, format: date-time }
-
-    AiInsightsInput:
-      type: object
-      properties:
-        focus: { type: string, enum: [overview, opportunities, risks, valuation] }
-
-    AiInsightsResult:
-      type: object
-      required: [summary, highlights, generatedAt]
-      properties:
-        summary: { type: string }
-        highlights:
-          type: array
-          items: { $ref: "#/components/schemas/AiHighlight" }
-        generatedAt: { type: string, format: date-time }
-
-    AiHighlight:
-      type: object
-      required: [title, body, sentiment]
-      properties:
-        title: { type: string }
-        body: { type: string }
-        sentiment: { type: string, enum: [positive, neutral, warning] }
-        itemId: { type: ["integer", "null"] }
-
-    AiSearchInput:
-      type: object
-      required: [query]
-      properties:
-        query: { type: string, minLength: 1 }
-
-    AiSearchResult:
-      type: object
-      required: [interpretation, results]
-      properties:
-        interpretation: { type: string }
-        results:
-          type: array
-          items: { $ref: "#/components/schemas/CollectionItem" }
 
     BillingPlan:
       type: object

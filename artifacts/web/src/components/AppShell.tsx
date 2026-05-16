@@ -32,7 +32,6 @@ import {
   MessagesSquare,
   Mail,
   TrendingUp,
-  Sparkles,
   CreditCard,
   Settings as SettingsIcon,
   UserCircle,
@@ -49,7 +48,6 @@ const NAV = [
   { to: "/scanner", label: "Scanner", icon: ScanLine },
   { to: "/grail", label: "My Grail List", icon: Star },
   { to: "/portfolio", label: "My Analytics", icon: TrendingUp },
-  { to: "/insights", label: "AI Insights", icon: Sparkles, premium: true },
   { to: "/trades", label: "Trading board", icon: ArrowLeftRight },
   { to: "/community", label: "Community", icon: MessagesSquare },
   { to: "/messages", label: "Messages", icon: Mail },
@@ -184,14 +182,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 >
                   {pendingTradeCount > 99 ? "99+" : pendingTradeCount}
                 </span>
-              )}
-              {item.premium && tier === "free" && (
-                <Badge
-                  variant="outline"
-                  className="text-[9px] px-1.5 py-0 h-4 border-accent/40 text-accent uppercase tracking-wide"
-                >
-                  Pro
-                </Badge>
               )}
             </Link>
           );

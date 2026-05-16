@@ -63,10 +63,6 @@ export default function LandingPage() {
               title: "Portfolio",
               body: "Watch your collection compound. Category breakdowns, gain/loss, timeline.",
             },
-            {
-              title: "AI Insights",
-              body: "Claude tells you what's working, what's not, and what to watch.",
-            },
           ].map((f) => (
             <div
               key={f.title}

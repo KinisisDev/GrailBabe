@@ -33,7 +33,6 @@ import CommunityPostPage from "@/pages/CommunityPost";
 import PortfolioPage from "@/pages/Portfolio";
 import BillingPage from "@/pages/Billing";
 import SettingsPage from "@/pages/Settings";
-import InsightsPage from "@/pages/Insights";
 import NotFound from "@/pages/not-found";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -65,7 +64,6 @@ function ProtectedRoutes() {
           <Route path="/community" component={CommunityPage} />
           <Route path="/community/:postId">{(params) => <CommunityPostPage id={Number(params.postId)} />}</Route>
           <Route path="/portfolio" component={PortfolioPage} />
-          <Route path="/insights" component={InsightsPage} />
           <Route path="/billing" component={BillingPage} />
           <Route path="/settings" component={SettingsPage} />
           <Route path="/"><Redirect to="/dashboard" /></Route>

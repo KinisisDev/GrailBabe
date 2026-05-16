@@ -4,7 +4,6 @@ import {
   RemoveBackgroundBody,
   ScannerAnalyzeBody,
 } from "@workspace/api-zod";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { cacheGet, cacheSet } from "../lib/cache";
 import { cachedJson } from "../lib/externalFetch";
 
@@ -12,7 +11,6 @@ const router: IRouter = Router();
 
 const REMOVE_BG_TIMEOUT_MS = 10_000;
 const PRICE_FETCH_TIMEOUT_MS = 8_000;
-const AI_GRADE_TIMEOUT_MS = 30_000;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 function imageTooLarge(b64: string): boolean {
@@ -780,28 +778,7 @@ async function fetchLegoPrice(itemId: string, advanced: boolean): Promise<PriceD
   return buildResult(itemId, primary!, extras, ebay.soldCount, advanced, ebay.partial);
 }
 
-// ───────────────────────── AI grading (advanced only) ─────────────────────────
-
-interface AiSubGrades {
-  centering: number;
-  corners: number;
-  edges: number;
-  surface: number;
-  centeringMeasured: string | null;
-}
-
-interface AiGradeOutput {
-  grade: string;
-  gradeRange: string;
-  confidence: "high" | "medium" | "low";
-  subGrades: AiSubGrades | null;
-  reasoning: string;
-  defects: string[];
-  centering: string;
-  surfaceNotes: string;
-  authenticityOk: boolean;
-  authenticityFlags: string[];
-}
+// ───────────────────────── Price ladder helpers ─────────────────────────
 
 interface PriceLadderRung {
   grade: string;
@@ -848,121 +825,6 @@ function impliedGradeFromMarket(
   return best.grade;
 }
 
-const PSA_RUBRIC = `PSA grading criteria (apply strictly):
-- PSA 10 GEM MINT: virtually perfect. Centering 55/45 or better on front, 75/25 or better on back. Sharp focus, full original gloss, sharp corners, no edge wear, no print defects, no surface marks.
-- PSA 9 MINT: minor flaw allowed (one of: slight wax stain on reverse, minor printing imperfection, slight off-white border, very slight focus issue, minor edge nick). Centering 60/40 or better front.
-- PSA 8 NM-MT: minor wear acceptable. Slight fuzzing on corners, small print spot, minor focus, slight wax stain. Centering 65/35 or better.
-- PSA 7 NM: visible surface wear or printing defects, slight fraying on corners, minor chipping on edges, slight notching. Centering 70/30 or better.
-- PSA 6 EX-MT: visible surface wear, possible light scratches, fuzzy corners, light scuffing, slight notching, minor staining. Centering 80/20 or better.
-- PSA 5 EX: very slight rounding of corners, minor chipping on edges, light scuffs/scratches, light staining. Centering 85/15 or better.
-- PSA 4 VG-EX: rounded corners, surface wear, possible printing defects, minor creases, light staining.
-- PSA 3 VG: rounding & layering on corners, scuffing on edges, scratching/scuffing on surface, light creases.
-- PSA 2 GOOD: significant rounding, fraying, scuffs, multiple light creases.
-- PSA 1 POOR: extreme wear, heavy creases, possibly trimmed/restored.`;
-
-async function gradeWithAi(
-  images: string[],
-  category: "tcg" | "sports" | "lego",
-  context: { itemId: string; rawMid: number | null; ladder: PriceLadderRung[] },
-): Promise<AiGradeOutput> {
-  const systemPrompt =
-    category === "lego"
-      ? "You are an expert LEGO set authenticator and condition grader. Output STRICT minified JSON only — no markdown, no commentary. Schema: " +
-        `{"grade":"Sealed","gradeRange":"Sealed-Used Complete","confidence":"high|medium|low","subGrades":null,"reasoning":"...","defects":["..."],"centering":"","surfaceNotes":"...","authenticityOk":true,"authenticityFlags":["..."]}.`
-      : `You are a professional PSA-style trading-card grader. Analyze EVERY supplied image (front, back, corners, edges) before deciding.
-
-${PSA_RUBRIC}
-
-Methodology:
-1. Score each PSA pillar independently on a 1-10 scale: centering, corners, edges, surface.
-2. Measure centering by eye and report as "L/R, T/B" percentages (e.g. "55/45, 50/50").
-3. Overall grade is the LOWEST sub-grade unless it is a clear outlier (then second-lowest).
-4. Confidence: "high" only if you can clearly see all four corners and both faces. "low" if only the front or only one image is provided.
-
-Output STRICT minified JSON only — no markdown, no commentary. Schema: ` +
-        `{"grade":"PSA 8","gradeRange":"PSA 8-9","confidence":"high|medium|low","subGrades":{"centering":8,"corners":7,"edges":9,"surface":8,"centeringMeasured":"58/42, 51/49"},"reasoning":"one short paragraph citing what lowered the grade","defects":["..."],"centering":"58/42 L-R, 51/49 T-B","surfaceNotes":"...","authenticityOk":true,"authenticityFlags":["..."]}.`;
-
-  const ladderHint =
-    context.ladder.length > 0
-      ? `\nMarket price ladder for cross-reference (raw → graded):\n${context.ladder
-          .map((r) => `  ${r.grade}: $${r.price.toFixed(2)}`)
-          .join("\n")}`
-      : "";
-  const rawHint =
-    context.rawMid && context.rawMid > 0
-      ? `\nCurrent raw market mid: $${context.rawMid.toFixed(2)}.`
-      : "";
-
-  const userInstruction =
-    category === "lego"
-      ? `Identify "${context.itemId}". Estimate condition (Sealed MISB, Used Complete, Used Incomplete). List visible damage (sticker fade, missing pieces, box wear, color fade) and any authenticity flags (fakes, knockoffs).`
-      : `Grade "${context.itemId}" using the PSA rubric.${rawHint}${ladderHint}\nLook at every image. Be conservative — when in doubt, drop a grade. Provide a 2-grade range (e.g. PSA 8-9) and one "best estimate".`;
-
-  const imageBlocks = images.slice(0, 6).map((img) => {
-    const { base64, mediaType } = stripDataUrl(img);
-    return {
-      type: "image" as const,
-      source: { type: "base64" as const, media_type: mediaType, data: base64 },
-    };
-  });
-
-  const msg = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    system: systemPrompt,
-    messages: [
-      {
-        role: "user",
-        content: [...imageBlocks, { type: "text", text: userInstruction }],
-      },
-    ],
-  });
-
-  const text = msg.content
-    .map((c) => (c.type === "text" ? c.text : ""))
-    .join("\n")
-    .trim();
-
-  const cleaned = text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-  const parsed = JSON.parse(cleaned) as Partial<AiGradeOutput> & {
-    subGrades?: Partial<AiSubGrades> | null;
-  };
-
-  let subGrades: AiSubGrades | null = null;
-  if (parsed.subGrades && typeof parsed.subGrades === "object") {
-    const s = parsed.subGrades;
-    subGrades = {
-      centering: Number(s.centering ?? 0) || 0,
-      corners: Number(s.corners ?? 0) || 0,
-      edges: Number(s.edges ?? 0) || 0,
-      surface: Number(s.surface ?? 0) || 0,
-      centeringMeasured: s.centeringMeasured ? String(s.centeringMeasured) : null,
-    };
-  }
-
-  const conf = String(parsed.confidence ?? "medium").toLowerCase();
-  const confidence: "high" | "medium" | "low" =
-    conf === "high" || conf === "low" ? conf : "medium";
-
-  return {
-    grade: String(parsed.grade ?? ""),
-    gradeRange: String(parsed.gradeRange ?? parsed.grade ?? ""),
-    confidence,
-    subGrades,
-    reasoning: String(parsed.reasoning ?? ""),
-    defects: Array.isArray(parsed.defects) ? parsed.defects.map(String) : [],
-    centering: String(parsed.centering ?? ""),
-    surfaceNotes: String(parsed.surfaceNotes ?? ""),
-    authenticityOk: Boolean(parsed.authenticityOk ?? true),
-    authenticityFlags: Array.isArray(parsed.authenticityFlags)
-      ? parsed.authenticityFlags.map(String)
-      : [],
-  };
-}
 
 router.post("/scanner/analyze", requireAuth, async (req, res) => {
   const parsed = ScannerAnalyzeBody.safeParse(req.body);
@@ -1012,28 +874,6 @@ router.post("/scanner/analyze", requireAuth, async (req, res) => {
     }
   }
 
-  let ai: AiGradeOutput | null = null;
-  let aiError = false;
-  let aiErrorReason: string | null = null;
-  if (advanced && images.length > 0) {
-    try {
-      ai = await withTimeout(
-        gradeWithAi(images, category, {
-          itemId,
-          rawMid: priceData.mid,
-          ladder: priceLadder,
-        }),
-        AI_GRADE_TIMEOUT_MS,
-        "AI grading",
-      );
-    } catch (err) {
-      aiError = true;
-      aiErrorReason =
-        err instanceof Error ? err.message.slice(0, 200) : "Unknown AI error";
-      req.log.warn({ err }, "AI grading failed");
-    }
-  }
-
   const sparkline = advanced
     ? mockSparkline(itemId + ":" + category)
     : [];
@@ -1050,22 +890,22 @@ router.post("/scanner/analyze", requireAuth, async (req, res) => {
     recentSoldCount: priceData.recentSoldCount,
     sources: priceData.sources,
     isMockData: priceData.isMockData,
-    aiGrade: ai?.grade ?? null,
-    aiGradeRange: ai?.gradeRange ?? null,
-    aiConfidence: ai?.confidence ?? null,
-    aiSubGrades: ai?.subGrades ?? null,
-    aiReasoning: ai?.reasoning ?? null,
-    defects: ai?.defects ?? [],
-    centering: ai?.centering ?? null,
-    surfaceNotes: ai?.surfaceNotes ?? null,
-    authenticityFlags: ai?.authenticityFlags ?? [],
-    authenticityOk: ai?.authenticityOk ?? null,
+    aiGrade: null,
+    aiGradeRange: null,
+    aiConfidence: null,
+    aiSubGrades: null,
+    aiReasoning: null,
+    defects: [],
+    centering: null,
+    surfaceNotes: null,
+    authenticityFlags: [],
+    authenticityOk: null,
     extendedPrices: priceData.extendedPrices,
     priceLadder,
     marketImpliedGrade,
     priceHistorySparkline: sparkline,
-    aiError,
-    aiErrorReason,
+    aiError: false,
+    aiErrorReason: null,
   });
 });
 

@@ -8,13 +8,6 @@
 
 export * from './activityEvent';
 export * from './activityEventKind';
-export * from './aiHighlight';
-export * from './aiHighlightSentiment';
-export * from './aiInsightsInput';
-export * from './aiInsightsInputFocus';
-export * from './aiInsightsResult';
-export * from './aiSearchInput';
-export * from './aiSearchResult';
 export * from './apiErrorResponse';
 export * from './billingPlan';
 export * from './billingPlanInterval';

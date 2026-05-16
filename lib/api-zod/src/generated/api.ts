@@ -801,51 +801,6 @@ export const GetActivityResponseItem = zod.object({
 export const GetActivityResponse = zod.array(GetActivityResponseItem)
 
 
-export const GetAiInsightsBody = zod.object({
-  "focus": zod.enum(['overview', 'opportunities', 'risks', 'valuation']).optional()
-})
-
-export const GetAiInsightsResponse = zod.object({
-  "summary": zod.string(),
-  "highlights": zod.array(zod.object({
-  "title": zod.string(),
-  "body": zod.string(),
-  "sentiment": zod.enum(['positive', 'neutral', 'warning']),
-  "itemId": zod.number().nullish()
-})),
-  "generatedAt": zod.coerce.date()
-})
-
-
-
-
-
-export const AiSearchBody = zod.object({
-  "query": zod.string().min(1)
-})
-
-export const AiSearchResponse = zod.object({
-  "interpretation": zod.string(),
-  "results": zod.array(zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "brand": zod.string().nullish(),
-  "category": zod.string(),
-  "condition": zod.enum(['mint', 'near_mint', 'excellent', 'good', 'fair', 'poor']),
-  "purchasePrice": zod.number().nullish(),
-  "currentValue": zod.number().nullish(),
-  "purchaseDate": zod.coerce.date().nullish(),
-  "notes": zod.string().nullish(),
-  "photos": zod.array(zod.string()),
-  "tags": zod.array(zod.string()),
-  "sku": zod.string().nullish(),
-  "favorite": zod.boolean().optional(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-}))
-})
-
-
 export const ListBillingPlansResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),

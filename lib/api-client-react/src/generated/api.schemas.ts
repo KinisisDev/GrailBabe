@@ -681,53 +681,6 @@ export interface DashboardSummary {
   activity: ActivityEvent[];
 }
 
-export type AiInsightsInputFocus = typeof AiInsightsInputFocus[keyof typeof AiInsightsInputFocus];
-
-
-export const AiInsightsInputFocus = {
-  overview: 'overview',
-  opportunities: 'opportunities',
-  risks: 'risks',
-  valuation: 'valuation',
-} as const;
-
-export interface AiInsightsInput {
-  focus?: AiInsightsInputFocus;
-}
-
-export type AiHighlightSentiment = typeof AiHighlightSentiment[keyof typeof AiHighlightSentiment];
-
-
-export const AiHighlightSentiment = {
-  positive: 'positive',
-  neutral: 'neutral',
-  warning: 'warning',
-} as const;
-
-export interface AiHighlight {
-  title: string;
-  body: string;
-  sentiment: AiHighlightSentiment;
-  /** @nullable */
-  itemId?: number | null;
-}
-
-export interface AiInsightsResult {
-  summary: string;
-  highlights: AiHighlight[];
-  generatedAt: string;
-}
-
-export interface AiSearchInput {
-  /** @minLength 1 */
-  query: string;
-}
-
-export interface AiSearchResult {
-  interpretation: string;
-  results: CollectionItem[];
-}
-
 export type BillingPlanTier = typeof BillingPlanTier[keyof typeof BillingPlanTier];
 
 
