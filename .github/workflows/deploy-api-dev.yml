@@ -14,9 +14,83 @@ env:
   IMAGE_NAME: grailbabe-api
   CONTAINER_APP: ca-grailbabedev-api-dev
   RESOURCE_GROUP: rg-grailbabedev-compute-dev-eus2
+  PG_SERVER: pg-grailbabedev-dev
+  PG_FIREWALL_RULE: gh-actions-migrate-dev
+
+concurrency:
+  group: deploy-api-dev
+  cancel-in-progress: false
 
 jobs:
+  migrate:
+    name: Run DB migrations (dev)
+    runs-on: ubuntu-latest
+    outputs:
+      runner_ip: ${{ steps.ip.outputs.ip }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Azure Login
+        run: |
+          az login --service-principal \
+            -u "${{ secrets.AZURE_CLIENT_ID }}" \
+            -p "${{ secrets.AZURE_CLIENT_SECRET }}" \
+            --tenant "${{ secrets.AZURE_TENANT_ID }}" >/dev/null
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Get runner public IP
+        id: ip
+        run: |
+          IP=$(curl -s https://api.ipify.org)
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "Runner IP: $IP"
+
+      - name: Open Postgres firewall for runner (idempotent)
+        run: |
+          # Delete any stale rule from a previous interrupted run, then create fresh.
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$PG_SERVER" \
+            --rule-name "$PG_FIREWALL_RULE" \
+            --yes >/dev/null 2>&1 || true
+          az postgres flexible-server firewall-rule create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$PG_SERVER" \
+            --rule-name "$PG_FIREWALL_RULE" \
+            --start-ip-address "${{ steps.ip.outputs.ip }}" \
+            --end-ip-address "${{ steps.ip.outputs.ip }}" >/dev/null
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_DEV }}
+        run: pnpm --filter @workspace/db run migrate
+
+      - name: Close Postgres firewall
+        if: always()
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$PG_SERVER" \
+            --rule-name "$PG_FIREWALL_RULE" \
+            --yes >/dev/null || true
+
   build-and-deploy:
+    name: Build & deploy image (dev)
+    needs: migrate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +100,7 @@ jobs:
           az login --service-principal \
             -u "${{ secrets.AZURE_CLIENT_ID }}" \
             -p "${{ secrets.AZURE_CLIENT_SECRET }}" \
-            --tenant "${{ secrets.AZURE_TENANT_ID }}"
+            --tenant "${{ secrets.AZURE_TENANT_ID }}" >/dev/null
           az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       - name: Login to ACR
@@ -36,11 +110,11 @@ jobs:
         run: |
           docker build \
             -f artifacts/api-server/Dockerfile \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest \
             .
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
 
       - name: Deploy to Container App
         run: |
@@ -49,8 +123,19 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --server ${{ env.REGISTRY }} \
             --username "${{ secrets.AZURE_CLIENT_ID }}" \
-            --password "${{ secrets.AZURE_CLIENT_SECRET }}"
+            --password "${{ secrets.AZURE_CLIENT_SECRET }}" >/dev/null
           az containerapp update \
             --name ${{ env.CONTAINER_APP }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ github.sha }}
+
+      - name: Smoke test
+        run: |
+          for i in {1..10}; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" https://grailbabedev.com/api/healthz)
+            echo "Attempt $i: HTTP $CODE"
+            if [ "$CODE" = "200" ]; then exit 0; fi
+            sleep 6
+          done
+          echo "Smoke test failed — /api/healthz never returned 200"
+          exit 1
