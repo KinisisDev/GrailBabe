@@ -40,9 +40,9 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function ProtectedRoutes() {
   return (
-    <OnboardingGuard>
-      <AppShell>
-        <ErrorBoundary>
+    <ErrorBoundary>
+      <OnboardingGuard>
+        <AppShell>
         <Switch>
           <Route path="/dashboard" component={DashboardPage} />
           <Route path="/profile" component={ProfilePage} />
@@ -71,9 +71,9 @@ function ProtectedRoutes() {
           <Route path="/"><Redirect to="/dashboard" /></Route>
           <Route component={NotFound} />
         </Switch>
-        </ErrorBoundary>
-      </AppShell>
-    </OnboardingGuard>
+        </AppShell>
+      </OnboardingGuard>
+    </ErrorBoundary>
   );
 }
 
