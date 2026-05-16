@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/queryClient";
 import AppShell from "@/components/AppShell";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import OnboardingGuard from "@/components/OnboardingGuard";
 import OnboardingPage from "@/pages/Onboarding";
 import SignInPage from "@/pages/SignIn";
@@ -41,6 +42,7 @@ function ProtectedRoutes() {
   return (
     <OnboardingGuard>
       <AppShell>
+        <ErrorBoundary>
         <Switch>
           <Route path="/dashboard" component={DashboardPage} />
           <Route path="/profile" component={ProfilePage} />
@@ -69,6 +71,7 @@ function ProtectedRoutes() {
           <Route path="/"><Redirect to="/dashboard" /></Route>
           <Route component={NotFound} />
         </Switch>
+        </ErrorBoundary>
       </AppShell>
     </OnboardingGuard>
   );
