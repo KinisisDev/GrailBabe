@@ -27,10 +27,10 @@ A Pokémon TCG collector / vault / trade / community app. Web (Vite + React), mo
 
 All three artifacts authenticate against a single Entra External ID (CIAM) tenant. Clerk has been fully removed.
 
-- Tenant: `kinislabs.ciamlogin.com` (tenant id `0cd996b2-486d-4cb4-a256-43c14db68570`)
-- App registration client id: `c585acb9-882f-4886-87f4-e4335ddad620`
-- API scope: `api://c585acb9-882f-4886-87f4-e4335ddad620/access_as_user`
-- Authority: `https://kinislabs.ciamlogin.com/{tenantId}` (v2 endpoint)
+- Tenant: `kinisiscustomer.ciamlogin.com` (External ID tenant id `25284917-bc2d-4a04-b95c-26d7479c3ec3`)
+- App registration client id: `0c8a43d1-6dec-45b3-8c58-dbf8af12c373`
+- API scope: `api://0c8a43d1-6dec-45b3-8c58-dbf8af12c373/access_as_user`
+- Authority: `https://kinisiscustomer.ciamlogin.com/{tenantId}` (v2 endpoint)
 - User flow: `B2X_1_SignUpandSignin` (handles email/password + any IdPs configured at the tenant)
 
 | Where | Library | Source of truth |
